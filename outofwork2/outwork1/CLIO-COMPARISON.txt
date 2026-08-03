@@ -1,0 +1,526 @@
+================================================================================
+              CLIO vs CAUSLY — FEATURE COMPARISON & GAP ANALYSIS
+================================================================================
+
+CLIO OVERVIEW:
+  World's #1 cloud legal practice management platform. 150,000+ legal
+  professionals. $400M ARR. Two products: Clio Manage (practice management)
+  and Clio Grow (CRM/intake). $49-$149/user/month. Founded 2008.
+  Acquired vLex (legal research) in 2025. AI assistant "Clio Duo".
+
+CAUSLY OVERVIEW:
+  Full practice management platform for Indian lawyers/firms. Cases, clients,
+  billing, documents, AI analysis, eCourts tracking, bare acts, calculators.
+  Subscription-based (Free/Solo/Professional/Enterprise).
+
+================================================================================
+1. CLIO'S COMPLETE FEATURE LIST
+================================================================================
+
+CLIO MANAGE (Practice Management):
+
+  MATTER/CASE MANAGEMENT
+    - Full matter lifecycle with custom fields
+    - Practice-area templates
+    - Matter templates for common case types
+    - Conflict of interest checking
+    - Custom task lists per matter
+    - Budget tracking per matter
+    - Matter-level billing rates
+
+  TIME TRACKING
+    - In-app timer (start/stop)
+    - Chrome extension (log time from Gmail/browser tabs)
+    - Mobile app timer
+    - Manual time entry
+    - Billable vs non-billable toggle
+    - LEDES billing format (Advanced tier)
+    - AI-powered automatic time capture (Clio Duo)
+
+  BILLING & INVOICING
+    - Custom invoice templates
+    - Multiple billing methods (hourly, flat, contingency, retainer)
+    - Online payments (credit card, eCheck, Apple Pay, Google Pay)
+    - Trust accounting (IOLTA compliant)
+    - Operating account management
+    - Batch invoicing
+    - Automated billing reminders
+    - Invoice approval workflows
+
+  DOCUMENT MANAGEMENT
+    - Native DMS with folder structure
+    - Version history
+    - Full-text search
+    - Document templates with merge fields
+    - Document automation
+    - Cloud storage integration (Dropbox, Google Drive, OneDrive)
+
+  CALENDAR & DEADLINES
+    - Calendar management
+    - Court deadline tracking
+    - Statute of limitations tracking
+    - Shared calendars
+    - Calendar rules (auto-calculate deadlines)
+    - Court calendaring integration
+
+  CLIENT MANAGEMENT
+    - Contact management
+    - Client portal (Clio Connect)
+    - Secure messaging
+    - Client communication history
+    - Two-way text messaging
+
+  REPORTING & ANALYTICS
+    - Custom reports
+    - Financial reports
+    - Matter performance reports
+    - Time entry reports
+    - Aging reports
+    - Revenue forecasting
+    - Scheduled report delivery
+
+  TASK MANAGEMENT
+    - Task assignment and tracking
+    - Task templates
+    - Automated task creation
+    - Kanban boards
+    - Due date tracking
+
+  INTEGRATIONS (250+)
+    - Accounting: QuickBooks, Xero
+    - Documents: NetDocuments, iManage, Dropbox, Google Drive, OneDrive
+    - Email: Gmail, Outlook (2-way sync)
+    - Payments: LawPay, Clio Payments, Stripe
+    - E-signatures: DocuSign, Adobe Sign
+    - Court calendaring: North Carolina, Florida, etc.
+    - Zapier (connect to 5000+ apps)
+    - Custom API access
+
+  SECURITY & COMPLIANCE
+    - SOC 2 Type II certified
+    - 256-bit encryption
+    - Two-factor authentication
+    - Role-based permissions
+    - Audit trail
+    - Data backup
+    - CIRCIA compliance (security logging)
+
+  MOBILE APP
+    - iOS and Android
+    - Time tracking
+    - Matter management
+    - Client communication
+    - Document access
+
+CLIO DUO (AI Assistant - 2025+):
+    - Automatic time capture from documents/emails
+    - Document drafting assistance
+    - Matter summarization
+    - Bill generation from AI
+    - Day planning
+    - Event/time entry creation from natural language
+
+CLIO GROW (CRM & Client Intake):
+    - Online intake forms (customizable)
+    - Lead pipeline management (Kanban)
+    - Automated follow-up sequences (drip campaigns)
+    - Appointment scheduling (Clio Scheduler)
+    - Email marketing
+    - E-signatures
+    - Document automation
+    - Text messaging
+    - Conflict checking across Manage + Grow
+    - Lead source tracking
+    - ROI reporting
+    - Website builder (for law firms)
+    - Google Ads integration
+
+================================================================================
+2. CAUSLY'S CURRENT FEATURE LIST
+================================================================================
+
+  CASE MANAGEMENT
+    - Full case lifecycle
+    - Case types, courts, priority
+    - Client assignment
+    - Team assignment
+    - Case notes
+    - Case status tracking
+
+  CLIENT MANAGEMENT
+    - Client CRM
+    - Contact details
+    - Client portal (separate login)
+    - Client-case linking
+
+  DOCUMENT MANAGEMENT
+    - Upload to Cloudinary
+    - Categorization (petition, evidence, etc.)
+    - Confidential flagging
+    - Download with signed URLs
+    - Soft delete
+
+  BILLING & INVOICING
+    - Invoice generation
+    - Razorpay payment integration
+    - Subscription billing
+    - Payment tracking
+
+  CALENDAR & REMINDERS
+    - Hearing calendar
+    - Custom reminders
+    - Deadline notifications
+
+  eCOURTS TRACKING
+    - Live case status from Indian courts
+    - Case search by CNR/number
+    - Hearing date tracking
+    - Case history
+
+  AI ASSISTANT
+    - Case strength analysis
+    - Strategy recommendations
+    - Precedent suggestions
+    - Natural language case description
+
+  INDIAN LEGAL TOOLS
+    - Bare Acts reference (searchable)
+    - Stamp duty calculator
+    - Court fee calculator
+    - Limitation period calculator
+    - Indian court hierarchy
+
+  TEAM MANAGEMENT
+    - Role-based access (owner, partner, associate, etc.)
+    - Employee management
+    - Performance tracking
+    - Profit sharing
+
+  COMMUNICATION
+    - Internal messaging
+    - Notifications
+    - Email alerts
+
+  DOCUMENTS
+    - Templates
+    - Document storage
+
+  REPORTS
+    - Case reports
+    - Financial reports
+    - Performance reports
+
+  ADMIN
+    - Super admin panel
+    - Platform settings
+    - Subscription management
+    - Coupon system
+
+================================================================================
+3. FEATURE-BY-FEATURE COMPARISON
+================================================================================
+
+CLIO FEATURE                              CAUSLY STATUS
+---------------------------------------------------------- --------------------------------
+PRACTICE MANAGEMENT
+  Matter/case management                  HAS ✓
+  Custom fields per case                  PARTIAL (fixed schema)
+  Practice-area templates                 NO — one generic form
+  Conflict of interest checking           NO
+  Budget tracking per matter              NO
+
+CLIENT MANAGEMENT
+  Contact management                      HAS ✓
+  Client portal                           HAS ✓
+  Two-way text messaging                  NO — one-way notifications only
+  Client communication history            NO — no email/chat sync
+
+DOCUMENT MANAGEMENT
+  Document storage                        HAS ✓ (Cloudinary)
+  Version history                         NO
+  Full-text search (inside documents)     NO — name/title search only
+  Document templates with merge fields    PARTIAL (static templates)
+  Document automation                     NO
+
+TIME TRACKING
+  Timer (start/stop)                      NO — not implemented yet
+  Manual time entry                       NO — not implemented yet
+  Billable/non-billable toggle            NO
+  Chrome extension for time capture       NO
+  AI automatic time capture               NO
+
+BILLING & INVOICING
+  Invoice generation                      HAS ✓
+  Multiple billing methods                NO — flat fee only
+  Hourly billing                          NO
+  Contingency billing                     NO
+  Retainer billing                        NO
+  Online payments                         HAS ✓ (Razorpay)
+  Trust accounting (IOLTA)                NO
+  Batch invoicing                         NO
+  Automated billing reminders             NO
+  LEDES billing format                    NO
+  Invoice approval workflows              NO
+
+CALENDAR & DEADLINES
+  Calendar management                     HAS ✓
+  Court deadline tracking                  PARTIAL (manual reminders)
+  Statute of limitations tracking         NO
+  Shared calendars                        NO
+  Calendar rules (auto-calculate)         NO
+  Court calendaring integration           NO
+
+CLIENT INTAKE & CRM (Clio Grow)
+  Online intake forms                     NO
+  Lead pipeline management                NO
+  Automated follow-up sequences           NO
+  Appointment scheduling                  NO
+  Email marketing                         NO
+  Lead source tracking                    NO
+  ROI marketing reporting                 NO
+  Website builder                         NO
+
+AI FEATURES
+  Case analysis                           HAS ✓
+  Contract review                         NO
+  Auto time capture                       NO
+  Document drafting assistance            NO
+  Matter summarization                    NO
+  Bill generation from AI                 NO
+
+INTEGRATIONS
+  250+ integrations                       NO — mostly standalone
+  QuickBooks/Xero                         NO
+  Gmail/Outlook sync                      NO
+  DocuSign/Adobe Sign                     NO
+  Zapier                                  NO
+  Open API                                NO
+
+INDIAN LEGAL (CAUSLY UNIQUE)
+  eCourts tracking                        HAS ✓ (unique)
+  Bare Acts reference                     HAS ✓ (unique)
+  Stamp duty calculator                   HAS ✓ (unique)
+  Court fee calculator                    HAS ✓ (unique)
+  Limitation period calculator            HAS ✓ (unique)
+  Indian court hierarchy                  HAS ✓ (unique)
+
+SECURITY & COMPLIANCE
+  SOC 2 certified                         NO
+  256-bit encryption                      PARTIAL (Supabase RLS)
+  Two-factor authentication               PARTIAL (Supabase)
+  Role-based permissions                  HAS ✓
+  Audit trail                             HAS ✓
+  CIRCIA compliance                       NO (US-specific)
+
+MOBILE APP
+  Native iOS/Android app                  NO — responsive web only
+
+================================================================================
+4. WHAT CAUSLY IS MISSING (Gaps from Clio)
+================================================================================
+
+HIGH PRIORITY — Build these first:
+
+  1. TIME TRACKING
+     - Already planned in TIME-MANAGEMENT-MODULE-PLAN.txt
+     - Timer + manual entry + billable toggle
+     - Effort: ~9 days
+
+  2. CLIENT INTAKE FORMS
+     - Clio charges extra for this ($59/user/month for Grow)
+     - Online forms → auto-create client records
+     - Appointment booking integration
+     - Effort: 3-4 days
+
+  3. CONFLICT OF INTEREST CHECKING
+     - Before creating a case, check if opposing party matches any
+       existing client or opposing party in other cases
+     - Effort: 1-2 days
+
+  4. DOCUMENT VERSION HISTORY
+     - Track changes to documents over time
+     - Show who modified what and when
+     - Effort: 2-3 days
+
+  5. HOURLY / MULTIPLE BILLING METHODS
+     - Add hourly billing alongside flat fee
+     - Contingency fee option
+     - Retainer tracking
+     - Effort: 3-4 days
+
+  6. TRUST ACCOUNTING
+     - Separate operating vs trust account tracking
+     - Critical for compliance in many jurisdictions
+     - Effort: 4-5 days
+
+MEDIUM PRIORITY — Build for competitive parity:
+
+  7. EMAIL INTEGRATION
+     - 2-way email sync with Gmail/Outlook
+     - Log emails to case records
+     - Effort: 5-7 days
+
+  8. AUTOMATED WORKFLOWS
+     - Trigger tasks/events based on case status changes
+     - Auto-create tasks when case is filed, hearing scheduled, etc.
+     - Effort: 3-4 days
+
+  9. STATUTE OF LIMITATIONS TRACKING
+     - Auto-calculate limitation deadlines based on case type
+     - Indian Limitation Act integration (already have calculator)
+     - Effort: 2-3 days
+
+ 10. BATCH INVOICING
+     - Generate invoices for multiple cases at once
+     - Monthly billing cycles
+     - Effort: 2-3 days
+
+ 11. CLIENT COMMUNICATION HISTORY
+     - Log all client interactions (calls, emails, meetings)
+     - Timeline view per client
+     - Effort: 2-3 days
+
+ 12. TASK MANAGEMENT (Advanced)
+     - Task templates per case type
+     - Automated task creation
+     - Kanban board view
+     - Effort: 3-4 days
+
+LOW PRIORITY — Nice to have:
+
+ 13. NATIVE MOBILE APP
+     - Clio has iOS/Android
+     - Causly has responsive web (PWA possible)
+     - Effort: 15-20 days
+
+ 14. E-SIGNATURE INTEGRATION
+     - DocuSign, Adobe Sign, or Indian alternative
+     - Effort: 3-5 days
+
+ 15. OPEN API
+     - Allow third-party integrations
+     - Effort: 5-7 days
+
+ 16. CALENDAR RULES
+     - Auto-calculate deadlines (e.g., "30 days from filing")
+     - Court holiday calendar integration
+     - Effort: 2-3 days
+
+ 17. LEAD PIPELINE / CRM
+     - Track potential clients through intake stages
+     - Lead source tracking
+     - Conversion analytics
+     - Effort: 4-5 days
+
+ 18. WEBSITE BUILDER
+     - Clio offers a law firm website builder
+     - Not critical for Indian market
+     - Effort: 10+ days
+
+================================================================================
+5. WHAT CAUSLY HAS THAT CLIO DOESN'T
+================================================================================
+
+  CAUSLY'S COMPETITIVE ADVANTAGES:
+
+  1. eCOURTS INTEGRATION
+     - Live case tracking from Indian courts
+     - CNR search, hearing dates, case history
+     - Clio has ZERO Indian court integration
+     - UNIQUE in the market
+
+  2. INDIAN BARE ACTS REFERENCE
+     - Searchable database of Indian laws
+     - Integrated into the practice workflow
+     - Clio has no legal reference database
+
+  3. INDIAN LEGAL CALCULATORS
+     - Stamp duty (state-wise)
+     - Court fees
+     - Limitation periods
+     - Clio has no calculators
+
+  4. AFFORDABLE PRICING
+     - Causly: Free to Rs 3,999/month (firm-level pricing)
+     - Clio: $49-$149/user/month = Rs 4,100-12,400/user/month
+     - A 5-attorney firm on Clio = Rs 20,500-62,000/month
+     - Same firm on Causly Professional = Rs 1,499/month TOTAL
+
+  5. AI CASE ANALYSIS
+     - Analyze case strength, strategy, precedents
+     - Clio's AI (Duo) focuses on time capture and billing
+     - Causly's AI is litigation-focused
+
+  6. CLIENT PORTAL (Included)
+     - Clio charges extra or requires higher tier
+     - Causly includes it in all plans
+
+  7. INTERNAL MESSAGING
+     - Built-in team communication
+     - Clio relies on email integration
+
+  8. SUPER ADMIN PANEL
+     - Platform-level management for multi-firm setups
+     - Clio doesn't have this (single-tenant)
+
+  9. SUBSCRIPTION BUSINESS MODEL
+     - Firm-level pricing, not per-seat
+     - More attractive for growing Indian firms
+
+ 10. FULL PRACTICE MANAGEMENT + INDIAN LEGAL STACK
+     - All-in-one: cases + billing + eCourts + Bare Acts + AI
+     - No other platform combines all of these
+
+================================================================================
+6. PRICING COMPARISON
+================================================================================
+
+  CLIO (per user per month):
+    EasyStart:  $49  (Rs 4,100)
+    Essentials:  $89  (Rs 7,400)
+    Advanced:   $119  (Rs 9,900)
+    Complete:   $149  (Rs 12,400)
+    + Grow:     $59  (Rs 4,900) — CRM add-on
+
+  CAUSLY (per firm per month):
+    Free:          Rs 0      (1 user, 3 cases, 100MB)
+    Solo:          Rs 599    (1 user, 25 cases, 5GB)
+    Professional:  Rs 1,499  (3 users, unlimited, 25GB)
+    Enterprise:    Rs 3,999  (10 users, unlimited, 100GB)
+
+  EXAMPLE — 5-attorney firm:
+    Clio Advanced:  5 × Rs 9,900  = Rs 49,500/month
+    Causly Pro:     1 × Rs 1,499  = Rs 1,499/month
+    SAVINGS:        Rs 48,001/month (97% cheaper)
+
+================================================================================
+7. RECOMMENDATION — BUILD vs SKIP
+================================================================================
+
+  BUILD (High ROI, competitive with Clio):
+  ✓ Time tracking — essential, already planned
+  ✓ Client intake forms — Clio charges extra for this
+  ✓ Conflict of interest checking — legal compliance requirement
+  ✓ Document version history — basic DMS feature
+  ✓ Multiple billing methods (hourly, contingency)
+  ✓ Trust accounting — compliance requirement
+  ✓ Automated workflows — productivity multiplier
+  ✓ Statute of limitations tracking — leverage existing calculator
+
+  SKIP (Not relevant for Indian market):
+  ✗ QuickBooks/Xero integration — Indian firms use Tally
+  ✗ Gmail/Outlook 2-way sync — complex, low ROI initially
+  ✗ LEDES billing — US litigation support format
+  ✗ CIRCIA compliance — US-specific regulation
+  ✗ Court calendaring integration — use eCourts instead
+
+  DEFER (Build later):
+  △ Native mobile app — PWA is sufficient for now
+  △ E-signature integration — low adoption in Indian legal
+  △ Open API — build after core features are stable
+  △ Website builder — not core to practice management
+  △ Lead pipeline/CRM — add after client intake forms
+
+================================================================================
+                              END OF ANALYSIS
+================================================================================

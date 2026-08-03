@@ -1,0 +1,54 @@
+CAUSLY - SIDEBAR ROLE ACCESS MATRIX
+=====================================
+
+LINK                    | OWNER | PARTNER | SR. ASSOC | ASSOC | JR. ASSOC | PARALEGAL | INTERN | OFFICE ADMIN
+------------------------|-------|---------|-----------|-------|-----------|-----------|--------|-------------
+Dashboard               |   Y   |    Y    |     Y     |   Y   |     Y     |     Y     |   Y    |      Y
+Cases                   |   Y   |    Y    |     Y     |   Y   |     Y     |     Y     |   Y    |      Y
+Clients                 |   Y   |    Y    |     Y     |   Y   |     Y     |     Y     |   -    |      Y
+Calendar                |   Y   |    Y    |     Y     |   Y   |     Y     |     Y     |   Y    |      Y
+eCourts Tracking        |   Y   |    Y    |     Y     |   Y   |     Y     |     -     |   -    |      -
+Cause List              |   Y   |    Y    |     Y     |   Y   |     Y     |     -     |   -    |      -
+Court Research          |   Y   |    Y    |     Y     |   Y   |     Y     |     Y     |   Y    |      -
+Documents               |   Y   |    Y    |     Y     |   Y   |     Y     |     Y     |   -    |      Y
+Templates               |   Y   |    Y    |     Y     |   Y   |     -     |     -     |   -    |      -
+Billing                 |   Y   |    Y    |     Y     |   Y   |     -     |     -     |   -    |      Y
+Outstanding             |   Y   |    Y    |     Y     |   Y   |     -     |     -     |   -    |      Y
+Collections             |   Y   |    Y    |     Y     |   Y   |     -     |     -     |   -    |      Y
+Expenses                |   Y   |    Y    |     Y     |   Y   |     Y     |     Y     |   -    |      -
+Timesheets              |   Y   |    Y    |     Y     |   Y   |     Y     |     Y     |   Y    |      -
+Tasks                   |   Y   |    Y    |     Y     |   Y   |     Y     |     Y     |   Y    |      Y
+Reminders               |   Y   |    Y    |     Y     |   Y   |     Y     |     Y     |   Y    |      -
+Bare Acts               |   Y   |    Y    |     Y     |   Y   |     Y     |     Y     |   Y    |      -
+Calculators             |   Y   |    Y    |     Y     |   Y   |     Y     |     Y     |   Y    |      -
+Notifications           |   Y   |    Y    |     Y     |   Y   |     Y     |     Y     |   Y    |      Y
+AI Assistant            |   Y   |    Y    |     Y     |   Y   |     Y     |     -     |   -    |      -
+AI Drafting             |   Y   |    Y    |     Y     |   Y   |     -     |     -     |   -    |      -
+AI Chat                 |   Y   |    Y    |     Y     |   Y   |     Y     |     -     |   -    |      -
+AI Summarize            |   Y   |    Y    |     Y     |   Y   |     -     |     -     |   -    |      -
+Consultations           |   Y   |    Y    |     Y     |   Y   |     -     |     -     |   -    |      -
+Intake Forms            |   Y   |    Y    |     Y     |   Y   |     -     |     -     |   -    |      -
+Reports                 |   Y   |    Y    |     Y     |   -   |     -     |     -     |   -    |      -
+Messages                |   Y   |    Y    |     Y     |   Y   |     Y     |     Y     |   Y    |      Y
+Settings                |   Y   |    Y    |     Y     |   Y   |     Y     |     Y     |   Y    |      Y
+Owner Panel             |   Y   |    Y    |     -     |   -   |     -     |     -     |   -    |      -
+
+TOTAL LINKS BY ROLE:
+  Owner:           28 links + Owner Panel
+  Partner:         28 links + Owner Panel
+  Senior Associate: 26 links
+  Associate:       25 links
+  Junior Associate: 18 links
+  Paralegal:       15 links
+  Intern:          11 links
+  Office Admin:    12 links
+
+ROLE DESCRIPTIONS:
+  Owner           - Firm owner, full access to everything including admin panel
+  Partner         - Senior partner, same access as owner (minus account-level settings)
+  Senior Associate- Experienced lawyer, access to reports, AI tools, billing
+  Associate       - Mid-level lawyer, access to AI drafting, consultations, intake forms
+  Junior Associate- Junior lawyer, access to AI assistant, chat, basic case tools
+  Paralegal       - Support staff, access to research, documents, expenses, tasks
+  Intern          - Trainee, limited to cases, calendar, tasks, timesheets, reminders
+  Office Admin    - Administrative staff, access to billing, documents, clients, messages

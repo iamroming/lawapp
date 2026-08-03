@@ -1,0 +1,702 @@
+# LawApp - Manual Testing Guide
+## Step-by-Step Testing Instructions
+
+---
+
+## PREREQUISITES
+
+Before testing, ensure you have:
+1. ✅ Supabase project created
+2. ✅ `.env.local` configured with credentials
+3. ✅ `complete-schema.sql` run in Supabase SQL Editor
+4. ✅ `lawapp-files` storage bucket created in Supabase
+5. ✅ Node.js 18+ installed
+6. ✅ Running `npm run dev`
+
+---
+
+## PHASE 1: AUTHENTICATION TESTING
+
+### Step 1.1: Test Login Page
+- [ ] Open browser to `http://localhost:3000`
+- [ ] Should redirect to `/login`
+- [ ] Verify login form displays (email, password fields)
+- [ ] Verify "Sign Up" link is visible
+- [ ] Verify "LawApp" branding/logo displays
+
+### Step 1.2: Test Signup
+- [ ] Click "Sign Up" link
+- [ ] Fill in: Full Name, Email, Phone, Password, Confirm Password
+- [ ] Click "Create Account"
+- [ ] Should show success message
+- [ ] Should redirect to dashboard
+
+### Step 1.3: Test Login with Valid Credentials
+- [ ] Logout (click Sign Out in sidebar)
+- [ ] Go to `/login`
+- [ ] Enter valid email and password
+- [ ] Click "Login"
+- [ ] Should redirect to `/dashboard`
+- [ ] Should show user info in header
+
+### Step 1.4: Test Login with Invalid Credentials
+- [ ] Go to `/login`
+- [ ] Enter wrong email or password
+- [ ] Click "Login"
+- [ ] Should show error message
+- [ ] Should stay on login page
+
+### Step 1.5: Test Super Admin Login
+- [ ] Go to `/login`
+- [ ] Email: `mubb@ymail.com`
+- [ ] Password: `123mubeen`
+- [ ] Click "Login"
+- [ ] Should redirect to `/dashboard`
+- [ ] Should see "Super Admin" link in sidebar
+
+---
+
+## PHASE 2: DASHBOARD TESTING
+
+### Step 2.1: Test Dashboard Load
+- [ ] Navigate to `/dashboard`
+- [ ] Verify 4 stats cards display:
+  - Total Cases
+  - Active Cases
+  - Total Clients
+  - Upcoming Hearings
+- [ ] Verify "Recent Cases" section displays
+- [ ] Verify "Upcoming Hearings" section displays
+- [ ] Verify "Quick Actions" section displays
+
+### Step 2.2: Test Quick Actions
+- [ ] Click "New Case" button
+- [ ] Should navigate to `/cases/new`
+- [ ] Go back to dashboard
+- [ ] Click "Add Client" button
+- [ ] Should navigate to `/clients/new`
+- [ ] Go back to dashboard
+- [ ] Click "Schedule Hearing" button
+- [ ] Should navigate to `/calendar`
+
+---
+
+## PHASE 3: CLIENT MANAGEMENT TESTING
+
+### Step 3.1: Test Add New Client
+- [ ] Navigate to `/clients`
+- [ ] Click "Add Client" button
+- [ ] Fill in required fields:
+  - Full Name: `Test Client`
+  - Phone: `9876543210`
+  - Email: `test@example.com`
+- [ ] Fill optional fields:
+  - Address: `123 Test Street`
+  - City: `Mumbai`
+  - State: `Maharashtra`
+  - Pincode: `400001`
+  - GST Number: `27AABCU9603R1ZM`
+- [ ] Click "Add Client"
+- [ ] Should show success toast
+- [ ] Should redirect to `/clients`
+- [ ] Should see new client in list
+
+### Step 3.2: Test Client List
+- [ ] Navigate to `/clients`
+- [ ] Verify client list displays
+- [ ] Verify search functionality works
+- [ ] Verify client name, phone, email display
+- [ ] Verify "View" button works
+
+### Step 3.3: Test Client Detail
+- [ ] Click on a client from the list
+- [ ] Should navigate to `/clients/[id]`
+- [ ] Verify client details display:
+  - Full Name
+  - Phone
+  - Email
+  - Address
+  - Company Name
+  - GST Number
+- [ ] Verify "Edit" button works
+- [ ] Verify "Delete" button works
+- [ ] Verify "Cases" section displays
+
+### Step 3.4: Test Edit Client
+- [ ] Click "Edit" on client detail page
+- [ ] Should navigate to `/clients/[id]/edit`
+- [ ] Modify client name
+- [ ] Click "Update Client"
+- [ ] Should show success toast
+- [ ] Should redirect to client detail
+- [ ] Should show updated name
+
+### Step 3.5: Test Delete Client
+- [ ] Click "Delete" on client detail page
+- [ ] Should show confirmation dialog
+- [ ] Click "Confirm"
+- [ ] Should show success toast
+- [ ] Should redirect to `/clients`
+- [ ] Should not see deleted client
+
+---
+
+## PHASE 4: CASE MANAGEMENT TESTING
+
+### Step 4.1: Test Add New Case
+- [ ] Navigate to `/cases`
+- [ ] Click "New Case" button
+- [ ] Fill in required fields:
+  - Case Title: `Test Case vs. ABC Corp`
+  - Case Type: `Civil`
+  - Court: `District Court`
+- [ ] Fill optional fields:
+  - Client: Select from dropdown
+  - Judge Name: `Hon'ble Justice Smith`
+  - Filing Date: Today's date
+  - Total Fee: `50000`
+  - Description: `Test case description`
+- [ ] Click "Create Case"
+- [ ] Should show success toast
+- [ ] Should redirect to `/cases`
+- [ ] Should see new case in list
+
+### Step 4.2: Test Case List
+- [ ] Navigate to `/cases`
+- [ ] Verify case list displays
+- [ ] Verify search functionality works
+- [ ] Verify case number, title, status display
+- [ ] Verify status badges show correct colors
+
+### Step 4.3: Test Case Detail
+- [ ] Click on a case from the list
+- [ ] Should navigate to `/cases/[id]`
+- [ ] Verify case details display:
+  - Case Number
+  - Case Title
+  - Status
+  - Court
+  - Judge
+  - Client info
+- [ ] Verify "Edit" button works
+- [ ] Verify "Delete" button works
+- [ ] Verify "Hearings" section displays
+
+### Step 4.4: Test Case Status Update
+- [ ] On case detail page, click different status buttons
+- [ ] Click "active" status
+- [ ] Should update status badge
+- [ ] Should show success toast
+
+### Step 4.5: Test Edit Case
+- [ ] Click "Edit" on case detail page
+- [ ] Should navigate to `/cases/[id]/edit`
+- [ ] Modify case title
+- [ ] Click "Update Case"
+- [ ] Should show success toast
+- [ ] Should redirect to case detail
+- [ ] Should show updated title
+
+---
+
+## PHASE 5: CALENDAR TESTING
+
+### Step 5.1: Test Calendar View
+- [ ] Navigate to `/calendar`
+- [ ] Verify calendar displays
+- [ ] Verify current month shows
+- [ ] Verify navigation (prev/next month) works
+
+### Step 5.2: Test Add Hearing
+- [ ] Click "Add Hearing" or "+" button
+- [ ] Fill in:
+  - Case: Select from dropdown
+  - Date: Tomorrow's date
+  - Time: 10:00 AM
+  - Purpose: `Test hearing`
+  - Court: `District Court`
+- [ ] Click "Save"
+- [ ] Should show success toast
+- [ ] Should see hearing on calendar
+
+### Step 5.3: Test Upcoming Hearings List
+- [ ] On calendar page, verify "Upcoming Hearings" section
+- [ ] Should show scheduled hearings
+- [ ] Should show case name, date, court
+
+---
+
+## PHASE 6: DOCUMENT MANAGEMENT TESTING
+
+### Step 6.1: Test Documents Page
+- [ ] Navigate to `/documents`
+- [ ] Verify documents list displays
+- [ ] Verify "Upload Document" button works
+
+### Step 6.2: Test Upload Document
+- [ ] Click "Upload Document"
+- [ ] Fill in:
+  - Title: `Test Document`
+  - Description: `Test description`
+  - Case: Select from dropdown
+  - Category: `Contract`
+- [ ] Select file to upload
+- [ ] Click "Upload"
+- [ ] Should show success toast
+- [ ] Should see document in list
+
+### Step 6.3: Test Document Download
+- [ ] Click on a document
+- [ ] Should show download option
+- [ ] Click download
+- [ ] File should download
+
+---
+
+## PHASE 7: BILLING TESTING
+
+### Step 7.1: Test Billing Page
+- [ ] Navigate to `/billing`
+- [ ] Verify 3 tabs display:
+  - Invoices
+  - Time Entries
+  - Payments
+
+### Step 7.2: Test Create Invoice
+- [ ] Click "New Invoice" button
+- [ ] Fill in:
+  - Client: Select from dropdown
+  - Case: Select from dropdown
+  - Amount: `10000`
+  - GST Rate: `18%`
+  - HSN/SAC Code: `997159`
+  - Place of Supply: `Maharashtra`
+  - Due Date: Next month
+- [ ] Verify GST breakdown shows:
+  - CGST: ₹900
+  - SGST: ₹900
+  - Total GST: ₹1800
+  - Total: ₹11800
+- [ ] Click "Create Invoice"
+- [ ] Should show success toast
+- [ ] Should see invoice in list
+
+### Step 7.3: Test Create Time Entry
+- [ ] Click "Time Entries" tab
+- [ ] Click "New Time Entry"
+- [ ] Fill in:
+  - Case: Select from dropdown
+  - Description: `Research work`
+  - Hours: `2`
+  - Rate per Hour: `5000`
+  - Date: Today
+- [ ] Click "Save"
+- [ ] Should show success toast
+
+### Step 7.4: Test Record Payment
+- [ ] Click "Payments" tab
+- [ ] Click "Record Payment"
+- [ ] Fill in:
+  - Client: Select from dropdown
+  - Amount: `5000`
+  - Payment Method: `UPI`
+  - Date: Today
+  - Reference: `UTR123456`
+- [ ] Click "Save"
+- [ ] Should show success toast
+
+---
+
+## PHASE 8: NOTIFICATIONS TESTING
+
+### Step 8.1: Test Notification Bell
+- [ ] Check header for bell icon
+- [ ] Should show unread count badge
+- [ ] Click bell icon
+- [ ] Should navigate to `/notifications`
+
+### Step 8.2: Test Notifications Page
+- [ ] Navigate to `/notifications`
+- [ ] Verify notifications list displays
+- [ ] Verify "Mark all read" button works
+- [ ] Verify "Preferences" button works
+
+### Step 8.3: Test Notification Preferences
+- [ ] Click "Preferences" button
+- [ ] Should navigate to `/notifications/preferences`
+- [ ] Toggle Email notifications
+- [ ] Toggle SMS notifications
+- [ ] Toggle Hearing Reminders
+- [ ] Click "Save Preferences"
+- [ ] Should show success toast
+
+---
+
+## PHASE 9: CALCULATORS TESTING
+
+### Step 9.1: Test Calculators Hub
+- [ ] Navigate to `/calculators`
+- [ ] Verify 4 calculator cards display:
+  - Limitation Period
+  - Court Fee
+  - Stamp Duty
+  - GST
+
+### Step 9.2: Test Limitation Calculator
+- [ ] Click "Limitation Period Calculator"
+- [ ] Select Article: `62 - Suit for compensation for breach of contract`
+- [ ] Select Date: Today
+- [ ] Click "Calculate Limitation"
+- [ ] Should show expiry date (3 years from today)
+- [ ] Should show days remaining
+
+### Step 9.3: Test Court Fee Calculator
+- [ ] Click "Court Fee Calculator"
+- [ ] Select Case Type: `Civil`
+- [ ] Select Court Level: `District Court`
+- [ ] Enter Claim Amount: `100000`
+- [ ] Click "Calculate Court Fee"
+- [ ] Should show court fee amount
+
+### Step 9.4: Test Stamp Duty Calculator
+- [ ] Click "Stamp Duty Calculator"
+- [ ] Select Document Type: `Sale Deed`
+- [ ] Select State: `Maharashtra`
+- [ ] Enter Property Value: `5000000`
+- [ ] Click "Calculate Stamp Duty"
+- [ ] Should show stamp duty, registration fee, total
+
+### Step 9.5: Test GST Calculator
+- [ ] Click "GST Calculator"
+- [ ] Enter Base Amount: `10000`
+- [ ] Select GST Rate: `18%`
+- [ ] Select Supply Type: `Intra-State`
+- [ ] Click "Calculate GST"
+- [ ] Should show:
+  - CGST: ₹900
+  - SGST: ₹900
+  - Total GST: ₹1800
+  - Total Amount: ₹11800
+
+---
+
+## PHASE 10: BARE ACTS TESTING
+
+### Step 10.1: Test Bare Acts Page
+- [ ] Navigate to `/bare-acts`
+- [ ] Verify acts list displays
+- [ ] Verify search functionality works
+- [ ] Verify category filter works
+
+### Step 10.2: Test Act Details
+- [ ] Click on an act (e.g., "Indian Penal Code")
+- [ ] Should expand to show sections
+- [ ] Click on a section
+- [ ] Should show section content
+
+### Step 10.3: Test Search
+- [ ] Type "murder" in search box
+- [ ] Should filter acts containing "murder"
+- [ ] Clear search
+- [ ] Should show all acts again
+
+---
+
+## PHASE 11: AI FEATURES TESTING
+
+### Step 11.1: Test AI Case Analysis
+- [ ] Navigate to `/ai/case-analysis`
+- [ ] Enter Case Title: `Test AI Case`
+- [ ] Select Case Type: `Civil`
+- [ ] Select Court: `District Court`
+- [ ] Enter Description: `This is a test case for AI analysis...`
+- [ ] Click "Analyze Case"
+- [ ] Should show:
+  - Case Strength (percentage)
+  - Risk Level
+  - Key Issues
+  - Suggested Strategies
+  - Relevant Precedents
+  - Next Steps
+
+### Step 11.2: Test AI Research
+- [ ] Navigate to `/ai/research`
+- [ ] Enter search query: `murder`
+- [ ] Click "Search"
+- [ ] Should show search results
+- [ ] Click bookmark icon to save
+- [ ] Should show "Saved" indicator
+
+---
+
+## PHASE 12: REPORTS TESTING
+
+### Step 12.1: Test Reports Dashboard
+- [ ] Navigate to `/reports`
+- [ ] Verify 5 report cards display:
+  - Case Statistics
+  - Revenue
+  - Client
+  - Hearing Schedule
+  - Performance
+
+### Step 12.2: Test Case Statistics
+- [ ] Click "Case Statistics"
+- [ ] Should show:
+  - Cases by status (chart)
+  - Cases by type
+  - Win/loss ratio
+
+### Step 12.3: Test Revenue Report
+- [ ] Click "Revenue Report"
+- [ ] Should show:
+  - Monthly revenue trend
+  - Revenue by client
+  - GST collected
+
+---
+
+## PHASE 13: SETTINGS TESTING
+
+### Step 13.1: Test Settings Page
+- [ ] Navigate to `/settings`
+- [ ] Verify tabs display:
+  - Profile
+  - Notifications
+  - Billing
+  - Team
+  - Subscription
+
+### Step 13.2: Test Profile Settings
+- [ ] Click "Profile" tab
+- [ ] Modify Full Name
+- [ ] Click "Save"
+- [ ] Should show success toast
+
+### Step 13.3: Test Change Password
+- [ ] Click "Change Password" button
+- [ ] Enter current password
+- [ ] Enter new password
+- [ ] Confirm new password
+- [ ] Click "Update Password"
+- [ ] Should show success toast
+
+---
+
+## PHASE 14: CLIENT PORTAL TESTING
+
+### Step 14.1: Test Client Login
+- [ ] Open new incognito window
+- [ ] Navigate to `/client-login`
+- [ ] Enter client credentials
+- [ ] Click "Sign In"
+- [ ] Should redirect to `/client/dashboard`
+
+### Step 14.2: Test Client Dashboard
+- [ ] Verify welcome message displays
+- [ ] Verify stats cards display:
+  - Active Cases
+  - Pending Payments
+  - Documents
+- [ ] Verify recent cases list
+
+### Step 14.3: Test Client Cases
+- [ ] Click "My Cases" in sidebar
+- [ ] Should show client's cases
+- [ ] Click on a case
+- [ ] Should show case details
+
+### Step 14.4: Test Client Documents
+- [ ] Click "Documents" in sidebar
+- [ ] Should show documents shared with client
+- [ ] Click download on a document
+- [ ] File should download
+
+### Step 14.5: Test Client Payments
+- [ ] Click "Payments" in sidebar
+- [ ] Should show invoices
+- [ ] Click "Pay Now" on an invoice
+- [ ] Should open payment modal
+
+### Step 14.6: Test Client Messages
+- [ ] Click "Messages" in sidebar
+- [ ] Should show message history
+- [ ] Type a message
+- [ ] Click send
+- [ ] Should show sent message
+
+---
+
+## PHASE 15: SUPER ADMIN TESTING
+
+### Step 15.1: Test Super Admin Login
+- [ ] Login as super admin (`mubb@ymail.com`)
+- [ ] Should see "Super Admin" link in sidebar
+- [ ] Click "Super Admin" link
+
+### Step 15.2: Test Super Admin Dashboard
+- [ ] Navigate to `/super-admin`
+- [ ] Verify dashboard displays:
+  - All Users count
+  - All Cases count
+  - All Clients count
+  - Revenue
+
+### Step 15.3: Test User Management
+- [ ] Click "Users" in sidebar
+- [ ] Should show all users
+- [ ] Click on a user
+- [ ] Should show user details
+- [ ] Test role change
+- [ ] Test activate/deactivate
+
+### Step 15.4: Test Cases Management
+- [ ] Click "Cases" in sidebar
+- [ ] Should show all cases
+- [ ] Click on a case
+- [ ] Should show case details
+
+### Step 15.5: Test Settings
+- [ ] Click "Settings" in sidebar
+- [ ] Should show platform settings
+- [ ] Modify a setting
+- [ ] Click save
+- [ ] Should show success toast
+
+---
+
+## PHASE 16: LANGUAGE SWITCHING TESTING
+
+### Step 16.1: Test Language Switcher
+- [ ] Find language switcher in sidebar (bottom)
+- [ ] Select "हिन्दी" (Hindi)
+- [ ] Should change navigation labels to Hindi
+- [ ] Should change page content to Hindi
+
+### Step 16.2: Test Hindi Translations
+- [ ] Navigate to different pages
+- [ ] Verify Hindi translations display
+- [ ] Verify calculations still work
+- [ ] Switch back to English
+
+---
+
+## PHASE 17: RESPONSIVE DESIGN TESTING
+
+### Step 17.1: Test Mobile View
+- [ ] Resize browser to mobile width (< 768px)
+- [ ] Verify hamburger menu appears
+- [ ] Click hamburger menu
+- [ ] Verify sidebar opens
+- [ ] Click a navigation item
+- [ ] Verify sidebar closes
+
+### Step 17.2: Test Tablet View
+- [ ] Resize browser to tablet width (768px - 1024px)
+- [ ] Verify layout adjusts
+- [ ] Verify cards stack properly
+
+### Step 17.3: Test Desktop View
+- [ ] Resize browser to desktop width (> 1024px)
+- [ ] Verify sidebar is visible
+- [ ] Verify content fills available space
+
+---
+
+## PHASE 18: ERROR HANDLING TESTING
+
+### Step 18.1: Test 404 Page
+- [ ] Navigate to `/nonexistent-page`
+- [ ] Should show 404 error page
+- [ ] Should have "Go Home" button
+
+### Step 18.2: Test Form Validation
+- [ ] Try to submit a form with empty required fields
+- [ ] Should show validation errors
+- [ ] Should not submit
+
+### Step 18.3: Test Network Error
+- [ ] Disconnect internet
+- [ ] Try to perform an action
+- [ ] Should show error message
+- [ ] Should not crash
+
+---
+
+## PHASE 19: MARKETING PAGES TESTING
+
+### Step 19.1: Test Landing Page
+- [ ] Navigate to `/` (should redirect to login)
+- [ ] Or access marketing pages directly
+- [ ] Verify hero section
+- [ ] Verify features section
+- [ ] Verify testimonials
+
+### Step 19.2: Test Pricing Page
+- [ ] Navigate to `/pricing`
+- [ ] Verify 4 pricing tiers display
+- [ ] Verify feature comparison table
+- [ ] Verify FAQ section
+
+### Step 19.3: Test About Page
+- [ ] Navigate to `/about`
+- [ ] Verify company story
+- [ ] Verify team section
+
+### Step 19.4: Test Help Page
+- [ ] Navigate to `/help`
+- [ ] Verify FAQ accordion works
+- [ ] Verify contact form
+
+---
+
+## PHASE 20: FINAL VERIFICATION
+
+### Step 20.1: Test Complete User Flow
+- [ ] Signup as new user
+- [ ] Create a client
+- [ ] Create a case for that client
+- [ ] Schedule a hearing
+- [ ] Upload a document
+- [ ] Create an invoice
+- [ ] Record a payment
+- [ ] Check notifications
+- [ ] Use calculators
+- [ ] View reports
+
+### Step 20.2: Test Data Persistence
+- [ ] Create data
+- [ ] Refresh page
+- [ ] Data should still be there
+- [ ] Logout and login again
+- [ ] Data should persist
+
+### Step 20.3: Test Performance
+- [ ] Pages should load quickly (< 3 seconds)
+- [ ] Forms should submit quickly
+- [ ] No memory leaks
+
+---
+
+## REPORTING ISSUES
+
+If you find any issues during testing, note them here:
+
+| # | Issue | Steps to Reproduce | Expected | Actual |
+|---|-------|---------------------|----------|--------|
+| 1 | | | | |
+| 2 | | | | |
+| 3 | | | | |
+
+---
+
+## TESTING COMPLETE
+
+- [ ] All phases tested
+- [ ] All critical issues fixed
+- [ ] App ready for production
+
+**Tester Name:** _______________
+**Test Date:** _______________
+**Environment:** _______________
+**Browser:** _______________

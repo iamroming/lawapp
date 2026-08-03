@@ -1,0 +1,148 @@
+# Court Integration Setup Guide
+
+## Overview
+Causly now integrates with Indian courts via bharat-courts SDK. This enables:
+- Live case status lookup
+- Daily cause lists on dashboard
+- Order/judgment PDF downloads
+- Supreme Court latest judgments
+- Full judgment search by text, judge, or party
+
+---
+
+## Architecture
+
+```
+┌─────────────────────┐     ┌─────────────────────┐     ┌─────────────────┐
+│   Causly Next.js    │────▶│  Court Service      │────▶│  eCourts / SCI  │
+│   (Frontend + API)  │     │  (FastAPI Python)   │     │  Portals        │
+└─────────────────────┘     └─────────────────────┘     └─────────────────┘
+```
+
+---
+
+## Setup Steps
+
+### 1. Run Database Migration
+Go to Supabase Dashboard → SQL Editor and run:
+```
+supabase/court-integration-migration.sql
+```
+
+### 2. Install Python Dependencies
+```bash
+cd court-service
+pip install -r requirements.txt
+```
+
+### 3. Start Court Service
+```bash
+# Development
+python main.py
+
+# Or with Docker
+docker-compose up -d
+```
+
+The service runs on http://localhost:8000
+
+### 4. Set Environment Variable
+Add to `.env.local`:
+```
+COURT_SERVICE_URL=http://localhost:8000
+```
+
+### 5. Test the Integration
+- Go to any case page → Click "Fetch Live Status"
+- Go to Dashboard → See Today's Cause List
+- Go to /research → Search judgments
+
+---
+
+## Features
+
+### Case Detail Page (/cases/[id])
+- Link case to eCourts by selecting court, case type, number, year
+- Fetch live case status (CNR, parties, status)
+- View and download court orders
+- Auto-refresh status
+
+### Dashboard (/dashboard)
+- Today's Cause List (auto-fetched for linked courts)
+- Quick link to Court Research
+
+### Court Research (/research)
+- **Search Judgments**: Full text, by judge, or by party
+- **Supreme Court Latest**: Recent SCI judgments with PDF downloads
+- Filter by court, year
+- Download judgment PDFs
+
+---
+
+## Court Codes Reference
+
+| Court | Code |
+|-------|------|
+| Supreme Court | sci |
+| Delhi HC | delhi |
+| Bombay HC | bombay |
+| Calcutta HC | calcutta |
+| Madras HC | madras |
+| Karnataka HC | karnataka |
+| Allahabad HC | allahabad |
+| Patna HC | patna |
+| Rajasthan HC | rajasthan |
+| Gujarat HC | gujarat |
+| AP HC | andhra |
+| Telangana HC | telangana |
+| Kerala HC | kerala |
+| Punjab & HC | punjab |
+| MP HC | mp |
+| Jharkhand HC | jharkhand |
+
+---
+
+## Case Type Codes (Common)
+
+| Code | Type |
+|------|------|
+| 134 | W.P.(C) - Civil Writ |
+| 27 | W.P.(CRL) - Criminal Writ |
+| 3 | EL.PET. - Election Petition |
+| 12 | WPA - Writ Petition Article 226 |
+
+Use `/api/hc/case-types?court_code=delhi` to get full list for each court.
+
+---
+
+## API Endpoints
+
+### Next.js Routes (call these from frontend)
+- `GET /api/courts/hc/case-status?court_code=delhi&case_type=134&case_number=4520&year=2023`
+- `GET /api/courts/hc/cause-list?court_code=delhi&causelist_date=31-07-2026`
+- `GET /api/courts/hc/orders?court_code=delhi&case_type=134&case_number=4520&year=2023`
+- `POST /api/courts/judgments/search` `{ text, judge, party, year, court }`
+- `GET /api/courts/sc/recent?limit=10`
+
+### Python Microservice (if needed directly)
+- `GET /api/hc/case-status`
+- `GET /api/hc/cause-list`
+- `GET /api/hc/orders`
+- `POST /api/judgments/search`
+- `GET /api/sc/recent-judgments`
+
+---
+
+## Troubleshooting
+
+### "Court service not running"
+Start the Python service: `cd court-service && python main.py`
+
+### "CAPTCHA error"
+The OCR solver handles CAPTCHAs automatically. If it fails, retry - it will try 5 times.
+
+### "No cause list data"
+Cause lists are only available for the current day. Past lists are not stored by eCourts.
+
+### Slow responses
+First request may take 5-10s (Python cold boot). Subsequent requests are faster.

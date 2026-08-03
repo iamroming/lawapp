@@ -1,0 +1,229 @@
+================================================================================
+              SESSION SUMMARY — REPORTS FIX + REMINDER SYSTEM
+================================================================================
+  Date: July 31, 2026
+  App: Causly (LawApp)
+  Goal: Fix broken reports, build client/performance reports, implement
+        free reminder system with email/SMS/WhatsApp
+
+================================================================================
+WHAT WE DID THIS SESSION
+================================================================================
+
+1. REPORTS FIX — 3 PAGES BROKEN
+────────────────────────────────
+
+  PROBLEM 1: reports/cases/page.tsx
+    Bug: Column name "type" doesn't exist, should be "case_type"
+    Fix: Changed .select("id, status, type, court...") to .select("id, status, case_type, court...")
+    Added: User authentication + role-based filtering (owner sees all, employee sees own)
+
+  PROBLEM 2: reports/revenue/page.tsx
+    Bug: Column "total_amount" doesn't exist on invoices table, should be "amount"
+    Fix: Changed .select("total_amount, status, tax_amount") to .select("amount, status, tax_amount")
+    Added: User authentication + role-based filtering
+
+  PROBLEM 3: reports/page.tsx
+    Bug: No user authentication, queries relied only on RLS (broken for owners)
+    Added: getUser() + profile fetch + role-based filtering
+    Fixed: Client Report and Performance Metrics links from href="#" to actual pages
+
+  ROOT CAUSE: All report pages made direct Supabase queries without:
+    - Getting current user (supabase.auth.getUser())
+    - Fetching user profile (role, firm_id)
+    - Distinguishing owner vs employee
+    - Applying explicit filters (created_by, assigned_to)
+
+  FIX PATTERN (applied to all reports):
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("firm_id, role")
+      .eq("id", user.id)
+      .single();
+
+    const isOwner = ["owner", "partner", "super_admin"].includes(profile.role);
+
+    let query = supabase.from("cases").select("...");
+    if (!isOwner) {
+      query = query.or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`);
+    }
+
+2. NEW REPORT PAGES CREATED
+───────────────────────────
+
+  reports/clients/page.tsx
+    - Total clients count
+    - Active clients (new in date range)
+    - New this month
+    - Clients with phone number
+    - Client growth chart (bar chart)
+    - Clients by type (Individual, Corporate, etc.)
+    - Top clients by case count + revenue
+
+  reports/performance/page.tsx
+    - Overall win rate
+    - Average case duration
+    - Total resolved cases
+    - Active lawyers count
+    - Performance by lawyer table (name, cases, won, lost, settled, win rate, revenue)
+    - Monthly case resolution trend
+    - Cases by priority distribution
+
+3. REMINDER SYSTEM — FULLY IMPLEMENTED
+─────────────────────────────────────
+
+  Free APIs chosen:
+    Email: Resend (100/day free) — resend.com
+    SMS: MSG91 (100/month free, India) — msg91.com
+    WhatsApp: Interakt (100/month free, India) — interakt.shop
+    Push: FCM (unlimited free) — firebase.google.com
+
+  /api/reminders/route.ts (UPDATED)
+    POST — Create reminder with firm_id + user_id
+           Auto-creates in-app notification
+           Sends immediately if reminder_date <= now
+    GET  — Fetch reminders (owners see all, employees see own)
+    DELETE — Delete reminder with ownership check
+
+    Notification channels supported:
+      in_app — Stored in notifications table
+      email — Sent via Resend API
+      sms — Sent via MSG91 API
+      whatsapp — Sent via Interakt API
+      push — Placeholder for FCM
+
+  /api/reminders/cron/route.ts (NEW)
+    GET/POST — Cron endpoint to process due reminders
+    Queries: status=pending AND reminder_date <= now
+    Sends notifications for each channel
+    Updates reminder status (sent/partial/failed)
+    Logs each notification to notification_logs table
+
+    Add to vercel.json:
+    {
+      "crons": [{
+        "path": "/api/reminders/cron",
+        "schedule": "* * * * *"
+      }]
+    }
+
+  reminders/page.tsx (UPDATED)
+    fetchReminders() — Now uses API route instead of direct Supabase
+    handleDeleteReminder() — Now uses API route for secure deletion
+
+  lib/notifications/service.ts (UPDATED)
+    Real implementations for email (Resend), SMS (MSG91), WhatsApp (Interakt)
+    Uses dynamic import for resend module
+
+4. DATABASE MIGRATION FILE CREATED
+──────────────────────────────────
+
+  supabase/add-firm-id-migration.sql
+    Adds firm_id column to: cases, clients, documents, payments, invoices,
+    hearings, messages, scheduled_reminders, notifications, notes
+
+    Populates firm_id from profiles table (via created_by, assigned_to, etc.)
+
+    Sets NOT NULL where all rows have firm_id
+
+    Creates indexes on all firm_id columns
+
+    Updates RLS policies with firm isolation:
+      Users can only see/modify data where firm_id matches their profile.firm_id
+
+    Creates notification_logs table for tracking sent notifications
+
+    Creates trigger to auto-set firm_id on INSERT from creator's profile
+
+5. ENVIRONMENT VARIABLES NEEDED
+───────────────────────────────
+
+  Add to .env.local:
+
+    # Resend (Email)
+    RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxx
+    EMAIL_FROM=Causly <reminders@causly.in>
+
+    # MSG91 (SMS - India)
+    MSG91_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxx
+    MSG91_FLOW_ID=xxxxxxxxxxxxxxxxxxxxxxxx
+
+    # Interakt (WhatsApp - India)
+    INTERAKT_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxx
+    INTERAKT_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxx
+
+    # Firebase Cloud Messaging (Push - optional)
+    FIREBASE_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxx
+    FIREBASE_PROJECT_ID=causly-xxxxx
+
+================================================================================
+FILES MODIFIED/CREATED THIS SESSION
+================================================================================
+
+  MODIFIED:
+    src/app/(dashboard)/reports/cases/page.tsx     — Fixed column name + filtering
+    src/app/(dashboard)/reports/revenue/page.tsx    — Fixed column name + filtering
+    src/app/(dashboard)/reports/page.tsx            — Added auth + linked new pages
+    src/app/api/reminders/route.ts                  — Full CRUD + notifications
+    src/app/(dashboard)/reminders/page.tsx          — Uses API route now
+    src/lib/notifications/service.ts                — Real email/SMS/WhatsApp
+
+  CREATED:
+    src/app/(dashboard)/reports/clients/page.tsx    — Client report page
+    src/app/(dashboard)/reports/performance/page.tsx — Performance report page
+    src/app/api/reminders/cron/route.ts             — Cron job for reminders
+    supabase/add-firm-id-migration.sql              — Database migration
+
+  INSTALLED:
+    resend (npm package) — Email sending library
+
+================================================================================
+TYPESCRIPT & LINT STATUS
+================================================================================
+
+  TypeScript: ✅ PASS (0 errors)
+  Lint: 102 pre-existing errors, 0 new errors from this session
+
+  Pre-existing errors are in:
+    - super-admin pages (accessing functions before declaration)
+    - api routes (using `any` types)
+    - global-search (setState in effect)
+    - notification-bell (any types)
+    - Various unused imports
+
+================================================================================
+NEXT STEPS — TO ACTIVATE REMINDERS
+================================================================================
+
+  1. Run migration in Supabase SQL Editor:
+     - Copy supabase/add-firm-id-migration.sql
+     - Paste into Supabase Dashboard → SQL Editor
+     - Click "Run"
+
+  2. Get free API keys:
+     - Sign up at resend.com → Get API key
+     - Sign up at msg91.com → Get API key + create SMS flow
+     - Sign up at interakt.shop → Get API key + token (optional)
+
+  3. Add keys to .env.local:
+     RESEND_API_KEY=re_xxxxx
+     MSG91_API_KEY=xxxxx
+     MSG91_FLOW_ID=xxxxx
+
+  4. Add cron job to vercel.json:
+     {
+       "crons": [{
+         "path": "/api/reminders/cron",
+         "schedule": "* * * * *"
+       }]
+     }
+
+  5. Test:
+     - Create a reminder with "in_app" channel → Should appear in bell
+     - Create a reminder with email channel → Should send via Resend
+     - Create a reminder with SMS channel → Should send via MSG91
+
+================================================================================
+                              END OF SESSION SUMMARY
+================================================================================

@@ -1,0 +1,159 @@
+"use client";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Select } from "@/components/ui/select";
+import { Plus, Wallet, TrendingUp, Filter, Trash2 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+
+const CATEGORIES = [
+  { value: "court_fees", label: "Court Fees" },
+  { value: "travel", label: "Travel" },
+  { value: "filing", label: "Filing" },
+  { value: "notary", label: "Notary" },
+  { value: "stamp_duty", label: "Stamp Duty" },
+  { value: "postal", label: "Postal" },
+  { value: "photocopy", label: "Photocopy" },
+  { value: "other", label: "Other" },
+];
+
+const CATEGORY_MAP = Object.fromEntries(CATEGORIES.map((c) => [c.value, c.label]));
+
+export default function ExpensesPage() {
+  const [expenses, setExpenses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [billableFilter, setBillableFilter] = useState("all");
+  const [summary, setSummary] = useState({ total: 0, billable: 0, unbilled: 0, count: 0 });
+  const supabase = createClient();
+
+  useEffect(() => { fetchExpenses(); }, [categoryFilter, billableFilter]);
+
+  const fetchExpenses = async () => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (categoryFilter !== "all") params.set("category", categoryFilter);
+    if (billableFilter !== "all") params.set("billable", billableFilter);
+
+    const [expensesRes, reportsRes] = await Promise.all([
+      supabase.from("expenses").select("*, cases(id, title, case_number), clients(id, full_name)").order("expense_date", { ascending: false }),
+      fetch(`/api/expenses/reports?${params.toString()}`),
+    ]);
+
+    if (expensesRes.data) setExpenses(expensesRes.data);
+    const reports = await reportsRes.json();
+    if (reports.summary) setSummary(reports.summary);
+    setLoading(false);
+  };
+
+  const deleteExpense = async (id: string) => {
+    if (!confirm("Delete this expense?")) return;
+    await supabase.from("expenses").delete().eq("id", id);
+    fetchExpenses();
+  };
+
+  const filteredExpenses = expenses.filter((e) => {
+    if (categoryFilter !== "all" && e.category !== categoryFilter) return false;
+    if (billableFilter === "billable" && !e.is_billable) return false;
+    if (billableFilter === "unbillable" && e.is_billable) return false;
+    return true;
+  });
+
+  const fmt = (n: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(n);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Wallet className="h-6 w-6" /> Expenses
+        </h1>
+        <Link href="/expenses/new">
+          <Button><Plus className="h-4 w-4 mr-2" /> Add Expense</Button>
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-500">Total Expenses</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold">{fmt(summary.total)}</p><p className="text-xs text-gray-400">{summary.count} entries</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-500">Billable</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold text-green-600">{fmt(summary.billable)}</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-500">Unbilled</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold text-orange-600">{fmt(summary.unbilled)}</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-500">Non-Billable</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold text-gray-600">{fmt(summary.total - summary.billable)}</p></CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardContent className="flex gap-4 pt-6">
+          <Select
+            options={[{ value: "all", label: "All Categories" }, ...CATEGORIES]}
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="w-48"
+          />
+          <Select
+            options={[
+              { value: "all", label: "All" },
+              { value: "billable", label: "Billable" },
+              { value: "unbillable", label: "Non-Billable" },
+            ]}
+            value={billableFilter}
+            onChange={(e) => setBillableFilter(e.target.value)}
+            className="w-48"
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="p-8 text-center text-gray-500">Loading...</div>
+          ) : filteredExpenses.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">
+              <Wallet className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+              <p>No expenses yet</p>
+              <Link href="/expenses/new"><Button className="mt-2" size="sm"><Plus className="h-4 w-4 mr-2" /> Add First Expense</Button></Link>
+            </div>
+          ) : (
+            <div className="divide-y">
+              {filteredExpenses.map((expense) => (
+                <div key={expense.id} className="flex items-center justify-between p-4 hover:bg-gray-50">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium">{expense.title}</p>
+                      <Badge variant="outline" className="text-xs">{CATEGORY_MAP[expense.category] || expense.category}</Badge>
+                      {expense.is_billable && <Badge className="text-xs bg-green-100 text-green-700">Billable</Badge>}
+                      {expense.is_billed && <Badge className="text-xs bg-blue-100 text-blue-700">Billed</Badge>}
+                    </div>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {expense.cases?.case_number && <span className="mr-3">Case: {expense.cases.case_number}</span>}
+                      {expense.clients?.full_name && <span className="mr-3">Client: {expense.clients.full_name}</span>}
+                      <span>{expense.expense_date}</span>
+                    </p>
+                    {expense.description && <p className="text-xs text-gray-400 mt-1">{expense.description}</p>}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold text-lg">{fmt(expense.amount)}</span>
+                    <Button variant="ghost" size="sm" onClick={() => deleteExpense(expense.id)}>
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

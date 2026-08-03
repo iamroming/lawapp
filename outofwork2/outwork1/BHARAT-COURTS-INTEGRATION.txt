@@ -1,0 +1,234 @@
+# BHARAT-COURTS SDK — Integration Analysis for Causly
+
+## What is bharat-courts?
+An open-source Python SDK (MIT license) that provides programmatic access to Indian court data:
+- 700+ District Courts, 25+ High Courts, Supreme Court
+- Case status search, order/judgment PDF downloads, daily cause lists
+- Historical archive from 1950 (via AWS Open Data, no CAPTCHA)
+- Built-in CAPTCHA solving (OCR/ONNX)
+- GitHub: https://github.com/iamshouvikmitra/bharat-courts
+
+---
+
+## Why This Is a Game-Changer for Causly
+
+### Current Problem
+Lawyers manually check eCourts portals for case status, cause lists, and orders.
+It's time-consuming, requires solving CAPTCHAs, and there's no API.
+
+### With bharat-courts Integration
+Causly can offer features NO other practice management app in India provides:
+1. **Live Case Status** — Check case status directly from the case page
+2. **Auto Order Downloads** — Fetch new orders/judgments automatically
+3. **Daily Cause List** — Show today's cause list on the dashboard
+4. **Judgment Research** — Search relevant precedents by judge, year, keyword
+5. **Client Notifications** — Alert clients when new orders are uploaded
+
+### Competitive Advantage
+- Clio, LegalSifter, PracticePanther = NO Indian court integration
+- LegalSifter = US-focused only
+- Causly with bharat-courts = UNIQUE in the market
+
+---
+
+## Feature Integration Plan
+
+### Feature 1: Case Status Lookup
+**Where**: Case detail page (/cases/[id])
+**How**: Add "Check Live Status" button
+**API**: HCServicesClient.case_status() or DistrictCourtClient.case_status()
+**Data Returned**: Case number, CNR, parties, next hearing date
+
+### Feature 2: Daily Cause List
+**Where**: Dashboard (/dashboard)
+**How**: Auto-fetch today's cause list for user's courts
+**API**: HCServicesClient.cause_list() or DistrictCourtClient.cause_list()
+**Data Returned**: List of cases with timings, bench, case numbers
+
+### Feature 3: Order/Judgment Auto-Fetch
+**Where**: Background job (cron)
+**How**: Nightly check for new orders on tracked cases
+**API**: HCServicesClient.court_orders()
+**Action**: Download PDFs, store in Cloudinary, notify user
+
+### Feature 4: Judgment Search
+**Where**: New page (/research/judgments)
+**How**: Search by keyword, judge, party, year, court
+**API**: Judgments.find() or ArchiveClient.search()
+**Data Returned**: Judgment titles, dates, CNR, PDFs
+
+### Feature 5: Client Auto-Updates
+**Where**: Client page, notifications
+**How**: When new order found, send WhatsApp/email to client
+**API**: court_orders() + our notification system (Resend/MSG91/Interakt)
+
+---
+
+## Technical Architecture
+
+### Challenge
+bharat-courts is Python, Causly is Next.js (Node.js).
+
+### Solution: Python Microservice
+Create a lightweight FastAPI service that wraps bharat-courts:
+
+```
+Causly Next.js App
+    ↓ HTTP requests
+Python Microservice (FastAPI)
+    ↓ uses
+bharat-courts SDK
+    ↓ queries
+eCourts / Supreme Court portals
+```
+
+### Microservice Endpoints
+```
+GET  /api/courts/status?court=delhi&type=134&number=4520&year=2023
+GET  /api/courts/cause-list?court=delhi&date=31-07-2026&civil=true
+GET  /api/courts/orders?court=delhi&type=134&number=4520&year=2023
+POST /api/courts/search-judgments  { text, judge, party, year, court }
+GET  /api/courts/recent-sci?limit=10
+```
+
+### Deployment Options
+1. **Vercel + Railway** — Next.js on Vercel, Python on Railway (free tier)
+2. **Same VPS** — Both services on one server
+3. **Serverless** — AWS Lambda for Python function
+
+---
+
+## Implementation Priority
+
+### Phase 1: Core (2-3 weeks)
+- [ ] Set up Python microservice with FastAPI
+- [ ] Case status lookup by CNR/case number
+- [ ] Daily cause list on dashboard
+- [ ] Basic judgment search
+
+### Phase 2: Automation (2 weeks)
+- [ ] Nightly order fetch cron job
+- [ ] Auto-download order PDFs
+- [ ] Store in Cloudinary
+- [ ] Notify users of new orders
+
+### Phase 3: Intelligence (2 weeks)
+- [ ] AI-powered judgment analysis (connect to existing AI page)
+- [ ] Similar case finding
+- [ ] Precedent suggestions based on case type
+
+---
+
+## Example Code
+
+### Python Microservice (FastAPI)
+```python
+from fastapi import FastAPI
+from bharat_courts import HCServicesClient, get_court, Judgments
+from bharat_courts.captcha.ocr import OCRCaptchaSolver
+
+app = FastAPI()
+solver = OCRCaptchaSolver()
+
+@app.get("/api/courts/status")
+async def case_status(court_code: str, case_type: str, case_number: str, year: str):
+    court = get_court(court_code)
+    async with HCServicesClient(captcha_solver=solver) as client:
+        cases = await client.case_status(court, case_type=case_type, 
+                                          case_number=case_number, year=year)
+        return [c.to_dict() for c in cases]
+
+@app.get("/api/courts/cause-list")
+async def cause_list(court_code: str, date: str, civil: bool = True):
+    court = get_court(court_code)
+    async with HCServicesClient(captcha_solver=solver) as client:
+        pdfs = await client.cause_list(court, civil=civil, causelist_date=date)
+        return [p.to_dict() for p in pdfs]
+
+@app.post("/api/courts/search-judgments")
+async def search_judgments(text: str = None, judge: str = None, 
+                           party: str = None, year: int = None):
+    async with Judgments() as j:
+        results = await j.find(text=text, judge=judge, party=party, year=year)
+        return [r.to_dict() for r in results]
+```
+
+### Next.js API Route (calls microservice)
+```typescript
+// src/app/api/courts/status/route.ts
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const res = await fetch(
+    `${COURT_SERVICE_URL}/api/courts/status?` + searchParams
+  );
+  const data = await res.json();
+  return NextResponse.json(data);
+}
+```
+
+---
+
+## Data to Store in Supabase
+
+### New Table: court_case_links
+```sql
+CREATE TABLE court_case_links (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  case_id UUID REFERENCES cases(id) ON DELETE CASCADE,
+  cnr_number TEXT,
+  court_code TEXT,
+  case_type_code TEXT,
+  last_checked TIMESTAMPTZ,
+  last_order_date DATE,
+  auto_fetch BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### New Table: court_orders
+```sql
+CREATE TABLE court_orders (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  case_id UUID REFERENCES cases(id) ON DELETE CASCADE,
+  order_date DATE,
+  order_type TEXT,
+  judge TEXT,
+  pdf_url TEXT,
+  pdf_storage_path TEXT,
+  downloaded BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+---
+
+## Cost
+- bharat-courts SDK: FREE (MIT license)
+- CAPTCHA solving: FREE (local OCR)
+- AWS Open Data archive: FREE (CC-BY-4.0)
+- Microhosting (Railway free tier): FREE
+- Total additional cost: $0/month
+
+---
+
+## Risk & Mitigations
+
+| Risk | Mitigation |
+|------|------------|
+| eCourts portal changes | SDK maintainer updates actively (53 commits) |
+| CAPTCHA solver accuracy | 75% accuracy, auto-retry 5x = 99.9% success |
+| Rate limiting | Built-in rate limiter in SDK |
+| Portal downtime | Cache results, show last-known status |
+| Legal concerns | Using public government data, no scraping private data |
+
+---
+
+## Conclusion
+
+bharat-courts is the MISSING PIECE for Causly. It transforms Causly from a
+"case manager" into a "connected legal platform" that talks directly to
+Indian courts. No competitor has this.
+
+Estimated integration time: 4-6 weeks
+Estimated cost: $0/month additional
+Competitive impact: MASSIVE — unique feature in Indian legal tech market

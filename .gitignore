@@ -39,3 +39,21 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# docker
+docker-compose.override.yml
+
+# editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# logs
+*.log
+
+# os
+Thumbs.db
+
+.vercel

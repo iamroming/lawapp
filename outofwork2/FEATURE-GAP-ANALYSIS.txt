@@ -1,0 +1,329 @@
+# Feature Gap Analysis: Causly vs Target Features
+# Date: August 2026
+# Comparison against 3 feature areas:
+#   1. AI-Powered Legal Drafting & Research
+#   2. Legal CRM & Client Consultation Portal
+#   3. Court Cause List & Billing Automation
+
+---
+
+## FEATURE AREA 1: AI-POWERED LEGAL DRAFTING & RESEARCH
+
+### What the target wants:
+- AI drafting for Indian legal formats (petitions, applications, agreements)
+- Context-aware AI that understands Indian law and court procedures
+- Template library with AI-assisted customization
+
+### What Causly currently has:
+- AI case analysis page (/ai/case-analysis) - works with OpenAI-compatible API
+- AI research page (/ai/research) - exists but returns MOCK/HARDCODED data
+- 4 document templates (Vakalatnama, Legal Notice, Affidavit, Civil Plaint)
+- Templates download as .txt only, no PDF
+
+### WHAT'S MISSING:
+
+| # | Feature | Status | Priority |
+|---|---------|--------|----------|
+| 1 | AI-Powered Legal Drafting (generate petitions, applications, agreements from prompts) | MISSING | HIGH |
+| 2 | AI Context Engine (understands Indian law, court procedures, jurisdiction-specific rules) | MISSING | HIGH |
+| 3 | AI-Assisted Template Customization (AI fills/modifies templates based on context) | MISSING | HIGH |
+| 4 | Template Library Expansion (rent agreement, power of attorney, will, bail application, NDAs, etc.) | PARTIAL - only 4 templates | HIGH |
+| 5 | PDF Generation for legal documents | MISSING | HIGH |
+| 6 | AI Legal Research (actual AI-powered, not mock data) | MOCK DATA | HIGH |
+| 7 | AI Precedent Search (real case law search via AI) | MOCK DATA | HIGH |
+| 8 | AI Document Summarization (upload doc, get AI summary) | EXISTS in code but no UI | MEDIUM |
+| 9 | AI Chatbot/Legal Assistant (conversational AI for legal queries) | MISSING | MEDIUM |
+| 10 | AI-Powered Contract Review (upload contract, get risk analysis) | MISSING | MEDIUM |
+| 11 | AI Translation (Hindi/English legal document translation) | MISSING | LOW |
+
+### HOW TO IMPLEMENT:
+
+**1. AI Legal Drafting Engine**
+- File: `src/app/ai/drafting/page.tsx` (new page)
+- File: `src/app/api/ai/draft/route.ts` (new API)
+- File: `src/lib/ai/drafting.ts` (new service)
+- Flow: User selects document type → fills key details → AI generates full legal document → preview → edit → download PDF
+- Use existing OpenAI-compatible API from `src/lib/ai/service.ts`
+- System prompt must include: Indian legal formatting, court procedures, jurisdiction rules, section references
+
+**2. AI Context Engine**
+- File: `src/lib/ai/indian-law-context.ts` (new)
+- Embed Indian legal knowledge base: court hierarchies, typical document structures, common clauses, section references from Bare Acts
+- Use the existing Bare Acts data from `src/lib/bare-acts-data.ts` as context for AI prompts
+
+**3. AI-Assisted Template Customization**
+- Extend `src/lib/templates.ts` to accept AI context
+- Add "AI Fill" button to template forms that uses case details + client info to auto-populate fields
+- Add "AI Suggest Clauses" for agreement templates
+
+**4. Template Library Expansion**
+- Add to `src/lib/templates.ts`: Rent Agreement, Power of Attorney, General Will, Bail Application, NDAs, Partnership Deed, Sale Deed, Gift Deed
+- Each template needs: fields array, content with placeholders, category, Hindi name
+
+**5. PDF Generation for Legal Documents**
+- Use existing `jsPDF` library (already in package.json for invoices)
+- Create `src/lib/legal-doc-pdf.ts` - format legal documents with proper margins, fonts, headers
+- Support: A4 paper, legal language formatting, signature blocks, date fields
+
+**6. Fix AI Research (Remove Mock Data)**
+- Edit `src/lib/ai/service.ts` - `searchLegalResearch()` and `findRelevantPrecedents()`
+- Connect to actual AI API instead of returning hardcoded results
+- Use Indian Kanoon API or similar for real case law search
+
+---
+
+## FEATURE AREA 2: LEGAL CRM & CLIENT CONSULTATION PORTAL
+
+### What the target wants:
+- Client onboarding, matter intake, and assignment
+- Online legal consultation booking for clients across India
+- Role-based access for lawyers, firms, and corporate legal teams
+
+### What Causly currently has:
+- Full client CRUD with validation
+- Client portal (client login, view cases/documents/messages/payments)
+- RBAC with 10 roles and 30+ permissions
+- Team invitation system
+- Client onboarding page exists (/onboarding)
+
+### WHAT'S MISSING:
+
+| # | Feature | Status | Priority |
+|---|---------|--------|----------|
+| 1 | Online Consultation Booking (clients book time slots) | MISSING | HIGH |
+| 2 | Consultation Payment Processing (pay before booking) | MISSING | HIGH |
+| 3 | Automated Matter Intake Forms (client fills detailed intake) | MISSING | HIGH |
+| 4 | Client Onboarding Workflow (step-by-step: sign engagement → upload docs → assign lawyer) | PARTIAL - basic onboarding exists | HIGH |
+| 5 | Consultation Calendar (lawyer availability, slot management) | MISSING | HIGH |
+| 6 | Client Communication History (all emails/calls/notes in timeline) | MISSING | MEDIUM |
+| 7 | Client Tags/Categories (VIP, Corporate, Referral, etc.) | MISSING | MEDIUM |
+| 8 | Client Portal - Invoice Viewing & Online Payment | MISSING | MEDIUM |
+| 9 | Client Portal - Consultation Booking | MISSING | HIGH |
+| 10 | Automated Conflict Check (on new client/matter) | EXISTS - /api/clients/conflict-check | DONE |
+| 11 | Corporate Legal Team Access (multi-tenant for corporates) | MISSING | MEDIUM |
+| 12 | Client Feedback/Rating System | MISSING | LOW |
+| 13 | Client Portal - Document Upload (client uploads evidence) | MISSING | MEDIUM |
+| 14 | Automated Engagement Letter Generation | MISSING | MEDIUM |
+| 15 | Client Portal Invitation Email | COMMENTED OUT | HIGH |
+
+### HOW TO IMPLEMENT:
+
+**1. Online Consultation Booking System**
+- File: `src/app/consultations/page.tsx` (lawyer availability management)
+- File: `src/app/consultations/book/page.tsx` (public booking page for clients)
+- File: `src/app/api/consultations/route.ts` (CRUD + availability)
+- File: `src/app/api/consultations/slots/route.ts` (available slots)
+- File: `src/app/api/consultations/book/route.ts` (client booking)
+- Database: `consultations` table (lawyer_id, client_id, date, time_slot, duration, type, status, payment_id, notes)
+- Database: `consultation_slots` table (lawyer_id, day_of_week, start_time, end_time, is_available)
+- Integration: Razorpay for consultation payment, Google Calendar sync, WhatsApp confirmation
+
+**2. Consultation Payment Processing**
+- Extend Razorpay integration (`src/lib/payments/razorpay.ts`)
+- Create consultation-specific payment flow: select slot → pay consultation fee → confirm booking
+- Support: one-time consultation fees, retainainer deposits
+
+**3. Automated Matter Intake Forms**
+- File: `src/app/intake/page.tsx` (form builder)
+- File: `src/app/api/intake/route.ts` (form submission)
+- File: `src/app/api/intake/templates/route.ts` (intake form templates)
+- Database: `intake_forms` table (template definitions)
+- Database: `intake_submissions` table (client submissions)
+- Flow: Lawyer creates intake form template → shares link with client → client fills form → data populates new client/matter record
+
+**4. Client Onboarding Workflow**
+- Extend existing `/onboarding` page
+- Add steps: Engagement letter → Document upload → Fee payment → Lawyer assignment → Welcome email
+- Track completion status per step
+- Auto-reminders for incomplete onboarding
+
+**5. Consultation Calendar**
+- File: `src/app/consultations/calendar/page.tsx`
+- Extend existing calendar (`/calendar`) to show consultation slots
+- Weekly availability template: "Mon-Fri 10am-1pm, 3pm-6pm"
+- Block dates for court appearances, holidays
+- Buffer time between consultations
+
+**6. Client Communication History**
+- Database: `client_communications` table (client_id, type[call/email/whatsapp/meeting], direction[in/out], subject, notes, timestamp, user_id)
+- File: `src/app/clients/[id]/communications/page.tsx`
+- Auto-log: emails sent via notification service, WhatsApp messages, reminder calls
+- Manual log: phone call notes, meeting minutes
+
+**7. Client Portal - Invoice Viewing & Payment**
+- Extend client portal layout (`src/app/(client-portal)/layout.tsx`)
+- Add `/client/invoices` page
+- Show: all invoices, payment status, pay online button
+- Razorpay checkout for client-side payment
+
+**8. Fix Client Portal Invitation Email**
+- Check `src/app/api/client-portal/route.ts` - invitation email is commented out
+- Wire up Resend email sending (already configured in `src/lib/notifications/service.ts`)
+
+---
+
+## FEATURE AREA 3: COURT CAUSE LIST & BILLING AUTOMATION
+
+### What the target wants:
+- Daily cause list tracking for High Courts and District Courts
+- Invoices, payment links, outstanding tracking, and collections
+- Auto reminders for hearings, deadlines, and next actions
+
+### What Causly currently has:
+- Court research page with HC cause list (PDF links), DC case search, SC recent judgments
+- Full invoicing system with GST, PDF generation, Razorpay
+- Payment tracking (manual + Razorpay)
+- Reminder system with cron jobs, WhatsApp/email/SMS
+- Case alerts for eCourts status changes (3x daily check)
+- Expense tracking with reports
+
+### WHAT'S MISSING:
+
+| # | Feature | Status | Priority |
+|---|---------|--------|----------|
+| 1 | Daily Cause List Auto-Fetch (pull cause list daily, not manual) | MISSING | HIGH |
+| 2 | Personalized Cause List (only cases relevant to MY firm) | MISSING | HIGH |
+| 3 | Cause List Notifications (alert when firm's cases are listed) | MISSING | HIGH |
+| 4 | Invoice Payment Links (shareable Razorpay link for each invoice) | MISSING | HIGH |
+| 5 | Outstanding Tracking Dashboard (aging analysis, follow-up queue) | PARTIAL - aging exists in API | HIGH |
+| 6 | Automated Payment Reminders (follow up on unpaid invoices) | MISSING | HIGH |
+| 7 | Collections Workflow (escalation: reminder → final notice → legal) | MISSING | MEDIUM |
+| 8 | Hearing Auto-Reminders (already exists but incomplete) | PARTIAL - WhatsApp works | MEDIUM |
+| 9 | Deadline Auto-Tracking (limitation dates, filing deadlines) | MISSING | HIGH |
+| 10 | Court Fee Calculation Integration (auto-calculate when filing) | EXISTS as calculator | DONE |
+| 11 | Invoice Recurring Generation (monthly retainers) | MISSING | MEDIUM |
+| 12 | Payment Link Sharing via WhatsApp/SMS | MISSING | MEDIUM |
+| 13 | Cause List PDF Download & Annotation | PARTIAL - download works | LOW |
+| 14 | Daily Digest Email (cause list + reminders + pending tasks) | MISSING | MEDIUM |
+
+### HOW TO IMPLEMENT:
+
+**1. Daily Cause List Auto-Fetch**
+- File: `src/app/api/cause-list/sync/route.ts` (new cron endpoint)
+- Add to `vercel.json` crons: daily at 6 AM
+- For each active case in the firm with a court/hearing scheduled:
+  - Call HC cause list API (`/api/courts/hc/cause-list`)
+  - Call DC case status API (`/api/courts/dc/case-status`)
+  - Store in `cause_list_entries` table
+- Database: `cause_list_entries` table (case_id, court, bench, cause_list_type, serial_number, date, fetched_at)
+
+**2. Personalized Cause List**
+- File: `src/app/(dashboard)/cause-list/page.tsx` (new page)
+- File: `src/app/api/cause-list/route.ts` (new API)
+- Query: join `cases` table with `cause_list_entries` where `cases.court` matches
+- Show: today's cases, this week's cases, all upcoming
+- Filter by: court, judge, case type
+- Highlight: cases heard today, cases next, cases missed
+
+**3. Cause List Notifications**
+- Extend `src/app/api/cause-list/sync/route.ts`
+- After fetching cause list, check if any firm cases appear
+- Send WhatsApp + email notification: "Your case [number] is listed for hearing on [date] at [court], Serial No. [X]"
+- Use existing notification service (`src/lib/notifications/service.ts`)
+
+**4. Invoice Payment Links**
+- Extend `src/app/api/invoices/[id]/route.ts`
+- Add endpoint: `POST /api/invoices/[id]/payment-link`
+- Generate Razorpay payment link with invoice amount
+- Return sharable URL
+- Add "Share Payment Link" button to invoice detail page
+- Send via WhatsApp/SMS using existing notification service
+
+**5. Outstanding Tracking Dashboard**
+- Extend `/reports/revenue` page or create `/billing/outstanding` page
+- Show: total outstanding, aging buckets (0-30, 31-60, 61-90, 90+ days)
+- List: unpaid invoices sorted by oldest first
+- Actions: send reminder, mark as collected, write off
+- Filter by: client, amount range, aging bucket
+
+**6. Automated Payment Reminders**
+- File: `src/app/api/invoices/reminders/route.ts` (new cron endpoint)
+- Add to `vercel.json` crons: weekly on Monday
+- For each unpaid invoice:
+  - If 7 days past due: send gentle reminder (email + WhatsApp)
+  - If 30 days past due: send final notice
+  - If 60 days past due: send escalation notice
+- Use existing notification templates, add invoice-specific templates
+- Track: last_reminder_sent, reminder_count
+
+**7. Collections Workflow**
+- Database: `collection_logs` table (invoice_id, action, sent_to, sent_at, channel, response)
+- File: `src/app/billing/collections/page.tsx`
+- Workflow stages: Reminder → Final Notice → Legal Notice → Recovery
+- Each stage has template and auto-schedule
+- Dashboard: cases in each stage, success rate, average collection time
+
+**8. Deadline Auto-Tracking**
+- Extend existing cases table with `limitation_date` field
+- File: `src/app/api/deadlines/check/route.ts` (new cron endpoint)
+- Add to `vercel.json` crons: daily at 8 AM
+- For each active case: calculate limitation date based on case type and filing date
+- Send escalating reminders: 30 days, 15 days, 7 days, 3 days before limitation
+- Use limitation calculator logic from `src/lib/india/limitation.ts`
+
+**9. Daily Digest Email**
+- File: `src/app/api/digest/route.ts` (new cron endpoint)
+- Add to `vercel.json` crons: daily at 7 AM
+- Compile: today's cause list, pending tasks, upcoming deadlines, outstanding invoices, recent case updates
+- Send as formatted email to each lawyer using Resend
+
+---
+
+## IMPLEMENTATION PRIORITY ORDER
+
+### Phase 1 (Week 1-2): Quick Wins - High Impact, Low Effort
+1. Fix AI Research (remove mock data) - `src/lib/ai/service.ts`
+2. Fix Client Portal invitation email - uncomment in `src/app/api/client-portal/route.ts`
+3. Add Invoice Payment Links - Razorpay payment link generation
+4. Expand Template Library - add 8 more templates to `src/lib/templates.ts`
+5. Add PDF generation for legal documents - new `src/lib/legal-doc-pdf.ts`
+
+### Phase 2 (Week 3-4): AI Drafting & Research
+1. AI Legal Drafting page + API
+2. AI Context Engine for Indian law
+3. AI-Assisted Template Customization
+4. AI Document Summarization UI
+5. Fix AI Precedent Search (connect to real data)
+
+### Phase 3 (Week 5-6): Consultation & CRM
+1. Consultation Booking System (calendar + slots + booking)
+2. Consultation Payment Processing
+3. Matter Intake Forms
+4. Client Communication History
+5. Client Portal - Invoice Viewing
+
+### Phase 4 (Week 7-8): Court & Billing Automation
+1. Daily Cause List Auto-Fetch + Notifications
+2. Personalized Cause List Page
+3. Automated Payment Reminders
+4. Outstanding Tracking Dashboard
+5. Deadline Auto-Tracking
+
+### Phase 5 (Week 9-10): Advanced Features
+1. Collections Workflow
+2. Daily Digest Email
+3. Corporate Legal Team Access
+4. Client Feedback System
+5. AI Chatbot/Legal Assistant
+
+---
+
+## TECHNICAL DEPENDENCIES
+
+- OpenAI API key (for AI features) - currently using `opencode/mimo-v2.5-free`
+- Resend API key (for emails) - already configured
+- Twilio API (for WhatsApp) - already configured
+- Razorpay API keys (for payments) - already configured
+- Indian Kanoon API (for case law search) - need to register
+- Google Calendar API (for consultation scheduling) - need to register
+
+## DATABASE MIGRATIONS NEEDED
+
+1. `consultation-slots-migration.sql` - lawyer availability
+2. `consultations-migration.sql` - booking records
+3. `intake-forms-migration.sql` - intake form templates
+4. `intake-submissions-migration.sql` - client submissions
+5. `client-communications-migration.sql` - communication history
+6. `cause-list-entries-migration.sql` - daily cause list data
+7. `collection-logs-migration.sql` - collections workflow
+8. `deadline-tracking-migration.sql` - limitation date tracking

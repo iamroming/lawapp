@@ -1,0 +1,73 @@
+CRON JOB SETUP (No GitHub Required)
+====================================
+
+Step 1: Generate Secret
+-----------------------
+Run this in terminal:
+
+  node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+Copy the output string.
+
+
+Step 2: Set in Vercel
+---------------------
+1. Go to https://vercel.com
+2. Select your project
+3. Settings → Environment Variables
+4. Add:
+   Key:   CRON_SECRET
+   Value: <paste the string from Step 1>
+
+
+Step 3: Create Jobs on cron-job.org
+------------------------------------
+1. Go to https://cron-job.org
+2. Sign up (free)
+3. Create a job for each row below:
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ URL                                          │ Schedule            │
+├─────────────────────────────────────────────────────────────────────┤
+│ https://YOUR_APP.vercel.app/api/reminders/cron       │ Every hour        │
+│ https://YOUR_APP.vercel.app/api/case-alerts/check    │ 8am,1pm,6pm IST   │
+│ https://YOUR_APP.vercel.app/api/cause-list/sync      │ 6am IST           │
+│ https://YOUR_APP.vercel.app/api/deadlines/check      │ 8am IST           │
+│ https://YOUR_APP.vercel.app/api/invoices/reminders   │ Monday 9am IST    │
+│ https://YOUR_APP.vercel.app/api/daily-digest         │ 8am IST           │
+│ https://YOUR_APP.vercel.app/api/subscriptions/expire-trials │ Midnight IST   │
+└─────────────────────────────────────────────────────────────────────┘
+
+Replace YOUR_APP with your actual Vercel URL.
+
+4. For EACH job, add this header:
+   Key:   Authorization
+   Value: Bearer <your_CRON_SECRET from Step 1>
+
+
+IST Timezone Note
+-----------------
+IST = UTC + 5:30
+
+On cron-job.org, select timezone "Asia/Kolkata" when setting schedules.
+Or use UTC times:
+  - 8am IST  = 2:30am UTC
+  - 6am IST  = 12:30am UTC
+  - 9am IST  = 3:30am UTC
+  - Midnight IST = 6:30pm UTC (previous day)
+
+
+Alternative: EasyCron
+---------------------
+If cron-job.org doesn't work, use https://easycron.com (free tier)
+
+Same setup: paste URL, set schedule, add Authorization header.
+
+
+Alternative: UptimeRobot
+------------------------
+https://uptimerobot.com (free, 50 monitors)
+
+Create HTTP monitor for each URL, set keyword "200" to verify success.
+But UptimeRobot only does monitoring, not scheduled POST/GET with headers.
+Use cron-job.org or easycron.com instead.

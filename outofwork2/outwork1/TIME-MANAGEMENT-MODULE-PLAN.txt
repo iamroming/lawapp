@@ -1,0 +1,307 @@
+================================================================================
+                    TIME MANAGEMENT MODULE — PLAN
+                          Causly (LawApp)
+================================================================================
+
+1. OVERVIEW
+--------------------------------------------------------------------------------
+A dedicated Time Management module that enables lawyers and law firms to track
+billable hours, manage deadlines, log time entries against cases/clients, and
+generate time-based reports. This is a core module for any legal practice
+management system as billable hour tracking is the primary revenue driver.
+
+--------------------------------------------------------------------------------
+2. FEATURES
+--------------------------------------------------------------------------------
+
+2.1 TIMER (Stopwatch)
+  - One-click start/stop timer for real-time tracking
+  - Live elapsed time display (HH:MM:SS)
+  - Auto-save timer state (survives page refresh via localStorage)
+  - Attach timer to a case, client, and activity type while running
+  - Manual entry option if user forgets to start timer
+
+2.2 MANUAL TIME ENTRY
+  - Date picker (default: today)
+  - Start time / End time fields (auto-calculates duration)
+  - OR direct duration input (hours + minutes)
+  - Case selector (optional but encouraged)
+  - Client selector (optional)
+  - Activity type dropdown:
+      - Court Appearance
+      - Client Meeting
+      - Document Drafting
+      - Research
+      - Case Review
+      - Travel
+      - Phone Call
+      - Email/Correspondence
+      - Negotiation/Mediation
+      - Other
+  - Description / notes field (what was done)
+  - Billable toggle (Yes/No) — some time may be non-billable
+  - Hourly rate override (optional, defaults from case or firm rate)
+  - Save as draft or submit
+
+2.3 TIME SHEET (Weekly/Monthly View)
+  - Calendar grid: rows = days, columns = cases or activity types
+  - Color-coded entries (billable vs non-billable)
+  - Inline editing (click cell to add/edit entry)
+  - Daily/weekly/monthly totals auto-calculated
+  - Export to PDF or CSV
+
+2.4 DEADLINES & REMINDERS
+  - Statute of Limitations tracker per case
+  - Filing deadline tracker
+  - Court date reminders (integrate with existing Calendar module)
+  - Custom reminders with email/notification alerts
+  - Color-coded urgency (overdue, due today, due this week, upcoming)
+
+2.5 BILLING INTEGRATION
+  - Time entries feed directly into Invoice generation
+  - Hourly rate × hours = line item on invoice
+  - Batch-select time entries to add to an invoice
+  - Mark entries as "billed" to prevent double-billing
+  - Outstanding (unbilled) time summary
+
+2.6 REPORTS & ANALYTICS
+  - Time by case (which cases consume most time)
+  - Time by client
+  - Time by activity type
+  - Time by team member (utilization rates)
+  - Billable vs non-billable breakdown
+  - Revenue per hour (effective rate)
+  - Daily/weekly/monthly trends
+  - Export reports as PDF or CSV
+
+2.7 TEAM / FIRM LEVEL
+  - Owner/partner can view all team members' time entries
+  - Approval workflow (optional): entries require partner approval before billing
+  - Firm-wide hourly rate settings per role
+  - Override rates at case or individual level
+
+--------------------------------------------------------------------------------
+3. DATABASE SCHEMA (New Tables)
+--------------------------------------------------------------------------------
+
+3.1 time_entries
+  - id UUID PRIMARY KEY
+  - user_id UUID REFERENCES profiles(id)       -- who logged the time
+  - case_id UUID REFERENCES cases(id)           -- which case (optional)
+  - client_id UUID REFERENCES clients(id)       -- which client (optional)
+  - activity_type TEXT                          -- enum of activity types
+  - description TEXT                            -- what was done
+  - start_time TIMESTAMPTZ                      -- for timer-based entries
+  - end_time TIMESTAMPTZ
+  - duration_minutes INTEGER                    -- computed or manual
+  - is_billable BOOLEAN DEFAULT true
+  - hourly_rate NUMERIC(10,2)                   -- rate at time of entry
+  - status TEXT DEFAULT 'submitted'             -- draft/submitted/approved/billed
+  - invoice_id UUID REFERENCES invoices(id)     -- linked to invoice if billed
+  - created_at TIMESTAMPTZ DEFAULT now()
+  - updated_at TIMESTAMPTZ DEFAULT now()
+
+3.2 deadlines
+  - id UUID PRIMARY KEY
+  - case_id UUID REFERENCES cases(id)
+  - title TEXT NOT NULL
+  - description TEXT
+  - due_date TIMESTAMPTZ NOT NULL
+  - deadline_type TEXT                          -- statute_of_limitations/filing/court_date/custom
+  - reminder_days INTEGER DEFAULT 7             -- days before to remind
+  - is_completed BOOLEAN DEFAULT false
+  - completed_at TIMESTAMPTZ
+  - created_by UUID REFERENCES profiles(id)
+  - created_at TIMESTAMPTZ DEFAULT now()
+
+3.3 firm_settings (additions)
+  - default_hourly_rate NUMERIC(10,2)
+  - currency TEXT DEFAULT 'INR'
+  - time_entry_approval_required BOOLEAN DEFAULT false
+
+--------------------------------------------------------------------------------
+4. NEW PAGES / ROUTES
+--------------------------------------------------------------------------------
+
+  /time-tracker          — Main time tracker page (timer + manual entry)
+  /time-sheet            — Weekly/monthly timesheet view
+  /deadlines             — Deadlines & reminders dashboard
+  /reports/time          — Time reports & analytics
+  /api/time-entries      — CRUD API for time entries
+  /api/timer             — Start/stop timer API
+  /api/deadlines         — CRUD API for deadlines
+
+  Sidebar additions:
+  - "Time Tracker" under main nav (clock icon)
+  - "Deadlines" under main nav (alarm icon)
+
+--------------------------------------------------------------------------------
+5. INTEGRATION POINTS
+--------------------------------------------------------------------------------
+
+  - Cases module:    Add "Time Logged" summary on case detail page
+  - Clients module:  Add "Total Hours" on client detail page
+  - Billing module:  Pull unbilled time entries into invoice creation
+  - Dashboard:       Add "Hours This Week" and "Billable Hours" stats cards
+  - Calendar:        Sync deadlines and court dates
+  - Notifications:   Deadline reminders as push/email notifications
+  - Reports:         Time reports in the existing Reports module
+  - AI Assistant:    Analyze time patterns to suggest efficiency improvements
+
+--------------------------------------------------------------------------------
+6. UI COMPONENTS
+--------------------------------------------------------------------------------
+
+  - TimerWidget:      Floating or inline timer with start/stop/reset
+  - TimeEntryForm:    Form for manual time entry
+  - TimesheetGrid:    Weekly calendar grid with drag-to-create entries
+  - DeadlineCard:     Card showing deadline with countdown and urgency color
+  - TimeReportChart:  Bar/line charts for time analytics
+  - BillableBadge:    Green "Billable" / Gray "Non-billable" badge
+  - DurationInput:    Hours + minutes input with auto-calculation
+
+--------------------------------------------------------------------------------
+7. BENEFITS FOR LAW FIRMS
+--------------------------------------------------------------------------------
+
+  1. ACCURATE BILLING
+     - Never miss billable hours again with real-time tracking
+     - Automatic duration calculation eliminates manual math errors
+     - Every minute accounted for, every rupee captured
+
+  2. INCREASED REVENUE
+     - Studies show lawyers only bill 2.5 hours out of 8-hour day
+     - Proper time tracking can increase billable hours by 20-30%
+     - Identify under-billed work and capture lost revenue
+
+  3. TRANSPARENCY WITH CLIENTS
+     - Detailed time logs build client trust
+     - Itemized invoices show exactly what time was spent on
+     - Reduces billing disputes and client complaints
+
+  4. CASE PROFITABILITY ANALYSIS
+     - Know which cases are profitable and which drain resources
+     - Make data-driven decisions on case acceptance
+     - Set accurate fee estimates for future cases
+
+  5. TEAM UTILIZATION INSIGHTS
+     - See who is overworked and who has capacity
+     - Balance workload across associates and paralegals
+     - Identify training needs based on time spent on tasks
+
+  6. DEADLINE COMPLIANCE
+     - Never miss a statute of limitations or filing deadline
+     - Automated reminders prevent costly malpractice claims
+     - Centralized deadline view for the entire firm
+
+  7. STREAMLINED WORKFLOW
+     - One-click timer eliminates friction of time logging
+     - Mobile-friendly: log time from court, client meetings, or home
+     - Reduces administrative overhead for lawyers
+
+  8. DATA-DRIVEN DECISIONS
+     - Historical time data helps estimate future cases
+     - Identify bottlenecks in case handling
+     - Optimize staffing based on actual time requirements
+
+  9. COMPLIANCE & AUDIT TRAIL
+     - Complete record of all work performed
+     - Essential for insurance claims and legal malpractice defense
+     - Court-ready documentation of attorney work
+
+ 10. COMPETITIVE ADVANTAGE
+     - Modern firms that track time efficiently outperform competitors
+     - Faster billing cycles improve cash flow
+     - Professional image with detailed, accurate invoices
+
+--------------------------------------------------------------------------------
+8. BENEFITS FOR APP OWNERS (Causly)
+--------------------------------------------------------------------------------
+
+  1. NEW REVENUE STREAM
+     - Time management is a MUST-HAVE for law firms
+     - Can justify higher subscription tiers with this module
+     - Premium feature for Professional and Enterprise plans
+
+  2. INCREASED RETENTION
+     - Time tracking is used DAILY — keeps users logged in
+     - More daily active users = higher stickiness
+     - Hard to switch platforms when historical time data is here
+
+  3. COMPETITIVE DIFFERENTIATION
+     - Most Indian legal tech apps lack proper time tracking
+     - First-mover advantage in the Indian legal market
+     - Feature parity with global tools (Clio, PracticePanther)
+
+  4. UPSELL OPPORTUNITY
+     - Free plan: manual entries only (limited to 50 entries/month)
+     - Solo plan: timer + basic reports
+     - Professional plan: full timer + timesheet + billing integration
+     - Enterprise plan: team analytics + approval workflow + API access
+
+  5. DATA INSIGHTS FOR PRODUCT
+     - Understand how lawyers spend their time
+     - Inform feature prioritization based on usage patterns
+     - Build better AI recommendations with time data
+
+  6. ECOSYSTEM LOCK-IN
+     - Time entries linked to cases, clients, invoices, and documents
+     - Creates a comprehensive data moat
+     - Users build their entire practice workflow around Causly
+
+  7. MARKETPLACE INTEGRATION
+     - Export time data to Tally, Zoho Books, or QuickBooks
+     - API access for third-party integrations
+     - Position Causly as the central hub for legal practice
+
+  8. REDUCED SUPPORT LOAD
+     - Self-service time tracking reduces manual billing support
+     - Automated reminders reduce missed deadline complaints
+     - Built-in reports eliminate "how do I export?" tickets
+
+--------------------------------------------------------------------------------
+9. IMPLEMENTATION PHASES
+--------------------------------------------------------------------------------
+
+  PHASE 1 (MVP — 2 weeks)
+  - Manual time entry (date, duration, case, description, billable flag)
+  - Basic timer (start/stop with local persistence)
+  - Time entries list page with filters
+  - CRUD API for time entries
+
+  PHASE 2 (Core — 2 weeks)
+  - Timesheet grid view (weekly)
+  - Activity type categorization
+  - Basic reports (time by case, time by user)
+  - Integration with existing cases and clients pages
+
+  PHASE 3 (Advanced — 2 weeks)
+  - Deadlines & reminders module
+  - Billing integration (time entries → invoices)
+  - Team approval workflow
+  - Advanced reports with charts
+
+  PHASE 4 (Polish — 1 week)
+  - Export (PDF/CSV)
+  - Mobile responsiveness optimization
+  - Notifications integration
+  - AI-powered time insights
+
+--------------------------------------------------------------------------------
+10. ESTIMATED EFFORT
+--------------------------------------------------------------------------------
+
+  Database schema + migrations:     0.5 days
+  API routes (CRUD + timer):        1 day
+  Timer UI component:               1 day
+  Manual entry form:                0.5 days
+  Timesheet grid view:              1.5 days
+  Deadlines module:                 1 day
+  Reports & analytics:              1.5 days
+  Billing integration:              1 day
+  Testing & bug fixes:              1 day
+  Total:                           ~9 days (1 developer)
+
+================================================================================
+                              END OF PLAN
+================================================================================

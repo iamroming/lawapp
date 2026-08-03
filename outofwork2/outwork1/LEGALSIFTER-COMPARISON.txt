@@ -1,0 +1,258 @@
+================================================================================
+         LEGAL SIFTER vs CAUSLY — FEATURE COMPARISON & GAP ANALYSIS
+================================================================================
+
+LEGAL SIFTER OVERVIEW:
+  AI-powered contract review platform. Combines 2,200+ pre-trained "Sifters"
+  (NLP/ML models) with OpenAI's generative AI. Focuses on contract review,
+  redlining, negotiation, and lifecycle management. $29/user/month.
+
+CAUSLY OVERVIEW:
+  Full practice management platform for Indian lawyers/firms. Cases, clients,
+  billing, documents, AI analysis, eCourts tracking, bare acts, calculators.
+
+================================================================================
+1. FEATURE-BY-FEATURE COMPARISON
+================================================================================
+
+LEGAL SIFTER FEATURE                    CAUSLY STATUS
+----------------------------------------------- --------------------------------
+CONTRACT REVIEW & ANALYSIS
+  AI contract review                    HAS (AI Assistant - case analysis)
+  2,200+ pre-trained clause checkers    NO — uses generic LLM prompts
+  Plain-English issue explanations      HAS (AI returns plain English)
+  Missing provision detection           NO — only analyzes what you describe
+  Risk scoring (per clause)             PARTIAL — overall case strength only
+  Contract type-specific modules        NO — one generic analysis endpoint
+
+CONTRACT REDLINING
+  AI redlining in Microsoft Word        NO
+  Auto-apply suggested edits            NO
+  Track changes / revision history      PARTIAL — documents have versions
+  Playbook-driven redlining             NO
+
+NEGOTIATION SUPPORT
+  Negotiation position suggestions      NO
+  Fallback language recommendations     NO
+  Counterparty response suggestions     NO
+
+CONTRACT MANAGEMENT (CLM)
+  Contract creation/drafting            HAS (Templates module)
+  Pre-built contract templates          HAS (Templates module)
+  Contract organization & search        HAS (Documents module)
+  Contract data extraction              NO
+  Renewal management / auto-renewal     NO
+  Obligation tracking                   NO
+  Key date monitoring                   PARTIAL (Calendar + Reminders)
+  Version control                       PARTIAL (documents stored)
+
+DOCUMENT MANAGEMENT
+  Upload & store documents              HAS (Cloudinary integration)
+  Full-text search                      PARTIAL (title/name search only)
+  OCR (extract text from scans)         NO
+  Document categorization               HAS (petition, evidence, etc.)
+  Access controls / permissions         PARTIAL (RLS policies)
+  E-signature integration               NO
+
+COMPLIANCE & WORKFLOW
+  Approval workflows                    NO
+  Audit trail                           HAS (audit_logs table)
+  Compliance tracking                   NO
+  Workflow automation                   NO
+
+INTEGRATIONS
+  Microsoft Word plugin                 NO
+  HubSpot / CRM integration            NO
+  DocuSign / Adobe Sign                 NO
+  Google Drive / Dropbox / OneDrive     NO
+  Zapier / API access                   NO
+
+PRICING & BILLING
+  Invoice generation                    HAS
+  Time-based billing                    NO (flat fee only)
+  Payment collection (Razorpay)         HAS
+  Subscription management               HAS
+
+E-COURTS & INDIAN LEGAL
+  eCourts case tracking                 HAS (unique to Causly)
+  Indian Bare Acts reference            HAS (unique to Causly)
+  Indian court hierarchy                HAS (unique to Causly)
+  Stamp duty calculator                 HAS (unique to Causly)
+  Indian legal calculators              HAS (unique to Causly)
+
+PRACTICE MANAGEMENT
+  Case management                       HAS
+  Client management (CRM)               HAS
+  Calendar & hearings                   HAS
+  Team management                       HAS
+  Role-based access control             HAS
+  Billing & invoicing                   HAS
+  Reports & analytics                   HAS
+  Notifications & reminders             HAS
+  Messages / internal communication     HAS
+  Client portal                         HAS
+  Super admin panel                     HAS
+  Subscription billing                  HAS
+
+================================================================================
+2. WHAT CAUSLY IS MISSING (Gaps from Legal Sifter)
+================================================================================
+
+HIGH PRIORITY (Can implement with existing AI infrastructure):
+
+  1. CONTRACT REVIEW AI
+     - Legal Sifter: Upload contract → AI identifies risky clauses,
+       missing provisions, suggests improvements
+     - Causly gap: AI only analyzes cases you DESCRIBE, not documents
+     - How to build: Upload contract → send to LLM with clause-specific
+       prompts → return risk analysis per section
+     - Effort: 3-5 days
+
+  2. DOCUMENT FULL-TEXT SEARCH
+     - Legal Sifter: Search inside document contents
+     - Causly gap: Only searches file names and titles
+     - How to build: Extract text on upload (PDF/docx parsing) → store
+       in a text column → use Supabase full-text search
+     - Effort: 2-3 days
+
+  3. MISSING PROVISION DETECTION
+     - Legal Sifter: Checks if contract has required clauses for its type
+     - Causly gap: No contract validation
+     - How to build: Define required clauses per contract type (e.g.,
+       "rental agreement must have: rent amount, notice period, deposit")
+       → AI checks presence/absence
+     - Effort: 2-3 days
+
+  4. CLAUSE RISK SCORING
+     - Legal Sifter: Each clause gets a risk score
+     - Causly gap: Only overall case strength score
+     - How to build: Parse contract into sections → score each section
+       → highlight high-risk clauses
+     - Effort: 2-3 days
+
+MEDIUM PRIORITY (Requires new infrastructure):
+
+  5. CONTRACT TEMPLATES WITH VARIABLES
+     - Legal Sifter: Dynamic templates with placeholders
+     - Causly gap: Static templates only
+     - How to build: Template engine with {{party_name}}, {{date}}, etc.
+     - Effort: 2-3 days
+
+  6. APPROVAL WORKFLOWS
+     - Legal Sifter: Route contracts through approval chains
+     - Causly gap: No approval system
+     - How to build: Define workflow states (draft → review → approved)
+       → assign reviewers → track status
+     - Effort: 3-4 days
+
+  7. OBLIGATION TRACKING
+     - Legal Sifter: Track post-signature obligations and deadlines
+     - Causly gap: Only has calendar reminders
+     - How to build: Extract obligations from contracts → create tasks
+       → link to reminders
+     - Effort: 3-4 days
+
+  8. TIME TRACKING FOR BILLING
+     - Legal Sifter: Track billable hours per contract review
+     - Causly gap: No time tracking module
+     - How to build: Timer + manual entries → linked to cases/clients
+       → feed into invoices
+     - Effort: See TIME-MANAGEMENT-MODULE-PLAN.txt
+
+LOW PRIORITY (Nice to have):
+
+  9. WORD PLUGIN / ADD-IN
+     - Legal Sifter: Works inside Microsoft Word
+     - Causly gap: Standalone web app only
+     - How to build: Office.js add-in or browser extension
+     - Effort: 5-7 days
+
+ 10. E-SIGNATURE INTEGRATION
+     - Legal Sifter: DocuSign / Adobe Sign integration
+     - Causly gap: No e-signature
+     - How to build: Integrate with Zoho Sign or RocketSign (Indian)
+     - Effort: 3-5 days
+
+ 11. OCR (OPTICAL CHARACTER RECOGNITION)
+     - Legal Sifter: Extract text from scanned documents
+     - Causly gap: Stores images but can't read them
+     - How to build: Google Vision API or Tesseract on upload
+     - Effort: 2-3 days
+
+ 12. CRM / HUBSPOT INTEGRATION
+     - Legal Sifter: Sync with CRM systems
+     - Causly gap: Standalone client management
+     - How to build: API integrations with popular CRMs
+     - Effort: 3-5 days per integration
+
+================================================================================
+3. WHAT CAUSLY HAS THAT LEGAL SIFTER DOESN'T
+================================================================================
+
+  These are Causly's competitive advantages — things Legal Sifter cannot do:
+
+  1. FULL PRACTICE MANAGEMENT
+     - Cases, clients, billing, calendar, team — all in one
+     - Legal Sifter is ONLY contract review, not a practice tool
+
+  2. eCOURTS INTEGRATION
+     - Track live cases on Indian courts
+     - Unique to Indian legal market — no global competitor has this
+
+  3. INDIAN BARE ACTS REFERENCE
+     - Searchable Indian laws database
+     - Unique to Indian legal market
+
+  4. INDIAN LEGAL CALCULATORS
+     - Stamp duty, court fees, limitation periods
+     - Unique to Indian legal market
+
+  5. CLIENT PORTAL
+     - Clients can log in and view their cases
+     - Legal Sifter has no client-facing portal
+
+  6. TEAM MANAGEMENT
+     - Employee roles, permissions, performance tracking
+     - Legal Sifter is individual-seat focused
+
+  7. BILLING & INVOICING
+     - Generate invoices, collect payments via Razorpay
+     - Legal Sifter has no billing system
+
+  8. SUBSCRIPTION BUSINESS MODEL
+     - Tiered plans (Free/Solo/Professional/Enterprise)
+     - Legal Sifter uses per-seat pricing ($29/user/month)
+
+  9. AI CASE ANALYSIS
+     - Analyze case strength, strategy, precedents
+     - Legal Sifter analyzes CONTRACTS, not cases
+
+ 10. MESSAGES / INTERNAL COMMUNICATION
+     - Team messaging system
+     - Legal Sifter has no messaging
+
+================================================================================
+4. RECOMMENDATION — BUILD vs SKIP
+================================================================================
+
+  BUILD (High ROI, fits Causly's Indian market):
+  ✓ Contract Review AI — use existing AI infrastructure
+  ✓ Document full-text search — low effort, high value
+  ✓ Missing provision detection — differentiator for Indian firms
+  ✓ Time tracking — already planned, essential for billing
+  ✓ Obligation tracking — extends existing reminders
+
+  SKIP (Not relevant for Indian legal market):
+  ✗ Microsoft Word plugin — Indian lawyers use web-based tools
+  ✗ HubSpot/CRM integration — Indian firms don't use these
+  ✗ DocuSign integration — Indian firms use physical signatures
+  ✗ Zapier integration — not popular in Indian legal market
+
+  DEFER (Build later if demand exists):
+  △ Approval workflows — needed for larger firms
+  △ OCR — useful but not urgent
+  △ E-signature — wait for Indian e-sign adoption
+
+================================================================================
+                              END OF ANALYSIS
+================================================================================

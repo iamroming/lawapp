@@ -1,0 +1,293 @@
+========================================
+SAAS READINESS FIXES - CHANGE LOG
+Date: 2026-08-02
+========================================
+
+SUMMARY
+-------
+All 6 P0 blockers and 7 P1 improvements implemented.
+TypeScript compiles cleanly with zero errors.
+
+
+========================================
+P0 FIXES (BLOCKERS)
+========================================
+
+1. EMAIL VERIFICATION FLOW
+--------------------------
+Problem: Signup used email_confirm: false and immediately tried
+         to sign in, which fails if Supabase email confirmation is on.
+
+Files Created:
+  - src/app/(auth)/confirm-email/page.tsx (new)
+
+Files Modified:
+  - src/app/(auth)/signup/page.tsx
+    Changed: After successful signup, redirects to /confirm-email
+    instead of immediately calling signInWithPassword()
+
+  The confirm-email page shows:
+  - "Check Your Email" message with the user's email
+  - Instructions to click the verification link
+  - Resend verification email button (calls supabase.auth.resend)
+  - Links to sign in or sign up again
+
+
+2. RESET-PASSWORD PAGE
+----------------------
+Status: Already existed at src/app/(auth)/reset-password/page.tsx
+No changes needed. The page properly:
+- Checks for valid session from reset link
+- Shows "Invalid Link" if token expired
+- Allows setting new password
+- Redirects to dashboard after success
+
+
+3. REMOVED /setup PAGE
+----------------------
+Problem: /setup page still rendered with hardcoded email (mubb@ymail.com)
+         even though the API backend returns 410 Gone.
+
+Files Modified:
+  - src/app/setup/page.tsx
+    Changed: Replaced full form with a redirect page that shows
+    "Setup Unavailable" message and redirects to /signup after 5 seconds.
+
+
+4. CLEANED SEED SCRIPT
+-----------------------
+Problem: scripts/seed-super-admin.ts had hardcoded credentials
+         (mubb@ymail.com / 123456) in source code.
+
+Files Modified:
+  - scripts/seed-super-admin.ts
+    Changed: Now requires ADMIN_EMAIL and ADMIN_PASSWORD environment
+    variables. Exits with error if not set. No hardcoded credentials.
+
+    Usage:
+      ADMIN_EMAIL=you@example.com ADMIN_PASSWORD=yourpassword npx tsx scripts/seed-super-admin.ts
+
+
+5. CREATED .env.example
+-----------------------
+Problem: No root-level .env.example for developer reference.
+
+Files Created:
+  - .env.example
+
+  Contains all required and optional environment variables:
+  - Required: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    SUPABASE_SERVICE_ROLE_KEY
+  - Optional: Razorpay, Cloudinary, AI, eCourts, Twilio, Resend,
+    MSG91, Cron Secret, Test credentials
+
+
+6. FIXED RATE LIMITING
+----------------------
+Problem: Rate limiting used in-memory Map, lost on Vercel serverless
+         cold starts. Effectively non-functional in production.
+
+Files Modified:
+  - src/lib/rate-limit.ts
+    Changed: checkRateLimit() is now async. Uses Supabase rate_limits
+    table for persistent storage. Falls back to in-memory Map for
+    local development when Supabase is unavailable.
+
+  - src/middleware.ts (2 call sites updated with await)
+  - src/app/auth/callback/route.ts (1 call site)
+  - src/app/api/team/invite/route.ts (1 call site)
+  - src/app/api/notifications/schedule/route.ts (1 call site)
+  - src/app/api/ai/research/route.ts (1 call site)
+  - src/app/api/ai/engagement-letter/route.ts (1 call site)
+  - src/app/api/ai/draft/route.ts (1 call site)
+  - src/app/api/ai/chat/route.ts (1 call site)
+  - src/app/api/ai/customize-template/route.ts (1 call site)
+  - src/app/api/ai/analyze/route.ts (1 call site)
+
+Files Created:
+  - supabase/rate-limits-migration.sql
+    Run in Supabase SQL Editor to create the rate_limits table
+    with indexes, RLS policies, and cleanup function.
+
+
+7. TRIAL EXPIRATION CRON
+-------------------------
+Problem: expireTrials() function existed but nothing triggered it.
+         Trials would never expire automatically.
+
+Files Created:
+  - src/app/api/subscriptions/expire-trials/route.ts
+    GET endpoint that requires CRON_SECRET authorization.
+    Finds all subscriptions with status "trialing" and expires_at
+    in the past, updates them to "expired".
+
+Files Modified:
+  - vercel.json
+    Added cron: /api/subscriptions/expire-trials at 0 0 * * *
+    (runs daily at midnight UTC)
+
+
+8. HEALTH CHECK ENDPOINT
+-------------------------
+Problem: No health check endpoint for monitoring.
+
+Files Created:
+  - src/app/api/health/route.ts
+    GET endpoint returning { status: "ok", timestamp, service: "lawxp" }
+
+
+========================================
+P1 FIXES (IMPROVEMENTS)
+========================================
+
+9. CSRF ON ALL STATE-CHANGING ROUTES
+-------------------------------------
+Problem: CSRF protection only covered 2 routes (/subscriptions/change
+         and /subscriptions/verify). 60+ other POST/PUT/DELETE routes
+         had no CSRF protection.
+
+Files Modified:
+  - src/middleware.ts
+    Changed: CSRF validation now applies to ALL POST, PUT, DELETE
+    requests on /api/* routes. Skips:
+    - /api/subscriptions/webhook (uses Razorpay signature)
+    - /api/auth/signup (public endpoint)
+    - /api/auth/callback (OAuth callback)
+
+
+10. USER ACCOUNT DELETION (DPDP ACT)
+-------------------------------------
+Problem: Privacy policy promises deletion but no API existed.
+         DPDP Act compliance gap.
+
+Files Created:
+  - src/app/api/account/delete/route.ts
+    DELETE endpoint that:
+    - Requires authentication
+    - Verifies email confirmation matches
+    - Soft-deletes profile (marks inactive, anonymizes data)
+    - Logs the deletion activity
+    - Returns success message about anonymization
+
+
+11. AI QUERY QUOTA ENFORCEMENT
+-------------------------------
+Problem: max_ai_queries defined in plan limits but never checked.
+         Free users could make unlimited AI queries.
+
+Files Modified:
+  - src/lib/subscription-limits.ts
+    Added functions:
+    - checkAiQueryLimit(userId) - checks 24-hour rolling window
+    - logAiQuery(userId, queryType) - logs query to ai_usage table
+
+  - src/app/api/ai/analyze/route.ts
+    Added quota check before AI call and logging after success.
+
+  - src/app/api/ai/chat/route.ts
+    Added quota check before AI call and logging after success.
+
+Files Created:
+  - supabase/ai-usage-migration.sql
+    Run in Supabase SQL Editor to create ai_usage table
+    with user_id, query_type, created_at columns.
+
+
+12. PAYMENT FAILURE EMAILS
+---------------------------
+Problem: Webhook set status to past_due on halt/pause but
+         didn't send any notification to the user.
+
+Files Modified:
+  - src/app/api/subscriptions/webhook/route.ts
+    Added: On "subscription.halted" and "subscription.paused" events,
+    fetches user profile and sends paymentFailedEmail via Resend.
+
+  Email includes:
+  - Subject: "Payment Failed for LawXP [Plan]"
+  - Red-themed HTML with clear CTA
+  - Link to settings?tab=billing to update payment method
+
+
+13. DEPLOYMENT.md FIX
+----------------------
+Problem: Documentation referenced OPENAI_API_KEY but code uses AI_API_KEY.
+
+Files Modified:
+  - docs/DEPLOYMENT.md (2 occurrences)
+    Changed: OPENAI_API_KEY -> AI_API_KEY
+
+  - docker-compose.yml
+    Changed: OPENAI_API_KEY -> AI_API_KEY
+
+
+14. CRON SECRET ON NOTIFICATIONS
+---------------------------------
+Problem: /api/notifications/schedule lacked cron secret verification.
+         Anyone could trigger it.
+
+Files Modified:
+  - src/app/api/notifications/schedule/route.ts
+    Changed: Now accepts Bearer token cron secret for scheduled calls.
+    Authenticated users can still call it directly.
+    Rate limit key adapts for cron vs user calls.
+
+
+15. EMAIL UTILITY
+------------------
+Problem: Each route duplicated Resend API call logic.
+
+Files Created:
+  - src/lib/email.ts
+    Utility function sendEmail(to, template) that:
+    - Checks RESEND_API_KEY is configured
+    - Sends via Resend API
+    - Returns { success, error? }
+
+
+========================================
+NEW FILES SUMMARY
+========================================
+
+src/app/(auth)/confirm-email/page.tsx    Email verification page
+src/app/api/subscriptions/expire-trials/route.ts  Trial expiration cron
+src/app/api/health/route.ts             Health check endpoint
+src/app/api/account/delete/route.ts     Account deletion endpoint
+src/lib/email.ts                        Email sending utility
+.env.example                            Environment variable reference
+supabase/rate-limits-migration.sql      Rate limits table
+supabase/ai-usage-migration.sql         AI usage tracking table
+
+
+========================================
+SQL MIGRATIONS TO RUN
+========================================
+
+Run these in Supabase SQL Editor:
+
+1. supabase/rate-limits-migration.sql
+   Creates: rate_limits table, indexes, RLS, cleanup function
+
+2. supabase/ai-usage-migration.sql
+   Creates: ai_usage table, indexes, RLS policies
+
+3. supabase/invoice-templates-migration.sql (from previous session)
+   Adds: invoice_template, invoice_settings JSONB, bank columns
+
+
+========================================
+VERCEL.JSON CRON JOBS (UPDATED)
+========================================
+
+/api/reminders/cron              0 * * * *     Every hour
+/api/case-alerts/check           0 8,13,18 * * *  3x daily
+/api/cause-list/sync             0 6 * * *     Daily 6am
+/api/deadlines/check             0 8 * * *     Daily 8am
+/api/invoices/reminders          0 9 * * 1     Monday 9am
+/api/daily-digest                0 8 * * *     Daily 8am
+/api/subscriptions/expire-trials 0 0 * * *     Daily midnight (NEW)
+
+
+========================================
+END OF CHANGE LOG
+========================================

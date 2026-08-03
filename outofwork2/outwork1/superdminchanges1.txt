@@ -1,0 +1,307 @@
+================================================================================
+                    SUPER ADMIN CHANGES - SESSION 1
+                    Date: 29 July 2026
+================================================================================
+
+SESSION OBJECTIVE
+-----------------
+Fix remaining bugs from the 66-item audit, implement subscription management
+module for the admin panel, and deploy to production.
+
+================================================================================
+DEPLOYED AT: https://lawapp-eight.vercel.app/
+================================================================================
+
+================================================================================
+PART 1: BUG FIXES (13 items from checkbugs1.txt)
+================================================================================
+
+1. CSRF MIDDLEWARE ENFORCEMENT
+   File: src/middleware.ts
+   - Added CSRF token verification on POST/DELETE for sensitive subscription routes
+   - Checks x-csrf-token header matches csrf_token cookie
+
+2. RATE LIMITING ON AUTH ROUTES
+   File: src/middleware.ts
+   - Auth callback: 10 requests/minute per IP
+   - Login/signup: 5 requests/5 minutes per IP
+
+3. RATE LIMITING ON AI ROUTES
+   Files: src/app/api/ai/analyze/route.ts, src/app/api/ai/research/route.ts
+   - Both AI endpoints: 10 requests/hour per user+IP
+
+4. NOTIFICATIONS SCHEDULE API - AUTH + RATE LIMITING
+   File: src/app/api/notifications/schedule/route.ts
+   - Added auth check (was completely unprotected)
+   - Added rate limit: 3 calls/hour per user+IP
+
+5. TAGS POST - VALIDATION + DUPLICATE CHECK
+   File: src/app/api/tags/route.ts
+   - Name validation: 1-50 characters
+   - Duplicate tag name check per user
+   - Field whitelist: name, color, created_by
+
+6. AI ROUTES - INPUT VALIDATION
+   Files: src/app/api/ai/analyze/route.ts, src/app/api/ai/research/route.ts
+   - Analyze: description required, 10-5000 chars
+   - Research: query required, 3-500 chars
+
+7. CASES POST - VERIFY CLIENT_ID OWNERSHIP
+   File: src/app/api/cases/route.ts
+   - Verifies client_id belongs to user before creating case
+   - Returns 400 if client not found or not owned
+
+8. NOTIFICATION PREFERENCES - DATABASE BACKED
+   File: src/app/(dashboard)/settings/page.tsx
+   - Changed from localStorage to notification_preferences table
+   - Fetches from Supabase on load, upserts on save
+
+9. TEAM INVITE API (NEW)
+   File: src/app/api/team/invite/route.ts
+   - POST endpoint for admin-only team member invitation
+   - Validates email exists, role is valid
+   - Rate limited: 5 invites/hour
+
+10. TEAM REMOVE API (NEW)
+    File: src/app/api/team/[id]/route.ts
+    - DELETE endpoint for admin-only member removal
+    - Prevents self-removal and admin hierarchy violations
+
+11. SKELETON LOADING STATES
+    Files: cases/page.tsx, clients/page.tsx, documents/page.tsx
+    - Replaced "Loading..." text with PageSkeleton component
+
+12. DOCUMENT UPLOAD - STORAGE LIMIT CHECK
+    File: src/app/api/documents/route.ts
+    - Added checkStorageLimit() before insert
+    - Added title validation
+
+13. GLOBAL SEARCH - EXPANDED COVERAGE
+    File: src/components/global-search.tsx
+    - Expanded from 3 to 6 search types: cases, clients, documents,
+      invoices, hearings, tags
+
+================================================================================
+PART 2: LOGIN FIX
+================================================================================
+
+PROBLEM: Login required two attempts on Vercel
+- First attempt: signInWithPassword succeeds but no redirect happens
+- Second attempt: cookies from first attempt allow middleware to redirect
+
+FIX:
+  File: src/app/(auth)/login/page.tsx
+  - Added router.push("/dashboard") after successful signInWithPassword
+  - Added useRouter import
+
+  File: src/app/(auth)/signup/page.tsx
+  - Added router.push("/dashboard") after successful signUp
+  - Added useRouter import
+
+================================================================================
+PART 3: ECOURTS API FIX
+================================================================================
+
+PROBLEM: getCaseByCNR() read data.caseStatus but actual API returns
+data.courtCaseData.caseStatus
+
+FIX:
+  File: src/lib/ecourts/api.ts
+  - Fixed mapping to read from courtCaseData and entityInfo
+  - Added judge mapping from judges array
+  - Added petitionerAdvocates/respondentAdvocates mapping
+  - Added judgmentOrders + interimOrders mapping
+
+TESTED:
+  - CNR DLHC010001232024: HTTP 200, full case details
+  - CNR MHHC010157292023: HTTP 404 (not found)
+  - Search "rash driving": 12,501 results
+
+================================================================================
+PART 4: SUBSCRIPTION TAB - DATABASE BACKED
+================================================================================
+
+PROBLEM: Settings subscription tab showed hardcoded data
+
+FIX:
+  File: src/app/(dashboard)/settings/page.tsx
+  - Fetches plans from subscription_plans table
+  - Fetches user's current subscription from user_subscriptions
+  - Fetches real usage stats (cases, documents, team members)
+  - Shows dynamic plan list with actual DB prices
+  - Progress bars reflect real usage vs plan limits
+
+DB PLANS:
+  Free:       ₹0/month,    3 cases, 1 user, 100 MB
+  Starter:    ₹499/month, 20 cases, 1 user, 512 MB
+  Professional: ₹999/month, unlimited cases, 1 user, 2 GB
+  Firm:       ₹2,999/month, unlimited cases, 5 users, 10 GB
+  Enterprise: ₹9,999/month, unlimited everything
+
+================================================================================
+PART 5: COUPON SYSTEM + SUBSCRIPTION MANAGEMENT MODULE
+================================================================================
+
+DATABASE MIGRATION (must run manually):
+  File: supabase/coupon-migration.sql
+  - Creates coupon_codes table
+  - Creates coupon_uses table
+  - Adds override fields to user_subscriptions
+  - Adds RLS policies
+  - Seeds sample coupons: WELCOME20, FLAT500, FRIEND2026
+
+--- Admin API Routes (require super_admin) ---
+
+POST /api/admin/subscription-override
+  - Change any user's plan, status, custom_price, discount_percent
+  - Sets override_reason for audit trail
+
+POST /api/admin/subscription-toggle
+  - Enable/disable subscriptions for bulk users
+  - Sets disabled_at, disabled_reason
+
+POST /api/admin/subscription-discount
+  - Apply percentage discounts to selected users
+  - 0-100% range
+
+GET/POST /api/admin/coupons
+  - List all coupons (GET)
+  - Create new coupon (POST)
+  - Auto-generates code if not provided
+
+PUT/DELETE /api/admin/coupons/[id]
+  - Update coupon details
+  - Delete coupon
+
+GET /api/admin/coupons/[id]/uses
+  - View coupon usage history
+
+--- User-Facing API Routes ---
+
+POST /api/coupons/validate
+  - Validates coupon code without applying
+  - Checks active, valid dates, max uses
+  - Returns discount info
+
+POST /api/coupons/apply
+  - Applies coupon to user's subscription
+  - Creates/updates user_subscriptions record
+  - Records coupon usage
+  - For "free" type: gives 10-year Enterprise access
+
+--- New Page ---
+
+/super-admin/coupons
+  - Full coupon management dashboard
+  - Stats: total coupons, active, total uses, friend bypass count
+  - Create coupon modal with code generator
+  - Toggle active/inactive per coupon
+  - View usage history per coupon
+  - Delete coupons
+
+--- Modified Pages ---
+
+/signup
+  - Added "Coupon Code (optional)" field
+  - Live validation on blur
+  - Shows discount info when valid
+  - Auto-applies coupon after account creation
+
+/settings (Subscription tab)
+  - Added "Have a coupon code?" section with CouponInput component
+  - Apply button with success/error feedback
+
+/super-admin sidebar
+  - Added "Coupons" link with Ticket icon
+
+================================================================================
+COUPON TYPES
+================================================================================
+
+PERCENTAGE: "SAVE20" → 20% off plan price
+  Example: Professional ₹999 → ₹799/month
+
+FIXED: "FLAT500" → ₹500 off any plan
+  Example: Professional ₹999 → ₹499/month
+
+FREE (FRIEND BYPASS): "FRIEND2026" → Free Enterprise access
+  - Sets amount to ₹0
+  - Gives 10-year expiry (effectively lifetime)
+  - Full Enterprise features
+
+================================================================================
+PRE-SEEDED COUPONS
+================================================================================
+
+WELCOME20
+  - 20% off Professional plan
+  - Max 100 uses
+  - Expires 6 months from creation
+
+FLAT500
+  - ₹500 off any plan
+  - Max 50 uses
+  - Expires 3 months from creation
+
+FRIEND2026
+  - Free Enterprise access (bypass)
+  - Unlimited uses
+  - Expires 10 years from creation
+
+================================================================================
+FILES CREATED THIS SESSION
+================================================================================
+
+Created:
+  supabase/coupon-migration.sql
+  src/app/api/admin/coupons/route.ts
+  src/app/api/admin/coupons/[id]/route.ts
+  src/app/api/admin/coupons/[id]/uses/route.ts
+  src/app/api/admin/subscription-override/route.ts
+  src/app/api/admin/subscription-toggle/route.ts
+  src/app/api/admin/subscription-discount/route.ts
+  src/app/api/coupons/validate/route.ts
+  src/app/api/coupons/apply/route.ts
+  src/app/api/team/invite/route.ts
+  src/app/api/team/[id]/route.ts
+  src/app/(super-admin)/super-admin/coupons/page.tsx
+
+Modified:
+  src/middleware.ts
+  src/app/(auth)/login/page.tsx
+  src/app/(auth)/signup/page.tsx
+  src/app/(dashboard)/settings/page.tsx
+  src/app/(dashboard)/cases/page.tsx
+  src/app/(dashboard)/clients/page.tsx
+  src/app/(dashboard)/documents/page.tsx
+  src/app/api/cases/route.ts
+  src/app/api/documents/route.ts
+  src/app/api/tags/route.ts
+  src/app/api/ai/analyze/route.ts
+  src/app/api/ai/research/route.ts
+  src/app/api/notifications/schedule/route.ts
+  src/components/global-search.tsx
+  src/components/super-admin-sidebar.tsx
+  src/lib/ecourts/api.ts
+
+================================================================================
+BUILD STATUS
+================================================================================
+
+Pages: 96 (up from 89)
+Errors: 0
+Deployed: https://lawapp-eight.vercel.app/
+
+================================================================================
+REMAINING TODO (not yet done)
+================================================================================
+
+- Apply database migration (run coupon-migration.sql in Supabase)
+- Admin subscriptions page: add override/toggle/discount action buttons
+  (API ready, UI buttons not yet added to the table)
+- Pricing page: sync with DB plans instead of hardcoded values
+- Dark mode: needs tailwind.config.js update for full support
+
+================================================================================
+                              END OF SESSION
+================================================================================

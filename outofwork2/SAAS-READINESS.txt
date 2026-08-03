@@ -1,0 +1,320 @@
+========================================
+LawXP SAAS READINESS AUDIT REPORT
+Date: 2026-08-02
+Files Audited: 65+
+========================================
+
+VERDICT: NOT READY FOR SAAS LAUNCH
+Blockers (P0): 6 | Week-1 Fixes (P1): 12 | Month-1 Fixes (P2): 8
+
+
+========================================
+1. AUTHENTICATION & AUTHORIZATION
+========================================
+
+STATUS: NEEDS WORK
+
+READY:
+  [OK] Supabase SSR session management
+  [OK] Session refresh in middleware
+  [OK] Disabled account check (is_active)
+  [OK] 10+ roles with hierarchy (owner to intern)
+  [OK] usePermissions() hook with per-role defaults
+  [OK] Role-based sidebar, API, and UI restrictions
+  [OK] Owner/partner can invite/remove team
+  [OK] Super admin route protection (middleware + DB)
+  [OK] Admin setup backdoor removed (returns 410)
+  [OK] Forgot password UI in login page
+  [OK] Password strength validation (8+ chars, uppercase, number)
+
+BLOCKERS:
+  [P0] Email verification bypassed - signup sets email_confirm: false
+       File: src/app/api/auth/signup/route.ts:23
+       Risk: Anyone can create accounts with fake emails
+
+  [P0] /reset-password page does not exist
+       Login redirects to /reset-password but no page handles it
+       Risk: Password reset flow is broken
+
+  [P0] Hardcoded credentials in seed script
+       File: scripts/seed-super-admin.ts (email: mubb@ymail.com, pass: 123456)
+       Risk: Known credentials in source code
+
+  [P0] /setup page still accessible
+       File: src/app/setup/page.tsx
+       Risk: Bypasses normal signup flow
+
+
+========================================
+2. MULTI-TENANCY & DATA ISOLATION
+========================================
+
+STATUS: MOSTLY READY
+
+READY:
+  [OK] firm_id column on all major tables
+  [OK] RLS policies enforce firm-level isolation (20+ tables)
+  [OK] security-hardening.sql migration comprehensive
+  [OK] Global search scoped by firm_id
+  [OK] Dashboard API scoped by firm_id
+  [OK] Client queries scoped by created_by/firm_id
+  [OK] Case queries scoped by created_by/assigned_to
+
+NEEDS WORK:
+  [P1] Some query functions lack firm_id at app layer
+       getHearings(), getDocuments() rely solely on RLS
+       Defense-in-depth suggests app-level filtering too
+
+  [P2] court_cause_lists uses broader auth-only policy
+       Less strict than other tables
+
+
+========================================
+3. BILLING & SUBSCRIPTIONS
+========================================
+
+STATUS: MOSTLY READY
+
+READY:
+  [OK] Razorpay order creation API
+  [OK] Payment verification with timingSafeEqual
+  [OK] Subscription creation via Razorpay
+  [OK] Webhook with signature verification
+  [OK] Plan change/upgrade API
+  [OK] 5 tiers: Free, Starter, Professional, Firm, Enterprise
+  [OK] Case/user/storage limits enforced
+  [OK] Usage stats dashboard
+  [OK] Trial status checking and expiration calculation
+  [OK] Trial lifecycle emails (start, expiring, expired)
+  [OK] Payment failure email template exists
+
+NEEDS WORK:
+  [P0] No cron job calls expireTrials() automatically
+       Function exists but nothing triggers it
+       Trials will never expire without manual intervention
+
+  [P1] Payment failure email not sent on webhook halt
+       Webhook sets status to past_due but doesn't send email
+
+  [P1] No per-plan AI query quota enforcement
+       max_ai_queries defined but not checked in AI routes
+
+
+========================================
+4. SECURITY
+========================================
+
+STATUS: NEEDS WORK
+
+READY:
+  [OK] All API routes check supabase.auth.getUser()
+  [OK] CSRF protection on subscription routes
+  [OK] .env files in .gitignore
+  [OK] Razorpay/Supabase/AI keys from env vars
+  [OK] Zod validation schemas for major entities
+  [OK] Indian-specific validation (GSTIN, PAN, Aadhaar, phone)
+  [OK] Supabase client parameterized queries (no SQL injection)
+  [OK] Rate limiting on auth, login, AI, team invite routes
+
+BLOCKERS:
+  [P0] Rate limiting uses in-memory Map
+       File: src/lib/rate-limit.ts
+       Lost on Vercel serverless cold starts
+       Rate limiting is effectively non-functional in production
+
+NEEDS WORK:
+  [P1] CSRF only on 2 routes (should cover all state-changing POST)
+  [P1] CSRF secret falls back to NEXT_PUBLIC_SUPABASE_ANON_KEY (public)
+  [P1] Not all API routes use Zod validation (some manual checks)
+  [P1] /api/notifications/schedule lacks cron secret verification
+
+
+========================================
+5. PERFORMANCE
+========================================
+
+STATUS: MOSTLY READY
+
+READY:
+  [OK] Dashboard uses parallel Promise.all for queries
+  [OK] Global search uses Promise.all for 6 queries
+  [OK] Soft-delete pattern on all queries
+  [OK] Indexes on firm_id, user_id, status columns
+  [OK] count: "exact", head: true for counting queries
+  [OK] usePermissions() uses useMemo/useCallback
+  [OK] GlobalSearch uses useCallback for search function
+
+NEEDS WORK:
+  [P2] Daily digest loops firms sequentially
+  [P2] getHearings() without caseId returns unbounded results
+  [P2] Supabase client created per-component (should be singleton)
+
+
+========================================
+6. ERROR HANDLING
+========================================
+
+STATUS: MOSTLY READY
+
+READY:
+  [OK] console.error in catch blocks throughout API routes
+  [OK] Notification service logs send failures
+  [OK] AI service logs failures with context
+  [OK] Consistent { error: string } response format
+  [OK] Proper HTTP status codes (401, 403, 400, 404, 429, 500)
+  [OK] Try/catch wrappers on all API routes
+  [OK] Root error.tsx exists
+  [OK] not-found.tsx exists
+  [OK] ErrorBoundary class component exists
+  [OK] Route-level error.tsx files (settings, reports, etc.)
+
+NEEDS WORK:
+  [P1] No structured logging or error tracking (Sentry/LogRocket)
+       console.error goes nowhere in serverless
+
+
+========================================
+7. DEPLOYMENT & INFRASTRUCTURE
+========================================
+
+STATUS: NEEDS WORK
+
+READY:
+  [OK] vercel.json configured with 6 cron jobs
+  [OK] Python runtime for court API
+  [OK] CORS headers configured
+  [OK] Region set to sin1 (Singapore)
+  [OK] env.ts validates required env vars at startup
+  [OK] isRazorpayConfigured() / isAIConfigured() helpers
+  [OK] Multi-stage Dockerfile
+  [OK] docker-compose.yml
+  [OK] DEPLOYMENT.md documents most env vars
+
+BLOCKERS:
+  [P0] No .env.example at root level
+       Only court-service/.env.example exists
+       New developers have no reference for required vars
+
+NEEDS WORK:
+  [P1] DEPLOYMENT.md references OPENAI_API_KEY (should be AI_API_KEY)
+  [P1] No trial expiration cron configured
+  [P1] No health check endpoint
+
+
+========================================
+8. LEGAL & COMPLIANCE
+========================================
+
+STATUS: MOSTLY READY
+
+READY:
+  [OK] Comprehensive privacy policy (covers DPDP Act)
+  [OK] Comprehensive terms of service
+  [OK] Data ownership clause
+  [OK] Subscription/refund terms
+  [OK] TLS in transit (Supabase/HTTPS)
+  [OK] Encryption at rest (Supabase/Cloudinary)
+  [OK] Data retention policy (30 days after deletion)
+
+NEEDS WORK:
+  [P1] No user-initiated account deletion flow
+       Privacy policy promises deletion but no UI/API for it
+       DPDP Act compliance gap
+
+  [P1] No data export / account closure endpoint
+       Users cannot download their data
+
+  [P2] No application-level encryption for sensitive fields
+       GSTIN, PAN stored as plain text
+
+
+========================================
+9. USER EXPERIENCE
+========================================
+
+STATUS: READY
+
+READY:
+  [OK] Loading skeleton components
+  [OK] Route-level loading.tsx files
+  [OK] Button loading states throughout UI
+  [OK] Global search loading indicator
+  [OK] Toast notifications for success/error
+  [OK] Inline error messages in forms
+  [OK] User-friendly error page with reset button
+  [OK] AI chat returns "not configured" gracefully
+  [OK] Client-side validation with Zod
+  [OK] Password strength requirements
+  [OK] Indian validation (GSTIN, PAN, Aadhaar, phone)
+  [OK] Required field indicators
+  [OK] ConfirmDialog with destructive variant
+  [OK] Undo toast for soft deletes
+
+
+========================================
+10. SAAS-SPECIFIC FEATURES
+========================================
+
+STATUS: MOSTLY READY
+
+READY:
+  [OK] Landing page with hero, features, testimonials, CTA
+  [OK] 5-tier pricing with monthly/annual toggle
+  [OK] Feature comparison table
+  [OK] Onboarding flow (owner vs team member)
+  [OK] Firm setup form for owners
+  [OK] Invite code flow for employees
+  [OK] Resend integration for emails
+  [OK] Trial lifecycle emails
+  [OK] Daily digest email with HTML
+  [OK] Client portal with separate auth
+  [OK] Portal pages: dashboard, cases, documents, payments, messages
+  [OK] Client portal scoped by firm_id
+
+NEEDS WORK:
+  [P1] Push notifications not implemented (stub only)
+  [P1] No in-app notification center (only email/SMS/WhatsApp)
+  [P2] No webhook for third-party integrations
+  [P2] No API key management for enterprise users
+
+
+========================================
+FINAL SCORECARD
+========================================
+
+Category                        Score   Status
+------------------------------  -----   ------
+Authentication & Authorization  70%     NEEDS WORK
+Multi-Tenancy & Data Isolation  90%     MOSTLY READY
+Billing & Subscriptions         85%     MOSTLY READY
+Security                        75%     NEEDS WORK
+Performance                     85%     MOSTLY READY
+Error Handling                  90%     MOSTLY READY
+Deployment & Infrastructure     80%     NEEDS WORK
+Legal & Compliance              80%     MOSTLY READY
+User Experience                 95%     READY
+SaaS Features                   85%     MOSTLY READY
+
+OVERALL: 82% - NOT READY FOR LAUNCH
+
+
+========================================
+P0 BLOCKERS TO FIX BEFORE LAUNCH
+========================================
+
+1. Enable email verification (set email_confirm: false in Supabase dashboard,
+   or create email confirmation flow)
+
+2. Create /reset-password page
+
+3. Remove /setup page and seed script hardcoded credentials
+
+4. Add .env.example at root level
+
+5. Fix rate limiting (use Redis or Supabase for state)
+
+6. Add trial expiration cron job
+
+========================================
+END OF REPORT
+========================================

@@ -1,0 +1,1120 @@
+{
+  "2": {
+    "name": "Andhra Pradesh",
+    "districts": {
+      "1": "Anantapur",
+      "2": "Chittoor",
+      "3": "East Godavari",
+      "4": "Guntur",
+      "5": "Kadapa",
+      "6": "Krishna",
+      "7": "Kurnool",
+      "8": "Nellore",
+      "9": "Prakasam",
+      "10": "Srikakulam",
+      "11": "Visakhapatnam",
+      "12": "Vizianagaram",
+      "13": "West Godavari",
+      "14": "Hyderabad",
+      "15": "Rangareddy",
+      "16": "Mahabubnagar",
+      "17": "Medak",
+      "18": "Nalgonda",
+      "19": "Warangal",
+      "20": "Karimnagar",
+      "21": "Adilabad",
+      "22": "Khammam",
+      "23": "Nizamabad",
+      "24": "Mahabubabad",
+      "25": "Jayashankar Bhupalpally",
+      "26": "Jangaon",
+      "27": "Mancherial",
+      "28": "Mulugu",
+      "29": "Nagarkurnool",
+      "30": "Peddapalli",
+      "31": "Siddipet",
+      "32": "Suryapet",
+      "33": "Vikarabad",
+      "34": "Wanaparthy",
+      "35": "Yadadri Bhuvanagiri"
+    },
+    "complexes": {
+      "1": ["Anantapur", "Hindupur", "Kadiri", "Penukonda", "Rayadurg"],
+      "2": ["Chittoor", "Tirupati", "Puttur", "Srikalahasti", "Palamaner"],
+      "3": ["Kakinada", "Rajahmundry", "Amalapuram", "Peddapuram"],
+      "4": ["Guntur", "Vijayawada", "Tenali", "Narasaraopet", "Bapatla"],
+      "5": ["Kadapa", "Proddatur", "Rajampet", "Jammalamadugu"],
+      "6": ["Machilipatnam", "Gudivada", "Vijayawada", "Nuzvid"],
+      "7": ["Kurnool", "Nandyal", "Adoni", "Yemmiganur"],
+      "8": ["Nellore", "Gudur", "Kavali", "Atmakur"],
+      "9": ["Ongole", "Chirala", "Kandukur", "Giddalur"],
+      "10": ["Srikakulam", "Vizianagaram", "Parvathipuram", "Palasa"],
+      "11": ["Visakhapatnam", "Anakapalli", "Pendurthi", "Gajuwaka"],
+      "12": ["Vizianagaram", "Bobbili", "Parvathipuram", "Salur"],
+      "13": ["Narsapur", "Tadepalligudem", "Eluru", "Bhimavaram"],
+      "14": ["Hyderabad", "Secunderabad", "Medchal"],
+      "15": ["Rangareddy", "Lingampally", "Uppal"],
+      "16": ["Mahabubnagar", "Wanaparthy", "Jadcherla"],
+      "17": ["Sangareddy", "Medak", "Zaheerabad"],
+      "18": ["Nalgonda", "Miryalaguda", "Devarakonda"],
+      "19": ["Warangal", "Hanamkonda", "Kazipet"],
+      "20": ["Karimnagar", "Siddipet", "Jagtial"],
+      "21": ["Adilabad", "Mancherial", "Nirmal"],
+      "22": ["Khammam", "Bhadrachalam", "Kothagudem"],
+      "23": ["Nizamabad", "Bodhan", "Banswada"],
+      "24": ["Mahabubabad", "Dornakal"],
+      "25": ["Jayashankar Bhupalpally"],
+      "26": ["Jangaon"],
+      "27": ["Mancherial", "Peddapalli"],
+      "28": ["Mulugu"],
+      "29": ["Nagarkurnool", "Achampet"],
+      "30": ["Peddapalli", "Mancherial"],
+      "31": ["Siddipet"],
+      "32": ["Suryapet", "Huzurnagar"],
+      "33": ["Vikarabad", "Tandur"],
+      "34": ["Wanaparthy"],
+      "35": ["Yadadri Bhuvanagiri", "Bhongir"]
+    }
+  },
+  "7": {
+    "name": "Delhi",
+    "districts": {
+      "1": "Central Delhi",
+      "2": "East Delhi",
+      "3": "New Delhi",
+      "4": "North Delhi",
+      "5": "North East Delhi",
+      "6": "North West Delhi",
+      "7": "South Delhi",
+      "8": "South East Delhi",
+      "9": "South West Delhi",
+      "10": "West Delhi",
+      "11": "Shahdara",
+      "12": "Outer Delhi"
+    },
+    "complexes": {
+      "1": ["Tis Hazari Courts"],
+      "2": ["Karkardooma Courts"],
+      "3": ["Patiala House Courts"],
+      "4": ["Rohini Courts"],
+      "5": ["Karkardooma Courts"],
+      "6": ["Rohini Courts"],
+      "7": ["Saket Courts"],
+      "8": ["Karkardooma Courts"],
+      "9": ["Saket Courts", "Dwarka Courts"],
+      "10": ["Rohini Courts"],
+      "11": ["Karkardooma Courts"],
+      "12": ["Rohini Courts"]
+    }
+  },
+  "8": {
+    "name": "Bihar",
+    "districts": {
+      "1": "Patna",
+      "2": "Gaya",
+      "3": "Nalanda",
+      "4": "Vaishali",
+      "5": "Muzaffarpur",
+      "6": "Darbhanga",
+      "7": "Samastipur",
+      "8": "Bhagalpur",
+      "9": "Munger",
+      "10": "Begusarai",
+      "11": "Katihar",
+      "12": "Purnia",
+      "13": "Kishanganj",
+      "14": "Araria",
+      "15": "Supaul",
+      "16": "Saharsa",
+      "17": "Madhepura",
+      "18": "Sheohar",
+      "19": "Sitamarhi",
+      "20": "Madhubani",
+      "21": "Arwal",
+      "22": "Jehanabad",
+      "23": "Aurangabad",
+      "24": "Nawada",
+      "25": "Gopalganj",
+      "26": "Siwan",
+      "27": "Saran",
+      "28": "East Champaran",
+      "29": "West Champaran",
+      "30": "Buxar",
+      "31": "Bhojpur",
+      "32": "Rohtas",
+      "33": "Kaimur",
+      "34": "Lakhisarai",
+      "35": "Sheikhpura",
+      "36": "Banka"
+    },
+    "complexes": {
+      "1": ["Patna Civil Court", "Patna District Court"],
+      "2": ["Gaya District Court"],
+      "3": ["Nalanda District Court"],
+      "4": ["Vaishali District Court"],
+      "5": ["Muzaffarpur District Court"],
+      "6": ["Darbhanga District Court"],
+      "7": ["Samastipur District Court"],
+      "8": ["Bhagalpur District Court"],
+      "9": ["Munger District Court"],
+      "10": ["Begusarai District Court"]
+    }
+  },
+  "9": {
+    "name": "Rajasthan",
+    "districts": {
+      "1": "Jaipur",
+      "2": "Jodhpur",
+      "3": "Udaipur",
+      "4": "Kota",
+      "5": "Ajmer",
+      "6": "Bikaner",
+      "7": "Alwar",
+      "8": "Bhilwara",
+      "9": "Sikar",
+      "10": "Pali",
+      "11": "Nagaur",
+      "12": "Tonk",
+      "13": "Baran",
+      "14": "Dausa",
+      "15": "Chittorgarh",
+      "16": "Pratapgarh",
+      "17": "Banswara",
+      "18": "Dungarpur",
+      "19": "Jhalawar",
+      "20": "Barmer",
+      "21": "Jaisalmer",
+      "22": "Jalore",
+      "23": "Sirohi",
+      "24": "Hanumangarh",
+      "25": "Ganganagar",
+      "26": "Churu",
+      "27": "Jhunjhunu",
+      "28": "Karauli",
+      "29": "Sawai Madhopur",
+      "30": "Dholpur",
+      "31": "Bundi"
+    },
+    "complexes": {
+      "1": ["Jaipur District & Sessions Court", "Jaipur Metropolitan Court"],
+      "2": ["Jodhpur District Court"],
+      "3": ["Udaipur District Court"],
+      "4": ["Kota District Court"],
+      "5": ["Ajmer District Court"],
+      "6": ["Bikaner District Court"]
+    }
+  },
+  "11": {
+    "name": "Gujarat",
+    "districts": {
+      "1": "Ahmedabad",
+      "2": "Surat",
+      "3": "Vadodara",
+      "4": "Rajkot",
+      "5": "Gandhinagar",
+      "6": "Bhavnagar",
+      "7": "Jamnagar",
+      "8": "Junagadh",
+      "9": "Kutch",
+      "10": "Banaskantha",
+      "11": "Patan",
+      "12": "Mehsana",
+      "13": "Sabarkantha",
+      "14": "Aravalli",
+      "15": "Mahisagar",
+      "16": "Panchmahal",
+      "17": "Dahod",
+      "18": "Chhota Udepur",
+      "19": "Narmada",
+      "20": "Tapi",
+      "21": "Dangs",
+      "22": "Navsari",
+      "23": "Valsad",
+      "24": "Amreli",
+      "25": "Botad",
+      "26": "Morbi",
+      "27": "Surendranagar",
+      "28": "Gir Somnath"
+    },
+    "complexes": {
+      "1": ["Ahmedabad City Civil Court", "Ahmedabad Rural Court"],
+      "2": ["Surat District & Sessions Court"],
+      "3": ["Vadodara District Court"],
+      "4": ["Rajkot District Court"],
+      "5": ["Gandhinagar District Court"]
+    }
+  },
+  "13": {
+    "name": "Uttar Pradesh",
+    "districts": {
+      "1": "Lucknow",
+      "2": "Agra",
+      "3": "Allahabad (Prayagraj)",
+      "4": "Varanasi",
+      "5": "Meerut",
+      "6": "Bareilly",
+      "7": "Kanpur Nagar",
+      "8": "Kanpur Dehat",
+      "9": "Ghaziabad",
+      "10": "Noida (Gautam Buddh Nagar)",
+      "11": "Aligarh",
+      "12": "Moradabad",
+      "13": "Jhansi",
+      "14": "Gorakhpur",
+      "15": "Azamgarh",
+      "16": "Sultanpur",
+      "17": "Jaunpur",
+      "18": "Mirzapur",
+      "19": "Banda",
+      "20": "Fatehpur",
+      "21": "Raebareli",
+      "22": "Amethi",
+      "23": "Sitapur",
+      "24": "Hardoi",
+      "25": "Unnao",
+      "26": "Kannauj",
+      "27": "Etawah",
+      "28": "Farrukhabad",
+      "29": "Mainpuri",
+      "30": "Budaun",
+      "31": "Bijnor",
+      "32": "Rampur",
+      "33": "Shahjahanpur",
+      "34": "Pilibhit",
+      "35": "Lakhimpur Kheri",
+      "36": "Bahraich",
+      "37": "Gonda",
+      "38": "Ayodhya",
+      "39": "Barabanki",
+      "40": "Balrampur",
+      "41": "Basti",
+      "42": "Sant Kabir Nagar",
+      "43": "Maharajganj",
+      "44": "Padrauna (Kushinagar)",
+      "45": "Deoria",
+      "46": "Mau",
+      "47": "Ballia",
+      "48": "Chandauli",
+      "49": "Varanasi",
+      "50": "Sonbhadra",
+      "51": "Mathura",
+      "52": "Hathras",
+      "53": "Firozabad",
+      "54": "Etah",
+      "55": "Kasganj",
+      "56": "Auraiya",
+      "57": "Jalaun",
+      "58": "Lalitpur",
+      "59": "Mahoba",
+      "60": "Hamirpur",
+      "61": "Chitrakoot",
+      "62": "Pratapgarh",
+      "63": "Ambedkar Nagar",
+      "64": "Shravasti",
+      "65": "Siddharthnagar",
+      "66": "Bhadohi"
+    },
+    "complexes": {
+      "1": ["Lucknow District Court", "Lucknow Civil Court"],
+      "2": ["Agra District Court"],
+      "3": ["Prayagraj District Court"],
+      "4": ["Varanasi District Court"],
+      "5": ["Meerut District Court"],
+      "6": ["Bareilly District Court"],
+      "7": ["Kanpur District Court"],
+      "9": ["Ghaziabad District Court"],
+      "10": ["Gautam Buddh Nagar District Court"]
+    }
+  },
+  "16": {
+    "name": "Karnataka",
+    "districts": {
+      "1": "Bangalore Urban",
+      "2": "Bangalore Rural",
+      "3": "Mysore",
+      "4": "Mangalore (Dakshina Kannada)",
+      "5": "Belgaum (Belagavi)",
+      "6": "Gulbarga (Kalaburagi)",
+      "7": "Bidar",
+      "8": "Bijapur (Vijayapura)",
+      "9": "Dharwad",
+      "10": "Haveri",
+      "11": "Gadag",
+      "12": "Uttara Kannada",
+      "13": "Shimoga (Shivamogga)",
+      "14": "Chikmagalur",
+      "15": "Hassan",
+      "16": "Tumkur (Tumakuru)",
+      "17": "Kolar",
+      "18": "Chikkaballapur",
+      "19": "Ramanagara",
+      "20": "Mandya",
+      "21": "Davangere",
+      "22": "Chitradurga",
+      "23": "Bellary (Ballari)",
+      "24": "Raichur",
+      "25": "Koppal",
+      "26": "Yadgir",
+      "27": "Bagalkot"
+    },
+    "complexes": {
+      "1": ["Bangalore Civil Court", "Bangalore Metropolitan Court", "Additional City Civil Court"],
+      "3": ["Mysore District Court"],
+      "4": ["Mangalore District Court"],
+      "5": ["Belgaum District Court"]
+    }
+  },
+  "17": {
+    "name": "Kerala",
+    "districts": {
+      "1": "Thiruvananthapuram",
+      "2": "Kollam",
+      "3": "Pathanamthitta",
+      "4": "Alappuzha",
+      "5": "Kottayam",
+      "6": "Idukki",
+      "7": "Ernakulam",
+      "8": "Thrissur",
+      "9": "Palakkad",
+      "10": "Malappuram",
+      "11": "Kozhikode",
+      "12": "Wayanad",
+      "13": "Kannur",
+      "14": "Kasaragod"
+    },
+    "complexes": {
+      "1": ["Thiruvananthapuram District Court"],
+      "2": ["Kollam District Court"],
+      "4": ["Alappuzha District Court"],
+      "5": ["Kottayam District Court"],
+      "7": ["Ernakulam District Court"],
+      "8": ["Thrissur District Court"],
+      "9": ["Palakkad District Court"],
+      "10": ["Malappuram District Court"],
+      "11": ["Kozhikode District Court"]
+    }
+  },
+  "21": {
+    "name": "Maharashtra",
+    "districts": {
+      "1": "Mumbai City",
+      "2": "Mumbai Suburban",
+      "3": "Thane",
+      "4": "Navi Mumbai",
+      "5": "Pune",
+      "6": "Pimpri-Chinchwad",
+      "7": "Nagpur",
+      "8": "Nashik",
+      "9": "Aurangabad (Chhatrapati Sambhajinagar)",
+      "10": "Solapur",
+      "11": "Kolhapur",
+      "12": "Sangli",
+      "13": "Satara",
+      "14": "Ratnagiri",
+      "15": "Sindhudurg",
+      "16": "Amravati",
+      "17": "Yavatmal",
+      "18": "Akola",
+      "19": "Washim",
+      "20": "Buldhana",
+      "21": "Jalgaon",
+      "22": "Dhule",
+      "23": "Nandurbar",
+      "24": "Ahmednagar",
+      "25": "Parbhani",
+      "26": "Hingoli",
+      "27": "Beed",
+      "28": "Osmanabad (Dharashiv)",
+      "29": "Latur",
+      "30": "Nanded",
+      "31": "Chandrapur",
+      "32": "Gadchiroli",
+      "33": "Wardha",
+      "34": "Bhandara",
+      "35": "Gondia"
+    },
+    "complexes": {
+      "1": ["Mumbai City Civil Court", "Esplanade Mansion Court"],
+      "2": ["Mumbai Suburban Court (Bandra)", "Andheri Court"],
+      "3": ["Thane District Court"],
+      "5": ["Pune District Court", "Pune Civil Court"],
+      "7": ["Nagpur District Court"],
+      "8": ["Nashik District Court"]
+    }
+  },
+  "27": {
+    "name": "Madhya Pradesh",
+    "districts": {
+      "1": "Bhopal",
+      "2": "Indore",
+      "3": "Gwalior",
+      "4": "Jabalpur",
+      "5": "Ujjain",
+      "6": "Sagar",
+      "7": "Satna",
+      "8": "Rewa",
+      "9": "Katni",
+      "10": "Jabalpur",
+      "11": "Narsinghpur",
+      "12": "Dindori",
+      "13": "Mandla",
+      "14": "Chhindwara",
+      "15": "Balaghat",
+      "16": "Seoni",
+      "17": "Betul",
+      "18": "Harda",
+      "19": "Hoshangabad (Narmadapuram)",
+      "20": "Raisen",
+      "21": "Vidisha",
+      "22": "Sehore",
+      "23": "Rajgarh",
+      "24": "Shajapur",
+      "25": "Dewas",
+      "26": "Shajapur",
+      "27": "Mandsaur",
+      "28": "Neemuch",
+      "29": "Ratlam",
+      "30": "Barwani",
+      "31": "Khargone",
+      "32": "Alirajpur",
+      "33": "Jhabua",
+      "34": "Dhar",
+      "35": "Indore",
+      "36": "Burhanpur",
+      "37": "Khandwa",
+      "38": "Chhatarpur",
+      "39": "Damoh",
+      "40": "Panna",
+      "41": "Tikamgarh",
+      "42": "Ashoknagar",
+      "43": "Guna",
+      "44": "Shivpuri",
+      "45": "Datia",
+      "46": "Morena",
+      "47": "Bhind",
+      "48": "Sheopur"
+    },
+    "complexes": {
+      "1": ["Bhopal District Court"],
+      "2": ["Indore District Court"],
+      "3": ["Gwalior District Court"],
+      "4": ["Jabalpur District Court"],
+      "5": ["Ujjain District Court"]
+    }
+  },
+  "29": {
+    "name": "Telangana",
+    "districts": {
+      "1": "Hyderabad",
+      "2": "Rangareddy",
+      "3": "Medchal-Malkajgiri",
+      "4": "Sangareddy",
+      "5": "Nalgonda",
+      "6": "Warangal Urban",
+      "7": "Warangal Rural",
+      "8": "Karimnagar",
+      "9": "Khammam",
+      "10": "Nizamabad",
+      "11": "Adilabad",
+      "12": "Mahabubnagar",
+      "13": "Nagarkurnool",
+      "14": "Wanaparthy",
+      "15": "Jagtial",
+      "16": "Peddapalli",
+      "17": "Mancherial",
+      "18": "Siddipet",
+      "19": "Suryapet",
+      "20": "Mahabubabad",
+      "21": "Jayashankar Bhupalpally",
+      "22": "Jangaon",
+      "23": "Mulugu",
+      "24": "Bhadradri Kothagudem",
+      "25": "Vikarabad",
+      "26": "Medak",
+      "27": "Kamareddy",
+      "28": "Yadadri Bhuvanagiri",
+      "29": "Hajipurabad"
+    },
+    "complexes": {
+      "1": ["Hyderabad City Civil Court", "Hyderabad Metropolitan Court"],
+      "2": ["Rangareddy District Court"],
+      "3": ["Medchal District Court"],
+      "4": ["Sangareddy District Court"],
+      "5": ["Nalgonda District Court"],
+      "6": ["Warangal District Court"],
+      "8": ["Karimnagar District Court"],
+      "9": ["Khammam District Court"]
+    }
+  },
+  "30": {
+    "name": "Tamil Nadu",
+    "districts": {
+      "1": "Chennai",
+      "2": "Coimbatore",
+      "3": "Madurai",
+      "4": "Tiruchirappalli",
+      "5": "Salem",
+      "6": "Tirunelveli",
+      "7": "Erode",
+      "8": "Vellore",
+      "9": "Thanjavur",
+      "10": "Dindigul",
+      "11": "Kancheepuram",
+      "12": "Tiruvallur",
+      "13": "Cuddalore",
+      "14": "Kumbakonam",
+      "15": "Namakkal",
+      "16": "Karur",
+      "17": "Nilgiris",
+      "18": "Madurai",
+      "19": "Theni",
+      "20": "Virudhunagar",
+      "21": "Ramanathapuram",
+      "22": "Sivaganga",
+      "23": "Tiruppur",
+      "24": "Krishnagiri",
+      "25": "Dharmapuri",
+      "26": "Villupuram",
+      "27": "Tiruvannamalai",
+      "28": "Perambalur",
+      "29": "Ariyalur",
+      "30": "Nagapattinam",
+      "31": "Thiruvarur",
+      "32": "Pudukkottai",
+      "33": "Ramnad"
+    },
+    "complexes": {
+      "1": ["Chennai City Civil Court", "Chennai Metropolitan Court"],
+      "2": ["Coimbatore District Court"],
+      "3": ["Madurai District Court"],
+      "4": ["Tiruchirappalli District Court"],
+      "5": ["Salem District Court"]
+    }
+  },
+  "31": {
+    "name": "Puducherry",
+    "districts": {
+      "1": "Puducherry",
+      "2": "Karaikal",
+      "3": "Mahe",
+      "4": "Yanam"
+    },
+    "complexes": {
+      "1": ["Puducherry District Court"],
+      "2": ["Karaikal District Court"]
+    }
+  },
+  "34": {
+    "name": "Tripura",
+    "districts": {
+      "1": "West Tripura",
+      "2": "South Tripura",
+      "3": "North Tripura",
+      "4": "Dhalai"
+    },
+    "complexes": {
+      "1": ["Agartala District Court"]
+    }
+  },
+  "33": {
+    "name": "Jharkhand",
+    "districts": {
+      "1": "Ranchi",
+      "2": "East Singhbhum (Jamshedpur)",
+      "3": "West Singhbhum",
+      "4": "Dhanbad",
+      "5": "Hazaribag",
+      "6": "Giridih",
+      "7": "Deoghar",
+      "8": "Godda",
+      "9": "Sahebganj",
+      "10": "Pakur",
+      "11": "Dumka",
+      "12": "Jamtara",
+      "13": "Bokaro",
+      "14": "Chatra",
+      "15": "Latehar",
+      "16": "Lohardaga",
+      "17": "Gumla",
+      "18": "Simdega",
+      "19": "Khunti",
+      "20": "Seraikela-Kharsawan",
+      "21": "Ramgarh"
+    },
+    "complexes": {
+      "1": ["Ranchi District Court"],
+      "2": ["Jamshedpur District Court"],
+      "4": ["Dhanbad District Court"],
+      "5": ["Hazaribag District Court"]
+    }
+  },
+  "36": {
+    "name": "Arunachal Pradesh",
+    "districts": {
+      "1": "Itanagar Capital Complex",
+      "2": "Tawang",
+      "3": "West Kameng",
+      "4": "East Kameng",
+      "5": "Papum Pare",
+      "6": "Lower Subansiri",
+      "7": "Upper Subansiri",
+      "8": "West Siang",
+      "9": "East Siang",
+      "10": "Upper Siang",
+      "11": "Lower Dibang Valley",
+      "12": "Upper Dibang Valley",
+      "13": "Lohit",
+      "14": "Namsai",
+      "15": "Changlang",
+      "16": "Tirap",
+      "17": "Longding",
+      "18": "Lower Siang",
+      "19": "Keyi Panyor",
+      "20": "Bichom",
+      "21": "Kra Daadi",
+      "22": "Pakke Kessang"
+    },
+    "complexes": {
+      "1": ["Itanagar District Court"]
+    }
+  },
+  "28": {
+    "name": "Andaman and Nicobar Islands",
+    "districts": {
+      "1": "South Andaman",
+      "2": "North and Middle Andaman"
+    },
+    "complexes": {
+      "1": ["Port Blair District Court"]
+    }
+  },
+  "35": {
+    "name": "Lakshadweep",
+    "districts": {
+      "1": "Lakshadweep"
+    },
+    "complexes": {
+      "1": ["Kavaratti District Court"]
+    }
+  },
+  "32": {
+    "name": "Chandigarh",
+    "districts": {
+      "1": "Chandigarh"
+    },
+    "complexes": {
+      "1": ["District and Sessions Court Chandigarh"]
+    }
+  },
+  "37": {
+    "name": "Goa",
+    "districts": {
+      "1": "North Goa",
+      "2": "South Goa"
+    },
+    "complexes": {
+      "1": ["Panaji Court Complex"],
+      "2": ["Margao Court Complex"]
+    }
+  },
+  "5": {
+    "name": "Himachal Pradesh",
+    "districts": {
+      "1": "Shimla",
+      "2": "Kangra",
+      "3": "Mandi",
+      "4": "Kullu",
+      "5": "Hamirpur",
+      "6": "Bilaspur",
+      "7": "Solan",
+      "8": "Sirmaur",
+      "9": "Chamba",
+      "10": "Kinnaur",
+      "11": "Lahaul and Spiti",
+      "12": "Una"
+    },
+    "complexes": {
+      "1": ["Shimla District Court"],
+      "2": ["Kangra District Court (Dharamshala)"],
+      "3": ["Mandi District Court"]
+    }
+  },
+  "10": {
+    "name": "Haryana",
+    "districts": {
+      "1": "Gurugram",
+      "2": "Faridabad",
+      "3": "Panchkula",
+      "4": "Ambala",
+      "5": "Karnal",
+      "6": "Panipat",
+      "7": "Sonipat",
+      "8": "Rohtak",
+      "9": "Hisar",
+      "10": "Jhajjar",
+      "11": "Bhiwani",
+      "12": "Mahendragarh",
+      "13": "Jind",
+      "14": "Kaithal",
+      "15": "Kurukshetra",
+      "16": "Sirsa",
+      "17": "Fatehabad",
+      "18": "Palwal",
+      "19": "Mewat (Nuh)",
+      "20": "Rewari"
+    },
+    "complexes": {
+      "1": ["Gurugram District Court"],
+      "2": ["Faridabad District Court"],
+      "3": ["Panchkula District Court"]
+    }
+  },
+  "12": {
+    "name": "Jammu and Kashmir",
+    "districts": {
+      "1": "Srinagar",
+      "2": "Jammu",
+      "3": "Anantnag",
+      "4": "Baramulla",
+      "5": "Budgam",
+      "6": "Pulwama",
+      "7": "Shopian",
+      "8": "Kulgam",
+      "9": "Kupwara",
+      "10": "Bandipora",
+      "11": "Ganderbal",
+      "12": "Doda",
+      "13": "Kishtwar",
+      "14": "Ramban",
+      "15": "Reasi",
+      "16": "Udhampur",
+      "17": "Samba",
+      "18": "Kathua",
+      "19": "Poonch",
+      "20": "Rajouri",
+      "21": "Kulgam",
+      "22": "Samba"
+    },
+    "complexes": {
+      "1": ["Srinagar District Court"],
+      "2": ["Jammu District Court"]
+    }
+  },
+  "38": {
+    "name": "Ladakh",
+    "districts": {
+      "1": "Leh",
+      "2": "Kargil"
+    },
+    "complexes": {
+      "1": ["Leh District Court"],
+      "2": ["Kargil District Court"]
+    }
+  },
+  "40": {
+    "name": "Dadra and Nagar Haveli and Daman and Diu",
+    "districts": {
+      "1": "Dadra and Nagar Haveli",
+      "2": "Daman",
+      "3": "Diu"
+    },
+    "complexes": {
+      "1": ["Silvassa District Court"],
+      "2": ["Daman District Court"],
+      "3": ["Diu District Court"]
+    }
+  },
+  "15": {
+    "name": "Uttarakhand",
+    "districts": {
+      "1": "Dehradun",
+      "2": "Haridwar",
+      "3": "Nainital",
+      "4": "Almora",
+      "5": "Pithoragarh",
+      "6": "Udham Singh Nagar",
+      "7": "Tehri Garhwal",
+      "8": "Pauri Garhwal",
+      "9": "Chamoli",
+      "10": "Uttarkashi",
+      "11": "Champawat",
+      "12": "Rudraprayag"
+    },
+    "complexes": {
+      "1": ["Dehradun District Court"],
+      "2": ["Haridwar District Court"],
+      "3": ["Nainital District Court"]
+    }
+  },
+  "18": {
+    "name": "Chhattisgarh",
+    "districts": {
+      "1": "Raipur",
+      "2": "Bilaspur",
+      "3": "Durg",
+      "4": "Bhilai",
+      "5": "Korba",
+      "6": "Jagdalpur",
+      "7": "Rajnandgaon",
+      "8": "Dhamtari",
+      "9": "Raigarh",
+      "10": "Jashpur",
+      "11": "Surguja (Ambikapur)",
+      "12": "Janjgir-Champa",
+      "13": "Kabirdham (Kawardha)",
+      "14": "Mahasamund",
+      "15": "Kanker",
+      "16": "Bemetara",
+      "17": "Balod",
+      "18": "Baloda Bazar",
+      "19": "Gariaband",
+      "20": "Kondagaon",
+      "21": "Bastar",
+      "22": "Dantewada",
+      "23": "Bijapur",
+      "24": "Narayanpur"
+    },
+    "complexes": {
+      "1": ["Raipur District Court"],
+      "2": ["Bilaspur District Court"],
+      "3": ["Durg District Court"]
+    }
+  },
+  "14": {
+    "name": "Jammu and Kashmir",
+    "districts": {
+      "1": "Srinagar",
+      "2": "Jammu"
+    },
+    "complexes": {
+      "1": ["Srinagar District Court"],
+      "2": ["Jammu District Court"]
+    }
+  },
+  "19": {
+    "name": "Lakshadweep",
+    "districts": {
+      "1": "Lakshadweep"
+    },
+    "complexes": {
+      "1": ["Kavaratti District Court"]
+    }
+  },
+  "20": {
+    "name": "Tripura",
+    "districts": {
+      "1": "West Tripura",
+      "2": "South Tripura",
+      "3": "North Tripura",
+      "4": "Dhalai"
+    },
+    "complexes": {
+      "1": ["Agartala District Court"]
+    }
+  },
+  "22": {
+    "name": "Manipur",
+    "districts": {
+      "1": "Imphal West",
+      "2": "Imphal East",
+      "3": "Thoubal",
+      "4": "Bishnupur",
+      "5": "Churachandpur",
+      "6": "Chandel",
+      "7": "Senapati",
+      "8": "Ukhrul",
+      "9": "Tamenglong",
+      "10": "Jiribam",
+      "11": "Kakching",
+      "12": "Noney",
+      "13": "Pherzawl",
+      "14": "Tengnoupal",
+      "15": "Kamjong"
+    },
+    "complexes": {
+      "1": ["Imphal District Court"]
+    }
+  },
+  "23": {
+    "name": "Meghalaya",
+    "districts": {
+      "1": "East Khasi Hills",
+      "2": "West Khasi Hills",
+      "3": "South West Khasi Hills",
+      "4": "East Jaintia Hills",
+      "5": "West Jaintia Hills",
+      "6": "East Garo Hills",
+      "7": "West Garo Hills",
+      "8": "South West Garo Hills",
+      "9": "South Garo Hills",
+      "10": "North Garo Hills",
+      "11": "Ri-Bhoi",
+      "12": "Eastern West Khasi Hills"
+    },
+    "complexes": {
+      "1": ["Shillong District Court"]
+    }
+  },
+  "24": {
+    "name": "Mizoram",
+    "districts": {
+      "1": "Aizawl",
+      "2": "Lunglei",
+      "3": "Siaha",
+      "4": "Champhai",
+      "5": "Kolasib",
+      "6": "Lawngtlai",
+      "7": "Saitual",
+      "8": "Khawzawl",
+      "9": "Hnahthial"
+    },
+    "complexes": {
+      "1": ["Aizawl District Court"]
+    }
+  },
+  "25": {
+    "name": "Manipur",
+    "districts": {
+      "1": "Imphal West",
+      "2": "Imphal East"
+    },
+    "complexes": {
+      "1": ["Imphal District Court"]
+    }
+  },
+  "26": {
+    "name": "Nagaland",
+    "districts": {
+      "1": "Kohima",
+      "2": "Mokokchung",
+      "3": "Tuensang",
+      "4": "Mon",
+      "5": "Wokha",
+      "6": "Zunheboto",
+      "7": "Dimapur",
+      "8": "Phek",
+      "9": "Longleng",
+      "10": "Peren",
+      "11": "Kiphire"
+    },
+    "complexes": {
+      "1": ["Kohima District Court"],
+      "7": ["Dimapur District Court"]
+    }
+  },
+  "39": {
+    "name": "Nagaland",
+    "districts": {
+      "1": "Kohima",
+      "2": "Mokokchung"
+    },
+    "complexes": {
+      "1": ["Kohima District Court"]
+    }
+  },
+  "6": {
+    "name": "Assam",
+    "districts": {
+      "1": "Kamrup (Metro)",
+      "2": "Kamrup (Rural)",
+      "3": "Cachar",
+      "4": "Dibrugarh",
+      "5": "Jorhat",
+      "6": "Sivasagar",
+      "7": "Golaghat",
+      "8": "Nagaon",
+      "9": "Morigaon",
+      "10": "Sonitpur",
+      "11": "Lakhimpur",
+      "12": "Dhemaji",
+      "13": "Tinsukia",
+      "14": "Dibrugarh",
+      "15": "Hailakandi",
+      "16": "Karimganj",
+      "17": "Silchar",
+      "18": "Bongaigaon",
+      "19": "Barpeta",
+      "20": "Nalbari",
+      "21": "Darrang",
+      "22": "Mangaldoi",
+      "23": "Goalpara",
+      "24": "Kokrajhar",
+      "25": "Chirang",
+      "26": "Dhubri",
+      "27": "North Cachar Hills (Dima Hasao)",
+      "28": "Karbi Anglong",
+      "29": "Hojai"
+    },
+    "complexes": {
+      "1": ["Guwahati City Civil Court"],
+      "3": ["Silchar District Court"],
+      "4": ["Dibrugarh District Court"],
+      "5": ["Jorhat District Court"]
+    }
+  },
+  "3": {
+    "name": "Karnataka",
+    "districts": {
+      "1": "Bangalore Urban",
+      "2": "Mysore",
+      "3": "Mangalore",
+      "4": "Belgaum"
+    },
+    "complexes": {
+      "1": ["Bangalore Civil Court"],
+      "2": ["Mysore District Court"],
+      "3": ["Mangalore District Court"]
+    }
+  },
+  "4": {
+    "name": "Kerala",
+    "districts": {
+      "1": "Thiruvananthapuram",
+      "2": "Kollam",
+      "3": "Alappuzha",
+      "4": "Kottayam",
+      "5": "Ernakulam",
+      "6": "Thrissur",
+      "7": "Palakkad",
+      "8": "Malappuram",
+      "9": "Kozhikode",
+      "10": "Kannur",
+      "11": "Kasaragod"
+    },
+    "complexes": {
+      "1": ["Thiruvananthapuram District Court"],
+      "5": ["Ernakulam District Court"]
+    }
+  },
+  "28": {
+    "name": "Punjab",
+    "districts": {
+      "1": "Ludhiana",
+      "2": "Amritsar",
+      "3": "Jalandhar",
+      "4": "Patiala",
+      "5": "Bathinda",
+      "6": "Gurdaspur",
+      "7": "Hoshiarpur",
+      "8": "Kapurthala",
+      "9": "Moga",
+      "10": "Sangrur",
+      "11": "Barnala",
+      "12": "Ferozepur",
+      "13": "Faridkot",
+      "14": "Muktsar",
+      "15": "Rupnagar",
+      "16": "SAS Nagar (Mohali)",
+      "17": "Tarn Taran",
+      "18": "Fazilka",
+      "19": "Mansa",
+      "20": "Pathankot"
+    },
+    "complexes": {
+      "1": ["Ludhiana District Court"],
+      "2": ["Amritsar District Court"],
+      "3": ["Jalandhar District Court"],
+      "4": ["Patiala District Court"]
+    }
+  }
+}

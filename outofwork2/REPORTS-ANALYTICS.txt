@@ -1,0 +1,333 @@
+CAUSLY - REPORTS & DATA ANALYTICS
+=====================================
+
+=========================================
+PART 1: CURRENT REPORTS (What Exists)
+=========================================
+
+--- REPORTS HUB (/reports) ---
+Access: Owner, Partner, Senior Associate
+Shows:
+  - Total Cases, Active Cases, Total Revenue, Upcoming Hearings (KPI cards)
+  - Cases by Status (horizontal bar chart)
+  - Monthly Revenue (horizontal bar chart)
+  - Date range filter (This Month, Last 3 Months, This Year, Custom)
+  - Export: PDF (print) + CSV
+
+--- CASE STATISTICS (/reports/cases) ---
+Access: Owner, Partner, Senior Associate
+Shows:
+  - Total Cases, Win Rate %, Avg Duration (days), Resolved Cases
+  - Cases by Status (SVG donut chart)
+  - Win/Loss Ratio (SVG donut chart)
+  - Cases by Type (horizontal bar)
+  - Cases by Court (horizontal bar)
+
+--- REVENUE REPORT (/reports/revenue) ---
+Access: Owner, Partner, Senior Associate
+Shows:
+  - Total Revenue, Outstanding, GST Collected, Pending Invoices
+  - Monthly Revenue Trend (vertical bar chart)
+  - Revenue by Client (top 10, horizontal bar)
+  - Revenue by Case Type (horizontal bar)
+  - GST Summary (CGST 9% + SGST 9%)
+
+--- CLIENT REPORT (/reports/clients) ---
+Access: Owner, Partner, Senior Associate
+Shows:
+  - Total Clients, Active Clients, New This Month, With Phone
+  - Client Growth by Month (vertical bar chart)
+  - Clients by Type (horizontal bar)
+  - Top 10 Clients by Cases (horizontal bar)
+
+--- PERFORMANCE METRICS (/reports/performance) ---
+Access: Owner, Partner, Senior Associate
+Shows:
+  - Win Rate %, Avg Case Duration, Total Resolved, Active Lawyers
+  - Performance by Lawyer (table: cases, won, lost, settled, win rate, revenue)
+  - Monthly Case Resolution (vertical bar chart)
+  - Cases by Priority (horizontal bar)
+
+--- ADMIN PANEL (/admin) ---
+Access: Owner, Partner only
+Shows:
+  - Total Employees, Total Clients, Active Cases, Total Revenue
+  - Employee Leaderboard (ranked by cases handled)
+  - Role Distribution
+  - Salary Management, Profit Sharing
+
+--- EMPLOYEE PERFORMANCE (/admin/performance) ---
+Access: Owner, Partner only
+Shows:
+  - Total Employees, Clients Acquired, Cases Handled, Cases Won
+  - Full leaderboard table with ranking
+
+--- ACTIVITY LOGS (/admin/activity) ---
+Access: Owner, Partner only
+Shows:
+  - Total Events, Events Today, Active Users Today
+  - Searchable activity feed with filtering
+
+--- BILLING REPORTS ---
+Access: Owner, Partner, Senior Associate, Associate, Office Admin
+Shows:
+  - Outstanding Payments (aging buckets: 0-30, 31-60, 61-90, 90+ days)
+  - Collections Workflow (reminder -> final notice -> legal notice -> recovery)
+  - Invoice list with payment status
+
+--- EXPENSES (/expenses) ---
+Access: Owner, Partner, Senior Associate, Associate, Junior Associate, Paralegal
+Shows:
+  - Total Expenses, Billable, Unbilled, Non-Billable
+  - Filterable expense list
+
+--- TIMESHEETS (/timesheets) ---
+Access: All roles
+Shows:
+  - Total Hours, Billable Hours, Entries count
+  - Live timer for real-time tracking
+  - Timesheet list with case links
+
+
+=========================================
+PART 2: ROLE-BASED REPORT ACCESS
+=========================================
+
+REPORT                  | OWNER | PARTNER | SR.ASSOC | ASSOC | JR.ASSOC | PARALEGAL | INTERN | OFF. ADMIN
+------------------------|-------|---------|----------|-------|----------|-----------|--------|----------
+Reports Hub             |   Y   |    Y    |    Y     |   -   |    -     |     -     |   -    |     -
+Case Statistics         |   Y   |    Y    |    Y     |   -   |    -     |     -     |   -    |     -
+Revenue Report          |   Y   |    Y    |    Y     |   -   |    -     |     -     |   -    |     -
+Client Report           |   Y   |    Y    |    Y     |   -   |    -     |     -     |   -    |     -
+Performance Metrics     |   Y   |    Y    |    Y     |   -   |    -     |     -     |   -    |     -
+Admin Dashboard         |   Y   |    Y    |    -     |   -   |    -     |     -     |   -    |     -
+Employee Performance    |   Y   |    Y    |    -     |   -   |    -     |     -     |   -    |     -
+Activity Logs           |   Y   |    Y    |    -     |   -   |    -     |     -     |   -    |     -
+Salary Management       |   Y   |    Y    |    -     |   -   |    -     |     -     |   -    |     -
+Profit Sharing          |   Y   |    Y    |    -     |   -   |    -     |     -     |   -    |     -
+Outstanding Payments    |   Y   |    Y    |    Y     |   Y   |    -     |     -     |   -    |     Y
+Collections Workflow    |   Y   |    Y    |    Y     |   Y   |    -     |     -     |   -    |     Y
+Expenses                |   Y   |    Y    |    Y     |   Y   |    Y     |     Y     |   -    |     -
+Timesheets              |   Y   |    Y    |    Y     |   Y   |    Y     |     Y     |   Y    |     -
+
+
+=========================================
+PART 3: WHAT'S MISSING (Data Science Opportunities)
+=========================================
+
+--- A. CASE ANALYTICS ---
+
+1. CASE DURATION BY TYPE
+   "How long do criminal vs civil vs family cases take?"
+   Data: cases.created_at, cases.status changes, cases.filing_date
+   Chart: Box plot or bar chart showing avg duration per case type
+
+2. WIN RATE BY COURT
+   "Which courts have higher success rates?"
+   Data: cases.court, cases.status (won/lost/settled)
+   Chart: Grouped bar chart (won/lost per court)
+
+3. WIN RATE BY JUDGE
+   "Which judges rule favorably for our clients?"
+   Data: cases.judge_name, cases.status
+   Chart: Horizontal bar chart (win rate per judge)
+
+4. CASE TIMELINE VISUALIZATION
+   "Show the lifecycle of a case from filing to resolution"
+   Data: cases.status_history (can be derived from workflow_events)
+   Chart: Gantt-style timeline
+
+5. CASE RE-OPEN RATE
+   "How often are closed cases reopened?"
+   Data: cases.status changes (closed -> active)
+   Chart: Percentage card + trend line
+
+6. SETTLEMENT VS TRIAL
+   "What percentage settle vs go to trial?"
+   Data: cases.status (settled vs won/lost)
+   Chart: Pie chart + comparison
+
+--- B. BILLING & FINANCIAL ANALYTICS ---
+
+7. REVENUE PER LAWYER OVER TIME
+   "Which lawyers bring in the most revenue month over month?"
+   Data: cases.assigned_to, payments.received_at, payments.amount
+   Chart: Stacked area chart (revenue by lawyer by month)
+
+8. AVERAGE PAYMENT TIME
+   "How long do clients take to pay?"
+   Data: invoices.created_at, payments.received_at
+   Chart: Histogram (days to pay) + average card
+
+9. PAYMENT METHOD BREAKDOWN
+   "Razorpay vs bank transfer vs cash?"
+   Data: payments.payment_method
+   Chart: Pie chart
+
+10. REVENUE FORECASTING
+    "Predict next month's revenue based on historical data"
+    Data: Monthly revenue for last 12 months
+    Chart: Line chart with forecast cone (linear regression)
+
+11. PROFIT MARGIN BY CASE TYPE
+    "Which case types are most profitable?"
+    Data: cases.total_fee, expenses.amount (linked to case)
+    Chart: Grouped bar chart (revenue vs expenses per type)
+
+12. EXPENSE-TO-REVENUE RATIO
+    "How much do we spend vs earn?"
+    Data: expenses.total, revenue.total by month
+    Chart: Dual-axis line chart
+
+13. COUPON/DISCOUNT IMPACT
+    "How much revenue do discounts cost?"
+    Data: coupons, coupon_uses, invoices
+    Chart: Summary card + trend
+
+--- C. TEAM PERFORMANCE ANALYTICS ---
+
+14. TIME UTILIZATION BY LAWYER
+    "Billable vs non-billable hours per team member"
+    Data: timesheets.hours, timesheets.billable
+    Chart: Stacked bar chart (billable vs non-billable per person)
+
+15. BILLABLE RATE EFFECTIVENESS
+    "Revenue per billable hour per lawyer"
+    Data: cases.total_fee, timesheets.hours, cases.assigned_to
+    Chart: Bar chart (revenue/hour per lawyer)
+
+16. CASE LOAD BALANCE
+    "Are cases evenly distributed across the team?"
+    Data: cases.assigned_to, count per person
+    Chart: Bar chart + standard deviation indicator
+
+17. TASK COMPLETION RATES
+    "Who completes tasks on time?"
+    Data: tasks.assigned_to, tasks.due_date, tasks.completed_at
+    Chart: Completion rate % per person + trend
+
+18. CONSULTATION-TO-CLIENT CONVERSION
+    "What % of consultations become paying clients?"
+    Data: consultations -> clients (linked)
+    Chart: Funnel chart (consultation -> intake -> client)
+
+--- D. CLIENT ANALYTICS ---
+
+19. CLIENT LIFETIME VALUE (LTV)
+    "Total revenue per client over all time"
+    Data: clients.id, sum(payments.amount) per client
+    Chart: Top 20 clients by LTV + average LTV card
+
+20. CLIENT RETENTION/CHURN
+    "Are clients returning for more cases?"
+    Data: clients with multiple cases vs single case
+    Chart: Retention rate % + cohort analysis
+
+21. CLIENT ACQUISITION TREND
+    "How many new clients per month over time?"
+    Data: clients.created_at by month
+    Chart: Line chart with trend
+
+22. INTAKE-TO-CLIENT CONVERSION
+    "What % of intake form submissions become clients?"
+    Data: intake_submissions -> clients
+    Chart: Funnel (submitted -> contacted -> onboarded)
+
+--- E. HEARING & COURT ANALYTICS ---
+
+23. HEARING FREQUENCY BY COURT
+    "Which courts have the most hearings?"
+    Data: hearings + cases.court
+    Chart: Bar chart
+
+24. ADJOURNMENT RATE
+    "How often are hearings postponed?"
+    Data: hearings (created vs completed vs adjourned)
+    Chart: Adjournment % card + trend
+
+25. COURT UTILIZATION HEATMAP
+    "Which courts are busiest on which days?"
+    Data: hearings.hearing_date (day of week)
+    Chart: Heatmap (day x court)
+
+26. AVERAGE HEARINGS PER CASE
+    "How many hearings does a typical case take?"
+    Data: count(hearings) per case
+    Chart: Distribution histogram
+
+--- F. PLATFORM ANALYTICS (SaaS Admin) ---
+
+27. MRR/ARR TRACKING
+    "Monthly and Annual Recurring Revenue"
+    Data: user_subscriptions, subscription_plans
+    Chart: MRR line chart + ARR card
+
+28. CHURN RATE
+    "How many subscribers cancel each month?"
+    Data: user_subscriptions (cancelled status)
+    Chart: Churn % trend line
+
+29. TRIAL-TO-PAID CONVERSION
+    "What % of trial users convert to paid?"
+    Data: user_subscriptions (trialing -> active)
+    Chart: Conversion funnel
+
+30. COHORT RETENTION
+    "Do users who sign up in January stick around?"
+    Data: user_subscriptions by signup month
+    Chart: Cohort retention heatmap
+
+
+=========================================
+PART 4: RECOMMENDED PRIORITY (Phased)
+=========================================
+
+PHASE 1 — Quick Wins (Add to existing reports):
+  [ ] Win rate by judge (#3)
+  [ ] Average payment time (#8)
+  [ ] Time utilization by lawyer (#14)
+  [ ] Client lifetime value (#19)
+  [ ] Case duration by type (#1)
+
+PHASE 2 — New Report Pages:
+  [ ] Financial Analytics page (revenue forecast, profit margins, expense ratio)
+  [ ] Team Analytics page (utilization, billable effectiveness, load balance)
+  [ ] Client Analytics page (LTV, retention, acquisition funnel)
+
+PHASE 3 — Advanced Data Science:
+  [ ] Revenue forecasting with linear regression (#10)
+  [ ] Court utilization heatmap (#25)
+  [ ] Consultation-to-client conversion funnel (#18)
+  [ ] Cohort retention analysis (#30)
+
+PHASE 4 — Intelligence Features:
+  [ ] "Recommended next action" based on case patterns
+  [ ] "Risk score" for cases (probability of win based on judge, court, case type)
+  [ ] "Optimal pricing suggestion" based on case type + duration + win rate
+  [ ] "Client churn prediction" (which clients are likely to leave)
+
+
+=========================================
+PART 5: TECHNICAL NOTES
+=========================================
+
+CHARTING LIBRARY OPTIONS:
+  - Recharts (React-native, simple API, recommended)
+  - Chart.js (lightweight, many chart types)
+  - Nivo (built on D3, beautiful but heavy)
+  - Tremor (Tailwind-native dashboard components)
+
+DATA PIPELINE OPTIONS:
+  - Keep current: Client-side Supabase queries (simple, real-time)
+  - Upgrade: Server-side API routes with caching (faster, more secure)
+  - Advanced: Background workers + materialized views (for heavy analytics)
+
+EXPORT OPTIONS:
+  - Current: CSV export (basic)
+  - Add: PDF export with charts (using jsPDF + html2canvas)
+  - Add: Excel export (using xlsx library)
+  - Add: Scheduled email reports (weekly/monthly)
+
+=========================================
+END OF FILE
+=========================================

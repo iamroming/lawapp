@@ -1,0 +1,394 @@
+============================================================
+CAUSLY - BUG & FLAW AUDIT REPORT
+============================================================
+Date: 2026-07-28
+Total Issues Found: 66
+============================================================
+
+============================================================
+1. SECURITY FLAWS (17 Critical)
+============================================================
+
+S-1. API Keys Exposed in .env.local
+  File: .env.local
+  Issue: Real AI API key, Supabase URL/anon key, Cloudinary secret,
+         eCourts live key, and DB password are committed to source.
+  Fix: Rotate ALL keys immediately. Add .env.local to .gitignore.
+
+S-2. CSRF Token Validates Nothing
+  File: src/lib/csrf.ts
+  Issue: CSRF_SECRET falls back to NEXT_PUBLIC_SUPABASE_ANON_KEY
+         (a public value). Token has no session binding. No API
+         route calls validateCsrfToken().
+  Fix: Use a proper secret. Bind tokens to sessions.
+
+S-3. Rate Limiting Never Applied
+  File: src/lib/rate-limit.ts
+  Issue: checkRateLimit() exists but is never imported or called
+         in any API route.
+  Fix: Apply to all API routes, especially auth endpoints.
+
+S-4. Admin/Super-Admin Auth is Client-Side Only
+  Files: src/app/(admin)/layout.tsx, src/app/(super-admin)/layout.tsx
+  Issue: Content renders before redirect (flash of unauthorized content).
+  Fix: Remove client-side checks since middleware handles it.
+
+S-5. Documents Page Does Hard Delete Bypassing API
+  File: src/app/(dashboard)/documents/page.tsx (line 124)
+  Issue: handleDelete calls supabase.from("documents").delete()
+         directly - a HARD delete. API route does soft delete.
+  Fix: Always use the API route for deletions.
+
+S-6. Client Detail Page Does Hard Deletes
+  File: src/app/(dashboard)/clients/[id]/page.tsx (lines 66-81)
+  Issue: Hard deletes hearings, time_entries, cases, and client
+         directly from client code, bypassing all protections.
+  Fix: Route through API endpoints.
+
+S-7. Case Detail Page Does Hard Deletes
+  File: src/app/(dashboard)/cases/[id]/page.tsx (lines 89-101)
+  Issue: Same as S-6 for cases.
+  Fix: Route through API endpoints.
+
+S-8. Webhook Endpoint Has No Signature Verification
+  File: src/app/api/subscriptions/webhook/route.ts
+  Issue: Accepts any POST body without verifying Razorpay webhook
+         signature. Attacker can forge subscription events.
+  Fix: Verify HMAC signature using RAZORPAY_WEBHOOK_SECRET.
+
+S-9. Signature Comparison Vulnerable to Timing Attacks
+  Files: src/app/api/subscriptions/verify/route.ts (line 19),
+         src/lib/payments/razorpay.ts (line 76)
+  Issue: Uses !== instead of crypto.timingSafeEqual().
+  Fix: Use crypto.timingSafeEqual() for all comparisons.
+
+S-10. Conflict Check Not Scoped to User
+  File: src/app/api/clients/conflict-check/route.ts
+  Issue: Queries clients table without filtering by created_by.
+         Leaks cross-tenant data.
+  Fix: Add .eq("created_by", user.id) to all queries.
+
+S-11. Reports Route Missing User Filtering
+  File: src/app/api/reports/route.ts (lines 76-88)
+  Issue: Revenue report fetches ALL payments/invoices globally.
+  Fix: Add .eq("received_by", user.id) filter.
+
+S-12. Dashboard API Hearing Data Not User-Scoped
+  File: src/app/api/dashboard/route.ts (lines 27-34)
+  Issue: Fetches ALL upcoming hearings globally.
+  Fix: Filter through cases table by created_by/assigned_to.
+
+S-13. Audit Logs API Missing User Filtering
+  File: src/app/api/audit/route.ts
+  Issue: Returns ALL audit logs without user filtering.
+  Fix: Add .eq("user_id", user.id).
+
+S-14. Documents API Missing User Scoping
+  File: src/app/api/documents/route.ts (lines 12-16)
+  Issue: Returns ALL documents across the platform.
+  Fix: Add uploaded_by filter.
+
+S-15. Tags API Missing User Scoping
+  File: src/app/api/tags/route.ts
+  Issue: Returns ALL tags without filtering.
+  Fix: Add created_by filter.
+
+S-16. No RLS Enforcement in Client Code
+  Issue: Multiple pages query Supabase directly from client.
+         If RLS policies are weak, all data leaks.
+
+S-17. Notifications API Has No Auth Check
+  File: src/app/api/notifications/schedule/route.ts (line 5)
+  Issue: POST handler processes ALL hearings without checking user.
+  Fix: Add getUser() check. Restrict to admin/cron.
+
+============================================================
+2. API ROUTE FLAWS (8)
+============================================================
+
+A-1. PUT Routes Accept Arbitrary Body
+  Files: src/app/api/cases/[id]/route.ts, src/app/api/clients/[id]/route.ts
+  Issue: supabase.from("cases").update(body) passes raw request
+         body without validation. Attacker can update created_by,
+         deleted_at, or any field.
+  Fix: Validate and whitelist allowed fields.
+
+A-2. Documents POST Has No Input Validation
+  File: src/app/api/documents/route.ts (lines 36-39)
+  Issue: Inserts raw body without using documentSchema from validators.
+  Fix: Apply documentSchema.safeParse(body).
+
+A-3. Tags POST Has No Validation
+  File: src/app/api/tags/route.ts (lines 19-22)
+  Issue: Inserts body directly into tags table without validation.
+  Fix: Create and apply a tags schema.
+
+A-4. Reminders POST Has No Validation
+  File: src/app/api/reminders/route.ts (lines 12-30)
+  Issue: Manually checks fields but doesn't use reminderSchema.
+  Fix: Use the reminderSchema.
+
+A-5. AI Routes Have No Input Validation
+  Files: src/app/api/ai/research/route.ts, src/app/api/ai/analyze/route.ts
+  Issue: Accept arbitrary body without validation or length limits.
+  Fix: Add input validation and length limits.
+
+A-6. Cases POST - No Ownership Check on client_id
+  File: src/app/api/cases/route.ts (line 52)
+  Issue: client_id accepted without verifying it belongs to user.
+  Fix: Verify client.created_by === user.id.
+
+A-7. Razorpay Route Exposes Secret Key ID
+  File: src/app/api/payments/razorpay/route.ts (line 53)
+  Issue: Returns RAZORPAY_KEY_ID instead of NEXT_PUBLIC variant.
+  Fix: Use NEXT_PUBLIC_RAZORPAY_KEY_ID.
+
+A-8. eCourts Sync Has N+1 Query Pattern
+  File: src/app/api/ecourts/sync/route.ts (lines 52-117)
+  Issue: Iterates over cases with individual DB calls per case.
+  Fix: Batch DB operations.
+
+============================================================
+3. TYPE SAFETY (2 categories, 37+ any types)
+============================================================
+
+T-1. 37 Occurrences of `any` Type
+  Files: src/lib/supabase/queries.ts (8), src/app/api/reports/route.ts (13),
+         src/components/global-search.tsx (3), and 10+ more files.
+  Fix: Replace with proper types from src/types/database.ts.
+
+T-2. generateCaseNumber() Uses Math.random()
+  File: src/lib/utils.ts (line 40)
+  Issue: At scale, collisions are likely.
+  Fix: Use UUID or database sequence.
+
+============================================================
+4. DATABASE QUERY FLAWS (5)
+============================================================
+
+D-1. No Soft Delete Filters on Many Queries
+  Files: src/app/(dashboard)/documents/page.tsx (line 65),
+         src/app/(dashboard)/reports/page.tsx (lines 87-101),
+         src/app/(dashboard)/clients/[id]/page.tsx (lines 51-58),
+         src/app/(dashboard)/cases/[id]/page.tsx (lines 57-81)
+  Issue: Queries fetch ALL records including soft-deleted ones.
+  Fix: Add .is("deleted_at", null) to all queries.
+
+D-2. N+1 in Dashboard API
+  File: src/app/api/dashboard/route.ts
+  Issue: Makes 6 sequential queries instead of Promise.all().
+  Fix: Parallelize with Promise.all().
+
+D-3. Reports API Missing User Scoping on Revenue
+  File: src/app/api/reports/route.ts (lines 76-88)
+
+D-4. Client Portal Payments Query Wrong
+  File: src/app/(client-portal)/client/payments/page.tsx (lines 33-37)
+  Issue: Queries invoices with .eq("client_id", user.id) but
+         client_id is the client record ID, not auth user ID.
+  Fix: Join through client_portal_users first.
+
+D-5. Storage Usage Fetches All Documents
+  File: src/lib/subscription-limits.ts (lines 137-140)
+  Issue: Fetches ALL documents to sum file sizes in JS.
+  Fix: Use database aggregate function.
+
+============================================================
+5. MISSING FEATURES (14)
+============================================================
+
+F-1. Export PDF Just Calls window.print()
+  File: src/app/(dashboard)/reports/page.tsx (line 230)
+  Issue: "Export PDF" button triggers browser print, not real PDF.
+
+F-2. Client Report & Performance Metrics Pages Missing
+  File: src/app/(dashboard)/reports/page.tsx (lines 188-205)
+  Issue: Cards link to # with "Coming soon!" toast.
+
+F-3. Billing Page Missing (404)
+  Issue: Sidebar links to /billing but no page exists.
+
+F-4. AI Case Analysis Page Missing
+  Issue: Sidebar links to /ai/case-analysis but no page exists.
+
+F-5. Bare Acts Page Missing
+  Issue: Sidebar links to /bare-acts but no page exists.
+
+F-6. Notification Preferences Don't Save
+  File: src/app/(dashboard)/settings/page.tsx (line 287)
+  Issue: "Save Preferences" shows success toast without DB save.
+
+F-7. Team "Add Member" Is a No-Op
+  File: src/app/(dashboard)/settings/page.tsx (lines 144-151)
+  Issue: Clears form without calling API. No invitation sent.
+
+F-8. Team "Remove Member" Is Local-Only
+  File: src/app/(dashboard)/settings/page.tsx (lines 153-156)
+  Issue: Filters local state without API call.
+
+F-9. Subscription Upgrade/Downgrade Buttons Have No Handlers
+  File: src/app/(dashboard)/settings/page.tsx (lines 450, 466)
+  Issue: Buttons have no onClick handlers.
+
+F-10. eCourts "Link to Case" Dropdown Is Empty
+  File: src/app/(dashboard)/ecourts/page.tsx (lines 429-437)
+  Issue: Dropdown has only placeholder option, no cases loaded.
+
+F-11. Settings Subscription Data Is Hardcoded
+  File: src/app/(dashboard)/settings/page.tsx (lines 402-557)
+  Issue: Plan name, usage stats, billing history are all hardcoded.
+
+F-12. Document Delete Inconsistency
+  File: src/app/(dashboard)/documents/page.tsx (line 124)
+  Issue: Client does hard delete + Cloudinary delete, but API
+         does soft delete. Inconsistent behavior.
+
+F-13. No Billing/Invoicing UI Page
+  Issue: Invoices creatable via API, PDF generator exists, but
+         no UI page to list/create/manage invoices.
+
+F-14. Client Portal Cases Page May Be Missing
+  File: src/app/(client-portal)/layout.tsx (line 24)
+  Issue: Nav links to /client/cases but page may not exist.
+
+============================================================
+6. COMPONENT / UI ISSUES (7)
+============================================================
+
+U-1. Dark Mode Toggle Doesn't Work
+  File: src/app/(dashboard)/settings/page.tsx (lines 560-605)
+  Issue: Sets localStorage and CSS classes, but no tailwind.config
+         dark mode config, no dark: variants in components.
+  Fix: Configure tailwind dark mode, add dark: variants.
+
+U-2. Three Duplicate Sidebar Components
+  Files: sidebar.tsx, admin-sidebar.tsx, super-admin-sidebar.tsx
+  Issue: Near-identical code with no shared base component.
+  Fix: Create shared SidebarBase component.
+
+U-3. Array.isArray Flattening Repeated 20+ Times
+  Files: 8+ API route files
+  Issue: Pattern repeated when flattenRelation() exists.
+  Fix: Use the existing helper.
+
+U-4. Missing loading.tsx for Some Routes
+  Issue: /billing, /bare-acts, /ai/*, /clients list have no
+         loading states.
+
+U-5. Missing error.tsx for Some Routes
+  Issue: /messages, /notifications/preferences, client portal
+         routes, admin pages.
+
+U-6. No useCallback/useMemo in Dashboard Pages
+  Issue: All functions recreated on every render.
+
+U-7. Loading States Are Plain Text
+  Files: settings, reports, documents pages
+  Issue: Shows "Loading..." instead of skeleton components.
+
+============================================================
+7. BUILD / RUNTIME ISSUES (3)
+============================================================
+
+B-1. Non-null Assertions on Env Vars
+  Files: supabase/server.ts, supabase/client.ts, razorpay.ts,
+         supabase/middleware.ts
+  Issue: process.env.X! will crash at runtime if missing.
+  Fix: Add env validation with @t3-oss/env-nextjs.
+
+B-2. Cloudinary Signature Inconsistency
+  File: src/lib/cloudinary.ts (line 57)
+  Issue: Uses crypto.subtle.digest("SHA-1") but Cloudinary
+         expects HMAC-SHA1 with API secret.
+
+B-3. date-fns Unused Dependency
+  Issue: Referenced in 01_GLOBAL_FLAWS.txt as unused.
+
+============================================================
+8. LOGIC / BUSINESS LOGIC FLAWS (10)
+============================================================
+
+L-1. Client Delete Doesn't Delete Documents
+  File: src/app/(dashboard)/clients/[id]/page.tsx (lines 66-81)
+  Issue: Deletes hearings, time_entries, cases but NOT documents.
+  Fix: Add document deletion to cascade.
+
+L-2. Case Delete Doesn't Delete Documents or Invoices
+  File: src/app/(dashboard)/cases/[id]/page.tsx (lines 89-101)
+  Issue: Only deletes hearings and time_entries.
+  Fix: Add document and invoice deletion.
+
+L-3. Invoice Number Generation Race Condition
+  File: src/app/api/invoices/route.ts (lines 62-67)
+  Issue: Count-based generation can collide under concurrent requests.
+  Fix: Use database sequence or UUID.
+
+L-4. Signup Password Placeholder Mismatch
+  File: src/app/(auth)/signup/page.tsx (line 133)
+  Issue: placeholder="Min. 6 characters" but validation requires 8.
+         minLength={6} contradicts 8-char minimum.
+  Fix: Update placeholder to "Min. 8 characters" and minLength to 8.
+
+L-5. Error Boundary Leaks Internal Details
+  File: src/components/error-boundary.tsx (lines 39-42)
+  Issue: Displays error.message in <pre> block to users.
+  Fix: Show generic message, log error server-side.
+
+L-6. Global Search Not User-Scoped
+  File: src/components/global-search.tsx (lines 56-72)
+  Issue: Searches all cases, clients, documents globally.
+  Fix: Filter by created_by.
+
+L-7. Notification Service Uses Browser Client on Server
+  File: src/lib/notifications/service.ts (line 4)
+  Issue: createClient() from supabase/client at module level.
+  Fix: Use server client when running server-side.
+
+L-8. Subscription Limits Only Check Cases
+  Issue: checkCaseLimit() called in POST /api/cases but no checks
+         for user limits or storage limits.
+  Fix: Add checks to user creation and document upload routes.
+
+L-9. WhatsApp Messages Sent Without Auth
+  File: src/app/api/notifications/schedule/route.ts
+  Issue: No API key or service-role verification.
+
+L-10. AI Fallback Returns Random Data
+  File: src/lib/ai/service.ts (lines 92-165)
+  Issue: When AI_API_KEY not set, returns random case strength
+         and risk levels. Users see fake analysis.
+  Fix: Return clear "AI not configured" message instead.
+
+============================================================
+SUMMARY
+============================================================
+
+| Category                      | Count |
+|-------------------------------|-------|
+| Security Flaws (Critical)     | 17    |
+| API Route Flaws               | 8     |
+| Type Safety Issues            | 2     |
+| Database Query Flaws          | 5     |
+| Missing Features              | 14    |
+| Component / UI Issues         | 7     |
+| Build / Runtime Issues        | 3     |
+| Logic / Business Logic Flaws  | 10    |
+|-------------------------------|-------|
+| TOTAL                         | 66    |
+
+============================================================
+TOP 10 CRITICAL FIXES (Must Fix Before Demo/Production)
+============================================================
+
+1.  S-1:  Rotate all exposed API keys and secrets
+2.  S-5:  Stop hard deletes from client code (documents, clients, cases)
+3.  S-6:  Stop hard deletes from client detail page
+4.  S-7:  Stop hard deletes from case detail page
+5.  S-10: Add user scoping to conflict check API
+6.  S-11: Add user scoping to reports API
+7.  S-12: Add user scoping to dashboard API
+8.  S-8:  Add webhook signature verification
+9.  A-1:  Add input validation to PUT routes
+10. F-3:  Create the missing /billing page
+
+============================================================

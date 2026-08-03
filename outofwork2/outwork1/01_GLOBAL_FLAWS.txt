@@ -1,0 +1,313 @@
+================================================================================
+LAWAPP - GLOBAL FLAWS AUDIT REPORT
+Generated: July 15, 2026
+================================================================================
+
+TABLE OF CONTENTS
+-----------------
+1. CRITICAL - Security Flaws
+2. HIGH - Architecture Flaws
+3. MEDIUM - Code Quality Issues
+4. LOW - UX Issues
+5. Database Schema Issues
+
+================================================================================
+1. CRITICAL - SECURITY FLAWS (Fix Immediately)
+================================================================================
+
+[#1] HARDCODED SUPER ADMIN CREDENTIALS IN SOURCE CODE
+  Location : src/lib/super-admin.ts
+  Issue    : Real email (mubb@ymail.com) and password (123mubeen) are hardcoded
+             in plain text and committed to git.
+  Impact   : Anyone with repo access has owner-level platform access.
+  Fix      : Move to environment variables + server-side validation only.
+
+[#2] CLIENT-SIDE AUTH BYPASS FOR SUPER ADMIN
+  Location : src/app/(auth)/login/page.tsx (lines 24-66)
+  Issue    : Super admin check runs in browser JavaScript BEFORE Supabase
+             authentication. The isSuperAdmin() function compares credentials
+             in plain JS that anyone can read via View Source.
+  Impact   : Credentials are visible to anyone inspecting the page.
+  Fix      : Move all auth logic to server-side API routes or middleware.
+
+[#3] SUPER ADMIN UPSERT FROM CLIENT SIDE
+  Location : src/app/(auth)/login/page.tsx (lines 55-58)
+  Issue    : After login, the client directly upserts into the super_admins
+             table with access_level: "owner".
+  Impact   : Any authenticated user could call this Supabase query directly
+             and elevate themselves to owner.
+  Fix      : Only server-side code should write to super_admins table.
+
+[#4] RLS POLICIES GRANT FULL ACCESS TO ALL DATA
+  Location : supabase/schema.sql (lines 229-265)
+  Issue    : All tables (clients, cases, hearings, documents, time_entries,
+             invoices, payments, notes) use auth.role() = 'authenticated'
+             policies. This means ANY logged-in user can read, modify, or
+             delete ANY other user's data.
+  Impact   : Lawyer A at Firm X can see and modify ALL of Lawyer B's data
+             at Firm Y. Complete data leak across tenants.
+  Fix      : Add user_id = auth.uid() or firm_id conditions on every table.
+
+[#5] NO TENANT ISOLATION
+  Location : All RLS policies
+  Issue    : There is no concept of firm_id or user_id ownership on data.
+             Cases, clients, documents have created_by but RLS doesn't
+             enforce ownership.
+  Impact   : Law firms will NEVER use this - their client data (which is
+             legally confidential) leaks to every other user on the platform.
+  Fix      : Add firm_id to all tables, enforce in RLS.
+
+[#6] CONFIDENTIAL DOCUMENTS HAVE PUBLIC URLs
+  Location : src/app/(dashboard)/documents/page.tsx (line 97)
+  Issue    : getPublicUrl() is used for ALL uploaded documents, including
+             those marked as is_confidential = true.
+  Impact   : Anyone with the URL (guessable, shareable) can download
+             confidential legal documents.
+  Fix      : Use signed URLs with expiration for all document access.
+
+[#7] ADMIN/SUPER-ADMIN CHECKS ARE CLIENT-SIDE ONLY
+  Location : src/app/(admin)/layout.tsx, src/app/(super-admin)/layout.tsx
+  Issue    : Role checks happen in useEffect after component mount. Content
+             flashes before redirect. Routes are technically accessible.
+  Impact   : A determined user can bypass the redirect and access admin pages.
+  Fix      : Add role checks in middleware or server-side layout data fetching.
+
+[#8] NO RATE LIMITING ON AUTH ENDPOINTS
+  Location : Login and signup pages
+  Issue    : No rate limiting on login attempts, signup, or password reset.
+  Impact   : Vulnerable to brute force attacks, credential stuffing, and
+             automated account creation.
+  Fix      : Add rate limiting via Supabase Edge Functions or middleware.
+
+[#9] NO CSRF PROTECTION BEYOND DEFAULTS
+  Location : Throughout the application
+  Issue    : No explicit CSRF token implementation.
+  Impact   : Cross-site request forgery attacks possible.
+  Fix      : Implement CSRF tokens for state-changing operations.
+
+[#10] WEAK PASSWORD FOR OWNER ACCOUNT
+  Location : src/lib/super-admin.ts
+  Issue    : Password "123mubeen" is extremely weak and easily guessable.
+  Impact   : Account takeover trivial.
+  Fix      : Enforce strong password requirements (12+ chars, mixed case,
+             numbers, symbols).
+
+================================================================================
+2. HIGH - ARCHITECTURE FLAWS
+================================================================================
+
+[#11] ZERO API ROUTES
+  Issue    : No src/app/api/ directory exists. All mutations go directly
+             from client to Supabase database.
+  Impact   : No server-side validation, no business logic layer, no audit
+             trail, no centralized error handling.
+  Fix      : Create API routes for all mutations.
+
+[#12] ZERO SERVER COMPONENTS
+  Issue    : Every page uses "use client". Zero server components exist.
+  Impact   : Defeats Next.js App Router benefits. No SSR, no SEO on any
+             page, slower initial loads, no server-side data fetching.
+  Fix      : Convert data-fetching pages to Server Components where possible.
+
+[#13] NO ERROR BOUNDARIES
+  Issue    : No React error boundary components exist anywhere.
+  Impact   : One component crash kills the entire page with a blank screen.
+  Fix      : Add error.tsx to all route segments, add global error boundary.
+
+[#14] NO TESTS AT ALL
+  Issue    : Zero test files. No Jest, no Vitest, no Playwright, no Cypress.
+             No testing framework even configured.
+  Impact   : Can't verify anything works. Every change risks regressions.
+             Cannot demonstrate quality to potential buyers.
+  Fix      : Add unit tests for critical paths, E2E tests for main flows.
+
+[#15] NO PAGINATION
+  Issue    : All list views load ALL records at once. Activity logs use
+             .limit(200) or .limit(500) with no pagination UI.
+  Impact   : Performance degrades as data grows. After a few months of use,
+             pages will be very slow.
+  Fix      : Add cursor-based or offset pagination on all list views.
+
+[#16] ACTIVITY LOGGING EXISTS BUT IS NEVER USED
+  Issue    : The log_activity() database function exists in admin-schema.sql
+             but is NEVER called from any application code.
+  Impact   : Activity logs table will always be empty. Admin cannot track
+             what users are doing.
+  Fix      : Call log_activity() on every mutation (create, update, delete).
+
+[#17] SUBSCRIPTION LIMITS ARE NEVER ENFORCED
+  Issue    : Subscription plans define max_cases, max_users, max_storage_mb
+             but no code checks these limits before allowing operations.
+  Impact   : Free plan users can create unlimited cases, users, and storage.
+             No revenue from subscription model.
+  Fix      : Add limit checks before every create operation.
+
+[#18] NO ENVIRONMENT VARIABLE VALIDATION
+  Issue    : .env.local has placeholder values. Non-null assertions (!) on
+             process.env.NEXT_PUBLIC_SUPABASE_URL will crash at runtime.
+  Impact   : App crashes silently if environment variables are missing.
+  Fix      : Add validation at startup using @t3-oss/env-nextjs or similar.
+
+[#19] MISSING EDIT PAGES
+  Issue    : /cases/[id]/edit and /clients/[id]/edit are linked in the UI
+             but the page files do not exist.
+  Impact   : Users click "Edit" and get 404 errors.
+  Fix      : Create the edit pages.
+
+================================================================================
+3. MEDIUM - CODE QUALITY ISSUES
+================================================================================
+
+[#20] UNUSED DEPENDENCY
+  Issue    : date-fns is in package.json but never imported anywhere.
+  Impact   : Unnecessary bundle bloat.
+  Fix      : Remove from package.json.
+
+[#21] EXTENSIVE USE OF 'any' TYPES
+  Issue    : Super-admin pages use useState<any>(null), useState<any[]>([]).
+  Impact   : TypeScript provides no type safety in those components.
+  Fix      : Create proper interfaces for all data types.
+
+[#22] FRAGILE CASE NUMBER GENERATION
+  Issue    : generateCaseNumber() uses Math.random() for uniqueness.
+  Impact   : Potential for collisions at scale.
+  Fix      : Use UUID-based or database-sequence-based generation.
+
+[#23] FRAGILE INVOICE NUMBER GENERATION
+  Issue    : Invoice numbers use Date.now().toString(36).
+  Impact   : Not guaranteed unique if two invoices are created simultaneously.
+  Fix      : Use database sequence or UUID.
+
+[#24] FRAGILE DOCUMENT DELETE PATH EXTRACTION
+  Issue    : doc.file_url.split("/").pop() is used to extract file path.
+  Impact   : Breaks if URL contains query parameters.
+  Fix      : Store the file path separately in the database.
+
+[#25] MISLEADING ADMIN HEADER
+  Issue    : Admin header component shows "Super Admin" badge.
+  Impact   : Confusing for users.
+  Fix      : Show "Admin" badge in admin panel, "Super Admin" only in super admin.
+
+[#26] REPEATED ARRAY FLATTENING PATTERN
+  Issue    : Array.isArray(x) ? x[0] : x appears 20+ times across codebase.
+  Impact   : Code duplication, maintenance burden.
+  Fix      : Create a shared helper function.
+
+[#27] THREE DUPLICATE SIDEBAR COMPONENTS
+  Issue    : Dashboard, Admin, and Super Admin sidebars are nearly identical
+             with no shared base component.
+  Impact   : Bug fixes and features must be applied 3 times.
+  Fix      : Create a shared Sidebar component with configurable items.
+
+[#28] NO useCallback/useMemo ANYWHERE
+  Issue    : All functions and computed values are recreated on every render.
+  Impact   : Unnecessary re-renders, potential performance issues.
+  Fix      : Add useCallback for handlers, useMemo for computed values.
+
+[#29] HARDCODED BARE ACTS DATA
+  Issue    : 170+ lines of legal data hardcoded in a component file.
+  Impact   : Cannot be updated without code changes. No search indexing.
+  Fix      : Move to database or separate JSON/data file.
+
+[#30] NO FORM VALIDATION LIBRARY
+  Issue    : No Zod, Yup, or any schema validation. Forms only use HTML5
+             required attributes.
+  Impact   : Invalid data can be submitted. No phone format validation, no
+             email validation beyond HTML5.
+  Fix      : Add Zod schemas for all forms.
+
+[#31] ADMIN ROLE TOGGLE ONLY TOGGLES TWO VALUES
+  Issue    : Admin user page toggles between "admin" and "lawyer" only,
+             ignoring paralegal and staff roles.
+  Impact   : Cannot properly manage user roles from admin panel.
+  Fix      : Use a dropdown with all role options.
+
+================================================================================
+4. LOW - UX ISSUES
+================================================================================
+
+[#32] NO SKELETON LOADERS
+  Issue    : Loading states show plain "Loading..." text.
+  Impact    : Poor perceived performance, no visual feedback.
+  Fix      : Add skeleton/shimmer loading components.
+
+[#33] DELETE USES window.confirm()
+  Issue    : Destructive actions use browser-native confirm dialog.
+  Impact   : Inconsistent with the modal system that already exists.
+  Fix      : Use the existing Modal component for confirmations.
+
+[#34] NO OPTIMISTIC UI UPDATES
+  Issue    : Every mutation refetches the entire dataset after completion.
+  Impact   : Slow perceived performance, unnecessary loading states.
+  Fix      : Update local state immediately, then sync with server.
+
+[#35] NO KEYBOARD SHORTCUTS
+  Issue    : No Ctrl+K search, no keyboard navigation shortcuts.
+  Impact   : Power users (lawyers) lose productivity.
+  Fix      : Add global search shortcut, navigation shortcuts.
+
+[#36] NO DARK MODE
+  Issue    : CSS variables for dark mode exist in globals.css but are never
+             applied. No theme toggle component.
+  Impact   : Lawyers working late nights need dark mode.
+  Fix      : Implement dark mode with theme toggle.
+
+[#37] NO RESPONSIVE DATA TABLES
+  Issue    : Data tables are plain divs, not proper table elements.
+  Impact   : Not accessible, no proper column alignment on mobile.
+  Fix      : Use proper table elements or a table library.
+
+[#38] INCONSISTENT SPACING
+  Issue    : Some pages use space-y-6, others space-y-4.
+  Impact   : Visual inconsistency across the application.
+  Fix      : Standardize spacing across all pages.
+
+[#39] ERROR MESSAGES DISPLAYED RAW TO USERS
+  Issue    : Supabase error messages shown directly to users.
+  Impact   : Technical errors confuse non-technical users.
+  Fix      : Map technical errors to user-friendly messages.
+
+[#40] NO UNDO ON DESTRUCTIVE ACTIONS
+  Issue    : Delete operations are permanent with no recovery.
+  Impact   : Accidental deletions are unrecoverable.
+  Fix      : Add soft delete with recovery option, or undo toast.
+
+================================================================================
+5. DATABASE SCHEMA ISSUES
+================================================================================
+
+[#41] NO SOFT DELETE
+  Issue    : No deleted_at column on any table.
+  Impact   : Deleted data is permanently gone. No audit trail.
+  Fix      : Add deleted_at column, filter deleted records in queries.
+
+[#42] NO UPDATED_AT ON ALL TABLES
+  Issue    : hearings and payments tables lack updated_at triggers.
+  Impact   : Cannot track when records were last modified.
+  Fix      : Add triggers for all tables.
+
+[#43] NO UNIQUE CONSTRAINTS ON CLIENT DATA
+  Issue    : No unique constraint on client email or phone.
+  Impact   : Duplicate clients can be created easily.
+  Fix      : Add unique constraints per firm.
+
+[#44] NO TAGS/LABELS TABLE
+  Issue    : No flexible categorization system for cases.
+  Impact   : Cannot tag cases by custom categories.
+  Fix      : Add tags table with case_tags junction table.
+
+[#45] NO NOTIFICATION/REMINDER TABLE
+  Issue    : No table for scheduling notifications or reminders.
+  Impact   : Cannot schedule hearing reminders or payment follow-ups.
+  Fix      : Add reminders table with scheduling logic.
+
+[#46] NO CASCADE DELETE ON DOCUMENT UPLOADS
+  Issue    : documents.uploaded_by has no cascade or set null on profile delete.
+  Impact   : Orphaned references if a user is deleted.
+  Fix      : Add ON DELETE SET NULL.
+
+================================================================================
+END OF GLOBAL FLAWS REPORT
+Total Issues Found: 46
+Critical: 10 | High: 9 | Medium: 12 | Low: 9 | Database: 6
+================================================================================

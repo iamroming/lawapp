@@ -1,0 +1,598 @@
+# CAUSLY vs MYKASE — FEATURE GAP ANALYSIS, IMPLEMENTATION PLAN & PRICING STRATEGY
+
+Generated: 2026-08-01
+Competitor: MyKase by Manupatra (mykase.in)
+Pricing: ₹1,250+/license/month (custom quotes)
+
+---
+
+## PART 1: WHAT MYKASE OFFERS vs WHAT CAUSLY HAS
+
+### MODULE 1: LITIGATION CASE TRACKING
+
+| MyKase Feature | Causly Status | Gap Level |
+|---|---|---|
+| Track cases across 10,000+ courts | SC + 15 HC + DC via bharat-courts | 🟡 Partial — cover SC + top 5 HC + select DC |
+| Automated Case Alerts (Email & WhatsApp) | Reminder system + WhatsApp integration exists | 🟡 Partial — need case-status-triggered alerts |
+| Personalized Cause List | Cause list API exists, no user preferences | 🟡 Partial — need court preferences per user |
+| Case Search by Party Name | HC + DC party search built | ✅ Done |
+| Orders, Judgments and Timeline | Cause list PDFs + court orders exist | 🟡 Partial — need visual timeline UI |
+| Document Management with Cloud Integration | Cloudinary upload/download | 🟡 Partial — need Drive/Dropbox/OneDrive sync |
+| Pro-active Alerts | Not built | 🔴 Missing |
+| Calendar Management | Full calendar with hearings | ✅ Done |
+
+### MODULE 2: CASE MANAGEMENT
+
+| MyKase Feature | Causly Status | Gap Level |
+|---|---|---|
+| Matter Intake (Litigation + Non-Litigation) | Only litigation cases | 🟡 Partial — need non-litigation matter types |
+| Central Repository of Cases | Cases page with search/filter | ✅ Done |
+| Expense Management | Not built | 🔴 Missing |
+| Invoice Management | Full invoicing + GST + Razorpay | ✅ Done |
+| Timesheet Management | Time entries API exists | 🟡 Partial — need UI, timer, reports |
+| Calendar Management | Full calendar | ✅ Done |
+| Communication | Lawyer-client messaging | ✅ Done |
+| Task Management | Not built | 🔴 Missing |
+| Reports & Analytics | Revenue, case, client, performance reports | ✅ Done |
+| Team Collaboration & Communication | Case team + messaging | ✅ Done |
+| Client Portals | Full client portal with cases/docs/payments | ✅ Done |
+| Rights Management (RBAC) | 8 roles with permissions | ✅ Done |
+
+### MODULE 3: PRO-ACTIVE ALERTS
+
+| MyKase Feature | Causly Status | Gap Level |
+|---|---|---|
+| Track new filings by keyword | Not built | 🔴 Missing |
+| Prevent Ex-Parte Orders | Not built | 🔴 Missing |
+| Brand/Director/Subsidiary protection | Not built | 🔴 Missing |
+| Automatic email alerts on match | Reminder system exists | 🟡 Partial |
+| Wide Court Coverage | SC + HC + DC | ✅ Done |
+| Real Time Monitoring | Not built | 🔴 Missing |
+
+### MODULE 4: INVOICE MANAGEMENT
+
+| MyKase Feature | Causly Status | Gap Level |
+|---|---|---|
+| Invoice Creation and Approval | Full invoice creation + PDF | ✅ Done |
+| Track Payments | Payment recording + Razorpay | ✅ Done |
+| Quick Search & Retrieval | Invoice list with search | ✅ Done |
+| Customize Invoice Template | Basic template | 🟡 Partial — need firm branding |
+| Easy Downloading & Sharing | PDF download | 🟡 Partial — need shareable link |
+
+### MODULE 5: EXPENSE MANAGEMENT
+
+| MyKase Feature | Causly Status | Gap Level |
+|---|---|---|
+| Capture Expenses | Not built | 🔴 Missing |
+| Client/Matter/User Wise | Not built | 🔴 Missing |
+| Billable/Non-Billable | Not built | 🔴 Missing |
+| Save Receipts | Not built | 🔴 Missing |
+| Analyse & Monitor Spending | Not built | 🔴 Missing |
+| Quick Search & Retrieval | Not built | 🔴 Missing |
+| Reports | Not built | 🔴 Missing |
+
+### MODULE 6: IPR MANAGEMENT
+
+| MyKase Feature | Causly Status | Gap Level |
+|---|---|---|
+| Trademark/Copyright/Patent/GI/Design search | Not built | 🔴 Missing |
+| Proprietor & Applicant Search | Not built | 🔴 Missing |
+| Agent Search with Reports | Not built | 🔴 Missing |
+| Alerts on Renewals & Status Updates | Not built | 🔴 Missing |
+| Document Management for IP | Not built | 🔴 Missing |
+| Store Application Details | Not built | 🔴 Missing |
+
+### MODULE 7: NOTICE MANAGEMENT
+
+| MyKase Feature | Causly Status | Gap Level |
+|---|---|---|
+| Send & Receive Notices | Not built | 🔴 Missing |
+| Drafting of Bulk Notices | Not built | 🔴 Missing |
+| Dashboard with Calendar View | Calendar exists | 🟡 Partial |
+| Track Milestones of Notices | Not built | 🔴 Missing |
+| Smart Alerts & Calendar Logs | Reminder system exists | 🟡 Partial |
+| Central Repository of Notices | Not built | 🔴 Missing |
+| Connect Notice to Matters | Not built | 🔴 Missing |
+
+### MODULE 8: DOCUMENT MANAGEMENT
+
+| MyKase Feature | Causly Status | Gap Level |
+|---|---|---|
+| Centralised Repository | Document list with search | ✅ Done |
+| Check In/Check Out | Not built | 🔴 Missing |
+| Versioning & Audit Trail | Not built | 🔴 Missing |
+| Mark as Confidential | Confidential flag exists | ✅ Done |
+| Share Files Securely | Download via API | 🟡 Partial — need shareable links |
+| Restricted User Rights | RLS policies exist | ✅ Done |
+| Collaborative Working | Not built | 🔴 Missing |
+| Quick Search & Retrieval | Document search exists | ✅ Done |
+| Dropbox/OneDrive/Google Drive integration | Not built | 🔴 Missing |
+
+### MODULE 9: TOOLS
+
+| MyKase Feature | Causly Status | Gap Level |
+|---|---|---|
+| Digital Signature | Not built | 🔴 Missing |
+| Bundling of PDF | Not built | 🔴 Missing |
+| Compare Document | Not built | 🔴 Missing |
+| OCR | Not built | 🔴 Missing |
+| Translator | Hindi i18n exists | 🟡 Partial — need document translation |
+
+---
+
+## PART 2: MISSING FEATURES — IMPLEMENTATION PLAN
+
+### PRIORITY 1: CORE GAPS (Must-Have, 0-30 days)
+
+#### 1.1 Expense Management
+```
+DB: expenses table
+  - id, case_id, user_id, firm_id
+  - amount, description, category (court_fees/travel/filing/notary/other)
+  - is_billable (boolean)
+  - receipt_url (Cloudinary upload)
+  - date, created_at
+
+Pages:
+  - /expenses — list with search, filters (case, user, date range, billable)
+  - /expenses/new — add expense form
+  - /expenses/reports — spending by category/case/user
+
+API:
+  - /api/expenses — CRUD
+  - /api/expenses/reports — aggregated stats
+
+Integration:
+  - Link expenses to invoices (billable expenses auto-added to invoice)
+  - Expense reports in /reports
+```
+Effort: 3-4 days
+
+#### 1.2 Task Management
+```
+DB: tasks table
+  - id, case_id, assigned_to, created_by, firm_id
+  - title, description, status (pending/in_progress/completed)
+  - priority (low/medium/high/urgent)
+  - due_date, completed_at
+
+Pages:
+  - Tasks widget on case detail page
+  - /tasks — my tasks / all tasks view with filters
+  - Task board (Kanban) view optional
+
+API:
+  - /api/tasks — CRUD with case linking
+
+Integration:
+  - Task assignment sends notification
+  - Overdue tasks show on dashboard
+  - Link to calendar
+```
+Effort: 2-3 days
+
+#### 1.3 Timesheet Management (Full UI)
+```
+Existing: time_entries API exists
+
+Add:
+  - /timesheets — weekly/monthly timesheet view
+  - Start/stop timer on case detail page
+  - Manual time entry form
+  - Billable hours report per lawyer/case/client
+  - Export timesheet as CSV/PDF
+  - Link time entries to invoices
+
+Pages:
+  - /timesheets — main timesheet page
+  - Timer component on case detail page
+
+API:
+  - Enhance /api/time-entries with aggregation endpoints
+  - /api/timesheets/report — billable hours by lawyer/case
+```
+Effort: 3-4 days
+
+#### 1.4 Personalized Cause List
+```
+DB: user_court_preferences table
+  - user_id, court_code, court_type (sc/hc/dc)
+  - notify_on_cause_list (boolean)
+
+Pages:
+  - Add "My Courts" section to dashboard
+  - Auto-fetch cause list for preferred courts
+  - Show filtered cause list on dashboard
+
+API:
+  - /api/user-court-preferences — CRUD
+  - Enhance dashboard to show personalized cause list
+
+Integration:
+  - Daily cron fetches cause list for all user-preferred courts
+  - Send WhatsApp/email alert when cause list has user's cases
+```
+Effort: 2-3 days
+
+#### 1.5 Case Status Alerts
+```
+DB: case_alerts table
+  - id, case_id, user_id, alert_type
+  - last_status, current_status
+  - channel (email/whatsapp/sms/in_app)
+
+Flow:
+  1. User links case to eCourts CNR
+  2. Cron job polls case status daily
+  3. If status changes → send alert via all channels
+  4. Store alert history
+
+API:
+  - /api/case-alerts — CRUD
+  - /api/case-alerts/check — cron endpoint
+  - Enhance eCourts sync to include status comparison
+
+Integration:
+  - Reuse existing WhatsApp/email infrastructure
+  - Dashboard notification when status changes
+```
+Effort: 3-4 days
+
+### PRIORITY 2: DIFFERENTIATORS (30-60 days)
+
+#### 2.1 Orders/Judgments Timeline
+```
+Pages:
+  - Timeline component on case detail page
+  - Visual chronological view of all orders/judgments
+  - Each entry: date, type, summary, PDF link
+
+API:
+  - /api/cases/[id]/timeline — fetch timeline entries
+  - Auto-populate from eCourts sync data
+
+DB:
+  - case_timeline table
+    - id, case_id, entry_type (order/judgment/hearing/filing)
+    - title, description, date, pdf_url
+    - source (manual/ecourts)
+```
+Effort: 3-4 days
+
+#### 2.2 Matter Intake Forms
+```
+Add non-litigation matter types:
+  - Contract Drafting
+  - Legal Advisory
+  - Due Diligence
+  - Registration/Stamping
+  - Corporate Compliance
+  - Family Matter
+  - Property Transaction
+
+Pages:
+  - Enhanced /cases/new with matter type selector
+  - Different fields per type (e.g., contract value for advisory)
+
+DB:
+  - Add matter_type column to cases
+  - Add custom_fields JSONB column
+```
+Effort: 2-3 days
+
+#### 2.3 Invoice Template Customization
+```
+Pages:
+  - /settings/invoice-template — template editor
+  - Upload firm logo
+  - Add firm name, address, phone, GSTIN
+  - Choose color scheme
+  - Preview before save
+
+API:
+  - /api/invoice-settings — CRUD
+  - Enhance PDF generation to use custom template
+```
+Effort: 2-3 days
+
+#### 2.4 Shareable Invoice Links
+```
+API:
+  - /api/invoices/[id]/share — generate shareable link
+  - /api/invoices/shared/[token] — public invoice view
+  - Client can view and pay online
+
+Flow:
+  1. Generate unique token per invoice
+  2. Send link via WhatsApp/email
+  3. Client opens link → sees invoice → pays via Razorpay
+```
+Effort: 2 days
+
+#### 2.5 Document Check-in/Check-out
+```
+DB: document_versions table
+  - id, document_id, version_number
+  - file_url, uploaded_by, uploaded_at
+  - change_description
+
+DB: document_locks table
+  - document_id, locked_by, locked_at, expires_at
+
+Pages:
+  - Version history on document detail
+  - Check-out/check-in button
+  - Compare versions (diff view)
+
+API:
+  - /api/documents/[id]/checkout — lock document
+  - /api/documents/[id]/checkin — unlock + new version
+  - /api/documents/[id]/versions — version history
+```
+Effort: 3-4 days
+
+### PRIORITY 3: NICE-TO-HAVE (60-90 days)
+
+#### 3.1 Pro-active Keyword Alerts
+```
+DB: keyword_alerts table
+  - id, user_id, firm_id
+  - keyword (company name, director name, brand)
+  - alert_type (new_filing/status_change)
+  - court_filter (sc/hc/all)
+  - last_checked_at
+
+Flow:
+  1. User sets keywords to monitor
+  2. Cron job searches eCourts for new filings matching keywords
+  3. If match found → send email/WhatsApp alert
+  4. Show matches in /alerts dashboard
+
+API:
+  - /api/keyword-alerts — CRUD
+  - /api/keyword-alerts/check — cron endpoint
+```
+Effort: 5-7 days (eCourts scraping is unreliable)
+
+#### 3.2 Google Calendar / Outlook Sync
+```
+Integration:
+  - OAuth2 Google Calendar API
+  - Sync hearings to Google Calendar
+  - Two-way sync (create in Causly → appears in Google Calendar)
+
+API:
+  - /api/calendar/sync — sync hearings
+  - /api/calendar/connect — OAuth flow
+```
+Effort: 3-4 days
+
+#### 3.3 Cloud Drive Integration
+```
+Integration:
+  - Google Drive API
+  - Dropbox API
+  - OneDrive API
+
+Flow:
+  1. User connects drive account
+  2. Upload from Causly → saves to drive
+  3. Or save from drive → links to Causly
+```
+Effort: 5-7 days
+
+#### 3.4 PDF Bundling
+```
+Tool:
+  - Select multiple documents
+  - Merge into single PDF
+  - Add table of contents
+  - Add page numbers
+  - Download merged PDF
+
+Implementation:
+  - Client-side PDF merge using pdf-lib
+  - Or server-side using PyPDF2
+```
+Effort: 2-3 days
+
+#### 3.5 Document Comparison
+```
+Tool:
+  - Upload two versions of a document
+  - Side-by-side diff view
+  - Highlight changes
+
+Implementation:
+  - Client-side diff using diff-match-patch
+  - Or integrate with external API
+```
+Effort: 3-4 days
+
+#### 3.6 Digital Signature (Future)
+```
+Integration:
+  - Leegality API (Indian DSC provider)
+  - Or Zoho Sign API
+
+Flow:
+  1. Upload document
+  2. Send for signature via Leegality
+  3. Track signature status
+  4. Store signed copy
+```
+Effort: 5-7 days + API costs
+
+---
+
+## PART 3: PRICING STRATEGY
+
+### CURRENT CAUSLY PLANS
+
+| Plan | Price | Cases | Users | Storage |
+|---|---|---|---|---|
+| Free | ₹0 | 3 | 1 | 100MB |
+| Solo | ₹999/mo | 25 | 1 | 5GB |
+| Professional | ₹2,999/mo | 100 | 5 | 25GB |
+| Enterprise | ₹7,999/mo | Unlimited | Unlimited | 100GB |
+
+### RECOMMENDED NEW PRICING
+
+Keep the same base plans but add feature gates:
+
+#### FREE PLAN (₹0)
+- 3 cases, 1 user, 100MB storage
+- Basic case management + calendar
+- Court research (SC + HC cause list)
+- 4 legal calculators
+- 17 bare acts reference
+- Email support only
+- **NO invoicing, NO expense tracking, NO timesheets**
+
+#### STARTER PLAN (₹799/month billed annually, ₹999/month)
+- 25 cases, 2 users, 5GB storage
+- Everything in Free
+- Invoice management + GST
+- Basic expense tracking
+- Basic time entries (manual only)
+- WhatsApp alerts for hearings
+- Client portal (view only)
+- Email + chat support
+
+#### PROFESSIONAL PLAN (₹2,499/month billed annually, ₹2,999/month)
+- 100 cases, 10 users, 25GB storage
+- Everything in Starter
+- Advanced expense reports
+- Timesheet management with timer
+- Task management
+- Case status alerts (email + WhatsApp)
+- Personalized cause list
+- Orders/judgments timeline
+- Invoice template customization
+- Shareable invoice links
+- Document versioning
+- Reports & analytics (all)
+- Priority support
+
+#### ENTERPRISE PLAN (₹5,999/month billed annually, ₹7,999/month)
+- Unlimited cases, users, 100GB storage
+- Everything in Professional
+- Pro-active keyword alerts
+- Google Calendar sync
+- Cloud drive integration (Google Drive/Dropbox/OneDrive)
+- PDF bundling tool
+- Document comparison
+- Custom roles & permissions
+- API access
+- Dedicated account manager
+- SLA guarantee
+
+### ADD-ON PRICING (Enterprise only)
+
+| Add-on | Price |
+|---|---|
+| IPR Management Module | ₹1,999/month |
+| Notice Management Module | ₹1,499/month |
+| Extra 10GB storage | ₹299/month |
+| Extra user pack (10 users) | ₹999/month |
+| Priority support SLA | ₹499/month |
+| Custom integrations | ₹9,999 one-time |
+
+### PRICING COMPARISON vs MYKASE
+
+| Feature | MyKase | Causly Starter | Causly Pro | Causly Enterprise |
+|---|---|---|---|---|
+| Monthly Price | ₹1,250+/license | ₹799 (2 users) | ₹2,499 (10 users) | ₹5,999 (unlimited) |
+| Per User Cost | ₹1,250 | ₹400 | ₹250 | ₹0 (unlimited) |
+| Court Tracking | ✅ (Manupatra sub) | ✅ (free via SDK) | ✅ (free via SDK) | ✅ (free via SDK) |
+| Invoicing | ✅ | ✅ | ✅ | ✅ |
+| Expense Mgmt | ✅ | ✅ | ✅ | ✅ |
+| Timesheets | ✅ | ❌ | ✅ | ✅ |
+| Tasks | ✅ | ❌ | ✅ | ✅ |
+| Client Portal | ✅ | View only | Full | Full |
+| Pro-active Alerts | ✅ | ❌ | ❌ | ✅ |
+| IPR Module | ✅ (separate) | ❌ | ❌ | Add-on |
+| Notice Module | ✅ (separate) | ❌ | ❌ | Add-on |
+
+### COMPETITIVE ADVANTAGES
+
+1. **Court tracking is FREE** — MyKase requires Manupatra subscription
+2. **Transparent pricing** — MyKase uses custom quotes only
+3. **All-in-one** — MyKase splits features across separate paid modules
+4. **Modern UI** — MyKase's interface is dated (per reviews)
+5. **India-first** — GST, bare acts, calculators, Indian court APIs
+6. **Client portal included** — MyKase charges extra for this
+
+### REVENUE PROJECTIONS
+
+Assuming conversion funnel:
+- 1,000 free signups/month
+- 10% convert to Starter (100 users)
+- 3% convert to Professional (30 users)
+- 1% convert to Enterprise (10 users)
+
+| Plan | Users | Monthly Revenue |
+|---|---|---|
+| Starter (₹799) | 100 | ₹79,900 |
+| Professional (₹2,499) | 30 | ₹74,970 |
+| Enterprise (₹5,999) | 10 | ₹59,990 |
+| **Total MRR** | **140** | **₹2,14,860** |
+| **Annual ARR** | | **₹25,78,320** |
+
+---
+
+## PART 4: IMPLEMENTATION TIMELINE
+
+### Phase 1: Core Gaps (Week 1-4)
+```
+Week 1: Expense Management + Task Management
+Week 2: Timesheet Management (full UI with timer)
+Week 3: Personalized Cause List + Case Status Alerts
+Week 4: Orders/Judgments Timeline + Matter Intake
+```
+
+### Phase 2: Differentiators (Week 5-8)
+```
+Week 5: Invoice Template Customization + Shareable Links
+Week 6: Document Check-in/Check-out + Versioning
+Week 7: PDF Bundling + Document Comparison
+Week 8: Google Calendar Sync
+```
+
+### Phase 3: Premium Features (Week 9-12)
+```
+Week 9-10: Pro-active Keyword Alerts
+Week 11: Cloud Drive Integration
+Week 12: Digital Signature (Leegality integration)
+```
+
+### Phase 4: IPR & Notice (Week 13-16)
+```
+Week 13-14: IPR Management Module
+Week 15-16: Notice Management Module
+```
+
+---
+
+## PART 5: MARKETING MESSAGING
+
+### Tagline Options
+1. "Everything MyKase offers — at a fraction of the cost"
+2. "India's most affordable practice management platform"
+3. "Track 10,000+ courts. Manage your practice. All in one place."
+
+### Key Differentiators to Highlight
+1. **Court tracking included free** (MyKase requires separate Manupatra subscription)
+2. **Transparent pricing** (MyKase hides pricing behind "Contact Sales")
+3. **All modules included** (MyKase charges separately for each module)
+4. **Modern, clean interface** (MyKase's UI is dated per user reviews)
+5. **Built for Indian lawyers** (GST, bare acts, calculators, court APIs)
+6. **Client portal at no extra cost**
+7. **Free tier available** (MyKase has no free tier)
+
+### Feature Comparison Landing Page
+Create /compare/mykase page showing:
+- Side-by-side feature comparison
+- Price comparison calculator
+- "Switch from MyKase" import guide
+- Customer testimonials (once you have them)

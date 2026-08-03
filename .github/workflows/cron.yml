@@ -1,0 +1,134 @@
+name: Cron Jobs
+
+on:
+  schedule:
+    # Every hour - Reminders
+    - cron: '0 * * * *'
+    # 8am, 1pm, 6pm IST - Case Alerts
+    - cron: '0 2,7,12 * * *'
+    # 6am IST - Cause List Sync
+    - cron: '0 0 * * *'
+    # 8am IST - Deadlines Check
+    - cron: '0 2 * * *'
+    # Monday 9am IST - Invoice Reminders
+    - cron: '0 3 * * 1'
+    # 8am IST - Daily Digest
+    - cron: '0 2 * * *'
+    # Midnight IST - Expire Trials
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'Job to run (all, reminders, case-alerts, cause-list, deadlines, invoices, digest, trials)'
+        required: false
+        default: 'all'
+
+env:
+  APP_URL: ${{ secrets.APP_URL }}
+  CRON_SECRET: ${{ secrets.CRON_SECRET }}
+
+jobs:
+  reminders:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '0 * * * *' ||
+      github.event_name == 'workflow_dispatch' && (inputs.job == 'all' || inputs.job == 'reminders')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Reminders Cron
+        run: |
+          response=$(curl -s -w "%{http_code}" -o /tmp/response.txt \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$APP_URL/api/reminders/cron")
+          echo "Status: $response"
+          cat /tmp/response.txt
+          if [ "$response" != "200" ]; then exit 1; fi
+
+  case-alerts:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '0 2,7,12 * * *' ||
+      github.event_name == 'workflow_dispatch' && (inputs.job == 'all' || inputs.job == 'case-alerts')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Case Alerts
+        run: |
+          response=$(curl -s -w "%{http_code}" -o /tmp/response.txt \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$APP_URL/api/case-alerts/check")
+          echo "Status: $response"
+          cat /tmp/response.txt
+          if [ "$response" != "200" ]; then exit 1; fi
+
+  cause-list:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '0 0 * * *' ||
+      github.event_name == 'workflow_dispatch' && (inputs.job == 'all' || inputs.job == 'cause-list')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Cause List Sync
+        run: |
+          response=$(curl -s -w "%{http_code}" -o /tmp/response.txt \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$APP_URL/api/cause-list/sync")
+          echo "Status: $response"
+          cat /tmp/response.txt
+          if [ "$response" != "200" ]; then exit 1; fi
+
+  deadlines:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '0 2 * * *' ||
+      github.event_name == 'workflow_dispatch' && (inputs.job == 'all' || inputs.job == 'deadlines')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Deadlines Check
+        run: |
+          response=$(curl -s -w "%{http_code}" -o /tmp/response.txt \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$APP_URL/api/deadlines/check")
+          echo "Status: $response"
+          cat /tmp/response.txt
+          if [ "$response" != "200" ]; then exit 1; fi
+
+  invoices:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1' ||
+      github.event_name == 'workflow_dispatch' && (inputs.job == 'all' || inputs.job == 'invoices')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Invoice Reminders
+        run: |
+          response=$(curl -s -w "%{http_code}" -o /tmp/response.txt \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$APP_URL/api/invoices/reminders")
+          echo "Status: $response"
+          cat /tmp/response.txt
+          if [ "$response" != "200" ]; then exit 1; fi
+
+  digest:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '0 2 * * *' ||
+      github.event_name == 'workflow_dispatch' && (inputs.job == 'all' || inputs.job == 'digest')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Daily Digest
+        run: |
+          response=$(curl -s -w "%{http_code}" -o /tmp/response.txt \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$APP_URL/api/daily-digest")
+          echo "Status: $response"
+          cat /tmp/response.txt
+          if [ "$response" != "200" ]; then exit 1; fi
+
+  trials:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '0 18 * * *' ||
+      github.event_name == 'workflow_dispatch' && (inputs.job == 'all' || inputs.job == 'trials')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Expire Trials
+        run: |
+          response=$(curl -s -w "%{http_code}" -o /tmp/response.txt \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$APP_URL/api/subscriptions/expire-trials")
+          echo "Status: $response"
+          cat /tmp/response.txt
+          if [ "$response" != "200" ]; then exit 1; fi

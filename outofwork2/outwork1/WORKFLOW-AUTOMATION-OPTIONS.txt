@@ -1,0 +1,341 @@
+# Workflow Automation Options for Causly (LawApp)
+
+## Current Automation Capabilities
+- Hearing reminders via email/SMS/WhatsApp
+- Invoice generation from case fees
+- Document storage with Cloudinary
+- Payment tracking with Razorpay
+- Court data auto-fetch (bharat-courts)
+- Notification scheduling via cron jobs
+
+---
+
+## Automation Options Available
+
+### 1. SUPABASE EDGE FUNCTIONS (Recommended - Free Tier)
+**Best for:** Database-triggered workflows, background jobs
+
+| Trigger | Action | Example |
+|---------|--------|---------|
+| New case created | Auto-create hearing slots | Generate default hearing dates |
+| Payment received | Update case amount_received | Auto-assign percentage to employees |
+| Invoice paid | Send thank you email | Auto-notify client |
+| Hearing tomorrow | Send reminder | Auto-trigger 24hr before |
+| Case status changed | Notify assigned lawyer | Push notification |
+| New employee added | Send welcome email | Auto-provision access |
+
+**Setup:**
+```bash
+# Install Supabase CLI
+npm i -g supabase
+
+# Create edge function
+supabase functions new send-hearing-reminder
+supabase functions new process-salary
+supabase functions new sync-court-status
+```
+
+**Pros:** Free, fast, Supabase-native, uses existing DB
+**Cons:** 500K invocations/month free, cold starts
+
+---
+
+### 2. VERCEL CRON JOBS (Already Partially Used)
+**Best for:** Scheduled tasks, periodic checks
+
+| Schedule | Task | Priority |
+|----------|------|----------|
+| `0 * * * *` | Process due reminders | High |
+| `0 9 * * *` | Daily cause list fetch | High |
+| `0 1 * * *` | Daily salary calculation | Medium |
+| `0 8 * * 1` | Weekly performance report | Medium |
+| `0 0 1 * *` | Monthly payslip generation | Low |
+| `*/15 * * * *` | Sync court case status | High |
+
+**Already in vercel.json:**
+```json
+"crons": [
+  { "path": "/api/reminders/cron", "schedule": "0 * * * *" }
+]
+```
+
+**Add more:**
+```json
+"crons": [
+  { "path": "/api/reminders/cron", "schedule": "0 * * * *" },
+  { "path": "/api/cron/daily-cause-list", "schedule": "0 8 * * *" },
+  { "path": "/api/cron/sync-court-status", "schedule": "*/30 * * * *" },
+  { "path": "/api/cron/process-salary", "schedule": "0 1 1 * *" },
+  { "path": "/api/cron/weekly-report", "schedule": "0 9 * * 1" }
+]
+```
+
+**Pros:** Free on Vercel, easy to set up, reliable
+**Cons:** Max duration 60s on free tier, limited concurrency
+
+---
+
+### 3. RESEND AUTOMATIONS (Email Workflows)
+**Best for:** Email-based automations
+
+| Trigger | Email | Template |
+|---------|-------|----------|
+| New client added | Welcome email | client-welcome |
+| Invoice generated | Send invoice | invoice-created |
+| Payment received | Receipt | payment-receipt |
+| Hearing tomorrow | Reminder | hearing-reminder |
+| Case won | Congratulations | case-won |
+| Salary processed | Payslip | salary-payslip |
+
+**API:**
+```typescript
+import { Resend } from 'resend';
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+await resend.emails.send({
+  from: 'Causly <noremail@causly.in>',
+  to: client.email,
+  subject: 'Welcome to your firm!',
+  react: WelcomeTemplate({ name: client.full_name })
+});
+```
+
+**Pros:** 100 emails/day free, beautiful templates, webhooks
+**Cons:** Limited free tier, no SMS/WhatsApp
+
+---
+
+### 4. MSG91 WORKFLOWS (SMS/WhatsApp - India)
+**Best for:** Indian SMS/WhatsApp automations
+
+| Trigger | Channel | Message |
+|---------|---------|---------|
+| Hearing tomorrow | SMS + WhatsApp | "Reminder: {case} hearing tomorrow at {time}" |
+| Invoice due | WhatsApp | "Payment of {amount} due for {case}" |
+| Salary credited | SMS | "Salary of {amount} credited for {month}" |
+| OTP login | SMS | "Your Causly login code: {otp}" |
+
+**Flow Builder:**
+```javascript
+// MSG91 Flow API
+await fetch('https://api.msg91.com/api/v5/flow', {
+  method: 'POST',
+  headers: { 'authkey': MSG91_API_KEY },
+  body: JSON.stringify({
+    flow_id: 'HEARING_REMINDER',
+    mobiles: `91${client.phone}`,
+    CASE_NAME: case.title,
+    HEARING_DATE: hearing.date,
+    COURT: hearing.court
+  })
+});
+```
+
+**Pros:** India-focused, bulk SMS, WhatsApp Business API
+**Cons:** Paid after 100/month, needs DLT registration for SMS
+
+---
+
+### 5. INTERAKT (WhatsApp Business - India)
+**Best for:** WhatsApp-first communication
+
+| Template | Use Case |
+|----------|----------|
+| `hearing_reminder` | 24hr before hearing |
+| `payment_due` | Invoice pending |
+| `case_update` | Status change |
+| `salary_payslip` | Monthly payslip |
+| `document_ready` | New document uploaded |
+
+**Pros:** WhatsApp Business official, template messages, free tier
+**Cons:** Template approval needed, limited free messages
+
+---
+
+### 6. ZAPIER / PABBLY (No-Code - External)
+**Best for:** Non-technical users, third-party integrations
+
+| Trigger | Action |
+|---------|--------|
+| New payment in Razorpay | Create payment record in Causly |
+| New client in Causly | Add to Mailchimp list |
+| Case won | Create Google Sheet entry |
+| Invoice paid | Update QuickBooks |
+| Hearing scheduled | Add to Google Calendar |
+
+**Setup:**
+1. Create webhook endpoint in Causly
+2. Connect to Zapier/Pabbly
+3. Set up triggers and actions
+
+**Pros:** No coding, 1000+ integrations
+**Cons:** Paid, slower, external dependency
+
+---
+
+### 7. CRONTO (Scheduled Tasks - Node.js)
+**Best for:** Custom complex workflows
+
+```typescript
+// lib/cron/scheduler.ts
+import cron from 'node-cron';
+
+// Daily at 8 AM - fetch cause lists
+cron.schedule('0 8 * * *', async () => {
+  await fetchAllCauseLists();
+});
+
+// Every 30 min - sync court status
+cron.schedule('*/30 * * * *', async () => {
+  await syncLinkedCases();
+});
+
+// 1st of month - process salary
+cron.schedule('0 0 1 * *', async () => {
+  await processMonthlySalary();
+});
+```
+
+**Pros:** Full control, custom logic, no external deps
+**Cons:** Requires server, not on Vercel (use Edge Functions instead)
+
+---
+
+### 8. DATABASE TRIGGERS (PostgreSQL)
+**Best for:** Real-time data consistency
+
+```sql
+-- Auto-set firm_id on insert
+CREATE TRIGGER set_firm_id_trigger
+  BEFORE INSERT ON cases
+  FOR EACH ROW
+  EXECUTE FUNCTION set_firm_id_from_creator();
+
+-- Auto-update case amount when payment added
+CREATE OR REPLACE FUNCTION update_case_amount()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE cases
+  SET amount_received = amount_received + NEW.amount
+  WHERE id = NEW.case_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER on_payment_added
+  AFTER INSERT ON payments
+  FOR EACH ROW
+  EXECUTE FUNCTION update_case_amount();
+```
+
+**Pros:** Instant, reliable, no external service
+**Cons:** Limited logic, no external API calls
+
+---
+
+## Recommended Automation Stack for Causly
+
+### Phase 1: Core (Free)
+| Component | Service | Cost |
+|-----------|---------|------|
+| Scheduled tasks | Vercel Cron | Free |
+| Email notifications | Resend (100/day) | Free |
+| SMS reminders | MSG91 (100/month) | Free |
+| WhatsApp | Interakt (100/month) | Free |
+| DB triggers | Supabase | Free |
+
+### Phase 2: Growth (Paid)
+| Component | Service | Cost |
+|-----------|---------|------|
+| More emails | Resend Pro | $20/month |
+| Bulk SMS | MSG91 | ₹500/month |
+| WhatsApp templates | Interakt | ₹1000/month |
+| Advanced workflows | Pabbly Connect | $25/month |
+
+---
+
+## Priority Implementation Order
+
+### Week 1: Foundation
+1. ✅ Vercel cron for reminders (already done)
+2. ✅ Resend email integration (already done)
+3. ✅ MSG91 SMS integration (already done)
+4. ✅ Interakt WhatsApp integration (already done)
+5. ⬜ Add more cron jobs (cause list, court sync)
+
+### Week 2: Database Automation
+6. ⬜ PostgreSQL triggers for:
+   - Auto-update case amount on payment
+   - Auto-create notification on case status change
+   - Auto-set firm_id on all inserts
+   - Auto-update invoice status on payment
+
+### Week 3: Email Templates
+7. ⬜ Welcome email template
+8. ⬜ Invoice email template
+9. ⬜ Payment receipt template
+10. ⬜ Hearing reminder template
+11. ⬜ Case update template
+
+### Week 4: Advanced Workflows
+12. ⬜ Daily cause list auto-fetch
+13. ⬜ Court status sync every 30 min
+14. ⬜ Monthly salary auto-calculation
+15. ⬜ Weekly performance report auto-send
+
+---
+
+## Example Workflow: Hearing Reminder
+
+```
+[24 hours before hearing]
+    │
+    ▼
+[Vercel Cron: /api/cron/hearing-reminders]
+    │
+    ├── Query hearings where hearing_date = tomorrow
+    │
+    ├── For each hearing:
+    │   ├── Send email via Resend
+    │   ├── Send SMS via MSG91
+    │   ├── Send WhatsApp via Interakt
+    │   └── Create in-app notification
+    │
+    └── Log results to notification_logs
+```
+
+---
+
+## Example Workflow: Payment Received
+
+```
+[Payment recorded in system]
+    │
+    ▼
+[PostgreSQL Trigger: on_payment_added]
+    │
+    ├── Update cases.amount_received
+    │
+    └── Create notification for assigned lawyer
+        │
+        ▼
+    [Edge Function: process-payment-effects]
+        │
+        ├── If case fully paid → update status
+        ├── If employee on percentage → calculate earnings
+        └── Send receipt email to client
+```
+
+---
+
+## Cost Summary
+
+| Service | Free Tier | Paid Tier |
+|---------|-----------|-----------|
+| Vercel Cron | Unlimited | $20/month |
+| Resend | 100/day | $20/month |
+| MSG91 | 100/month | ₹500/month |
+| Interakt | 100/month | ₹1000/month |
+| Supabase Edge | 500K/month | $25/month |
+| **Total Free** | **$0** | - |
+| **Total Paid** | - | **~$65/month** |

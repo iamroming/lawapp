@@ -1,0 +1,213 @@
+================================================================================
+                    CAUSLY - SESSION SUMMARY
+                    Date: 28 July 2026
+================================================================================
+
+SESSION OBJECTIVE
+-----------------
+Continue fixing remaining bugs from the 66-item bug audit (checkbugs1.txt),
+implementing the 14 critical fixes that were identified but not yet applied.
+
+COMPLETED FIXES THIS SESSION (13 items)
+========================================
+
+1. CSRF MIDDLEWARE ENFORCEMENT
+   File: src/middleware.ts
+   - Added CSRF token verification on POST/DELETE for sensitive subscription routes
+   - Checks both x-csrf-token header and csrf_token cookie match
+   - Skips CSRF for auth routes, webhooks, client portal, and public APIs
+   - Prevents cross-site request forgery on payment/subscription endpoints
+
+2. RATE LIMITING ON AUTH ROUTES
+   File: src/middleware.ts
+   - Auth callback routes: 10 requests per minute per IP
+   - Login/signup POST: 5 requests per 5 minutes per IP
+   - Uses in-memory rate limit map (src/lib/rate-limit.ts)
+   - Returns 429 Too Many Requests with descriptive error message
+
+3. RATE LIMITING ON AI ROUTES
+   Files: src/app/api/ai/analyze/route.ts, src/app/api/ai/research/route.ts
+   - Both AI endpoints: 10 requests per hour per user+IP
+   - Prevents abuse of AI features
+   - Returns 429 with "AI rate limit exceeded" message
+
+4. NOTIFICATIONS SCHEDULE API AUTH + RATE LIMITING
+   File: src/app/api/notifications/schedule/route.ts
+   - Added authentication check (was completely unprotected before)
+   - Added rate limiting: max 3 schedule calls per hour per user+IP
+   - Added NextRequest import for request parameter access
+
+5. TAGS POST - VALIDATION + DUPLICATE CHECK
+   File: src/app/api/tags/route.ts
+   - Added field validation: name required, 1-50 characters
+   - Added duplicate tag name check (case-insensitive per user)
+   - Field whitelist: only accepts name, color, created_by
+   - Returns 409 Conflict for duplicate names
+
+6. AI ROUTES - INPUT VALIDATION
+   Files: src/app/api/ai/analyze/route.ts, src/app/api/ai/research/route.ts
+   - Analyze: description required, min 10 chars, max 5000 chars
+   - Research: query required, min 3 chars, max 5000 chars
+   - Returns 400 Bad Request for invalid inputs
+
+7. CASES POST - VERIFY CLIENT_ID OWNERSHIP
+   File: src/app/api/cases/route.ts
+   - Before creating a case, verifies the provided client_id belongs to the user
+   - Queries clients table with created_by filter and deleted_at check
+   - Returns 400 "Client not found or does not belong to you" if invalid
+
+8. NOTIFICATION PREFERENCES - DATABASE BACKED
+   File: src/app/(dashboard)/settings/page.tsx
+   - Changed from localStorage-only to database-backed via notification_preferences table
+   - fetchNotificationPreferences(): loads from Supabase on page load
+   - Save button: upserts to notification_preferences table with user_id
+   - Uses upsert with onConflict: "user_id" for idempotent saves
+
+9. TEAM INVITE API
+   File: src/app/api/team/invite/route.ts (NEW)
+   - POST endpoint for admin-only team member invitation
+   - Validates email exists in profiles table
+   - Validates requester is admin or super_admin
+   - Rate limited: 5 invites per hour per user+IP
+   - Updates the invitee's role in profiles table
+   - Logs activity via log_activity RPC
+   - Prevents self-invitation and admin hierarchy violations
+
+10. TEAM REMOVE API
+    File: src/app/api/team/[id]/route.ts (NEW)
+    - DELETE endpoint for admin-only member removal
+    - Validates requester is admin or super_admin
+    - Prevents self-removal
+    - Prevents removing another admin (unless super_admin)
+    - Sets role to "staff" (soft removal from team)
+    - Logs activity with previous_role in details
+
+11. SKELETON LOADING STATES
+    Files: src/app/(dashboard)/cases/page.tsx,
+           src/app/(dashboard)/clients/page.tsx,
+           src/app/(dashboard)/documents/page.tsx
+    - Replaced "Loading..." text with PageSkeleton component
+    - Shows animated skeleton cards and tables during data fetch
+    - Improves perceived performance and user experience
+
+12. DOCUMENT UPLOAD - STORAGE LIMIT CHECK
+    File: src/app/api/documents/route.ts
+    - Added checkStorageLimit() before document insert
+    - Validates file_size against user's subscription storage limit
+    - Returns 403 if storage limit exceeded
+    - Added title validation (required, non-empty string)
+
+13. GLOBAL SEARCH - EXPANDED COVERAGE
+    File: src/components/global-search.tsx
+    - Expanded from 3 search types to 6:
+      * Cases (title, case_number)
+      * Clients (full_name, email, phone)
+      * Documents (title, file_name)
+      * Invoices (invoice_number) - NEW
+      * Hearings (court name) - NEW
+      * Tags (name) - NEW
+    - Added new icons: Receipt, Calendar, Tag
+    - Updated search placeholder text
+    - Each result type has its own color-coded icon
+
+FILES MODIFIED THIS SESSION
+============================
+
+Modified:
+  - src/middleware.ts                          (CSRF + rate limiting)
+  - src/app/api/cases/route.ts                (client_id ownership check)
+  - src/app/api/documents/route.ts            (storage limit + validation)
+  - src/app/api/tags/route.ts                 (validation + duplicate check)
+  - src/app/api/ai/analyze/route.ts           (validation + rate limiting)
+  - src/app/api/ai/research/route.ts          (validation + rate limiting)
+  - src/app/api/notifications/schedule/route.ts (auth + rate limiting)
+  - src/app/(dashboard)/settings/page.tsx     (DB-backed notifications)
+  - src/app/(dashboard)/cases/page.tsx        (skeleton loading)
+  - src/app/(dashboard)/clients/page.tsx      (skeleton loading)
+  - src/app/(dashboard)/documents/page.tsx    (skeleton loading)
+  - src/components/global-search.tsx          (6 search types)
+  - scripts/seed-super-admin.ts              (fixed type error)
+
+Created:
+  - src/app/api/team/invite/route.ts          (team invitation API)
+  - src/app/api/team/[id]/route.ts            (team removal API)
+
+BUILD STATUS
+============
+- Build: PASSING (89 pages, 0 errors)
+- TypeScript: No type errors
+- Pages: All routes compiled successfully
+
+KNOWN REMAINING ISSUES (from checkbugs1.txt)
+=============================================
+Not fixed in this session (lower priority or require infrastructure changes):
+
+Security:
+  - S-1: Rotate exposed API keys (requires manual key rotation)
+  - S-2: CSRF token storage needs Supabase table for server-side persistence
+  - S-3: Rate limiting uses in-memory map (resets on server restart)
+  - S-4: Admin/super-admin layout flash (already has auth check)
+  - S-16: No RLS enforcement in client code (relies on Supabase RLS)
+  - S-17: Some API routes lack auth (client-portal is intentionally public)
+
+Architecture:
+  - A-3: Tags POST no Zod validation (basic validation added)
+  - A-4: Reminders POST no Zod validation (basic validation exists)
+  - A-5: AI routes no Zod validation (basic validation added)
+  - A-7: Razorpay route exposes wrong key (environment variable issue)
+  - A-8: ecourts N+1 query (requires query optimization)
+
+Types:
+  - T-1: 37 `any` types remain in codebase
+  - T-2: generateCaseNumber uses Math.random (low collision risk)
+
+Database:
+  - D-3: Dashboard queries may be slow (needs indexing)
+  - D-4: Reports query issues (needs query optimization)
+  - D-5: Subscription-limit query issues
+
+Features:
+  - F-1 through F-15: Remaining missing features (lower priority)
+  - F-6 through F-8: Now fixed (notifications DB, team invite/remove)
+
+UI:
+  - U-1: Dark mode needs tailwind config for full support
+  - U-2: Duplicate sidebars exist
+  - U-3: Array.isArray repeated pattern
+  - U-6: No memoization on heavy pages
+  - U-7: No skeleton loading (now partially fixed)
+
+Build:
+  - B-1: Env var assertions (NEXT_PUBLIC_ prefix exposure)
+  - B-2: Cloudinary signature needs server-side generation
+
+Logic:
+  - L-6 through L-10: Various edge cases
+
+PRIOR SESSION ACCOMPLISHMENTS (Reference)
+==========================================
+Previous sessions completed:
+  - Phase 1: Security Fixes (6 items) - credentials, RLS, rate-limit, CSRF
+  - Phase 2: Architecture Fixes (5 items) - error boundaries, types, unwrap, pagination
+  - Phase 3: Core Feature Fixes (5 items) - Razorpay, activity logging, limits, invoices
+  - Phase 4: India-Specific Features (5 items) - GST, courts, templates, Hindi, validation
+  - Pricing: Research + implementation (3 plans, Razorpay integration, email templates)
+  - Phase 5: Communication & Client-Facing (4 items) - notifications, portal, team, conflicts
+  - Phase 6: Polish & Advanced (6 items) - modals, theme, search, export, table, undo
+  - Bug Audit: 66 issues found in checkbugs1.txt
+  - Bug Fixes Round 1: 14 critical fixes (soft deletes, webhooks, scoping, cascades)
+  - Super Admin Panel: Setup page, dashboard, users, cases, clients, documents, revenue
+
+Total fixes applied across all sessions: 27 bug fixes
+
+OWNER ACCESS
+============
+- Email: mubb@ymail.com
+- Password: 123456
+- Setup page: /setup (grant super admin access)
+- Admin panel: /super-admin
+- Login: /login
+
+================================================================================
+                              END OF SESSION SUMMARY
+================================================================================

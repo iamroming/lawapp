@@ -1,0 +1,5 @@
+"use client";
+import { PageError } from "@/components/page-error";
+export default function DashboardError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  return <PageError title="Dashboard Error" error={error} reset={reset} />;
+}

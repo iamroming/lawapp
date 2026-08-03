@@ -1,0 +1,100 @@
+{
+  "timestamp": "2026-08-01T16:24:24.288Z",
+  "totalPages": 15,
+  "passedPages": 15,
+  "failedPages": 0,
+  "consoleErrors": [],
+  "errors": [],
+  "results": [
+    {
+      "page": "/dashboard",
+      "status": 200,
+      "hasErrors": false,
+      "screenshot": "01-dashboard"
+    },
+    {
+      "page": "/cases",
+      "status": 200,
+      "hasErrors": false,
+      "screenshot": "02-cases-list"
+    },
+    {
+      "page": "/expenses",
+      "status": 200,
+      "hasErrors": false,
+      "screenshot": "03-expenses-list"
+    },
+    {
+      "page": "/expenses/new",
+      "status": 200,
+      "hasErrors": false,
+      "screenshot": "04-expenses-new"
+    },
+    {
+      "page": "/timesheets",
+      "status": 200,
+      "hasErrors": false,
+      "screenshot": "05-timesheets-list"
+    },
+    {
+      "page": "/timesheets/new",
+      "status": 200,
+      "hasErrors": false,
+      "screenshot": "06-timesheets-new"
+    },
+    {
+      "page": "/tasks",
+      "status": 200,
+      "hasErrors": false,
+      "screenshot": "07-tasks-board"
+    },
+    {
+      "page": "/tasks/new",
+      "status": 200,
+      "hasErrors": false,
+      "screenshot": "08-tasks-new"
+    },
+    {
+      "page": "/reports",
+      "status": 200,
+      "hasErrors": false,
+      "screenshot": "09-reports"
+    },
+    {
+      "page": "/reports/clients",
+      "status": 200,
+      "hasErrors": false,
+      "screenshot": "10-reports-clients"
+    },
+    {
+      "page": "/reports/performance",
+      "status": 200,
+      "hasErrors": false,
+      "screenshot": "11-reports-performance"
+    },
+    {
+      "page": "/ecourts",
+      "status": 200,
+      "hasErrors": false,
+      "screenshot": "12-ecourts-tracking"
+    },
+    {
+      "page": "/research",
+      "status": 200,
+      "hasErrors": false,
+      "screenshot": "13-court-research"
+    },
+    {
+      "page": "/billing",
+      "status": 200,
+      "hasErrors": false,
+      "screenshot": "14-billing"
+    },
+    {
+      "page": "/reminders",
+      "status": 200,
+      "hasErrors": false,
+      "screenshot": "15-reminders"
+    }
+  ]
+}

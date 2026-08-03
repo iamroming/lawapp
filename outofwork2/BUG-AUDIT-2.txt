@@ -1,0 +1,261 @@
+========================================
+LawXP CODEBASE BUG AUDIT REPORT
+Generated: 2026-08-02
+========================================
+
+SUMMARY:
+  CRITICAL: 3
+  HIGH:     7
+  MEDIUM:  15
+  LOW:     10
+  TOTAL:   35
+
+
+========================================
+CRITICAL BUGS (3)
+========================================
+
+BUG #1 — Hardcoded admin email in production API route
+  File: src/app/api/admin-setup/route.ts (line 8)
+  Description: The admin-setup route hardcodes a specific email (mubb@ymail.com)
+    to grant super_admin access. This is a hardcoded backdoor. Anyone who
+    discovers this route can grant themselves super_admin.
+  Fix: Remove hardcoded email. Use env var or remove the route entirely.
+
+BUG #2 — CSRF validation uses simple cookie equality, not HMAC
+  File: src/middleware.ts (lines 41-48)
+  Description: CSRF check compares csrf_cookie === csrf_header as plain text
+    equality. The HMAC-signed tokens in csrf.ts are NOT used in middleware.
+    An attacker can set any cookie value and pass same value in header.
+  Fix: Use the HMAC verification from csrf.ts in middleware validation.
+
+BUG #3 — CSRF fallback secret in source code
+  File: src/lib/csrf.ts (line 3)
+  Description: CSRF_SECRET falls back to "fallback-csrf-secret" when env var
+    is missing. CSRF tokens signed with publicly known secret.
+  Fix: Throw error if CSRF_SECRET is not set. Never use fallback.
+
+
+========================================
+HIGH BUGS (7)
+========================================
+
+BUG #4 — Timing-unsafe payment signature comparison
+  File: src/lib/payments/razorpay.ts (line 76)
+  Description: verifyPayment() uses === for HMAC signature verification instead
+    of crypto.timingSafeEqual(). Vulnerable to timing attacks.
+  Fix: Use crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b)).
+
+BUG #5 — Webhook signature verification skipped when secret not set
+  File: src/app/api/subscriptions/webhook/route.ts (lines 15-32)
+  Description: If RAZORPAY_WEBHOOK_SECRET is not set, signature verification
+    is skipped entirely. Anyone can POST fake subscription events.
+  Fix: Return 500 if webhook secret is not configured.
+
+BUG #6 — Cron endpoint has no auth when CRON_SECRET is unset
+  File: src/app/api/reminders/cron/route.ts (line 41)
+  Description: Auth check is "if (cronSecret && authHeader !== ...)" — if
+    CRON_SECRET is not set, endpoint runs completely unauthenticated.
+  Fix: Return 500 if CRON_SECRET is not configured.
+
+BUG #7 — Non-null assertion on env vars without runtime validation
+  Files: src/lib/payments/razorpay.ts, src/lib/supabase/client.ts,
+    src/lib/supabase/server.ts, src/lib/supabase/middleware.ts,
+    src/app/api/auth/signup/route.ts, src/app/api/subscriptions/verify/route.ts,
+    src/app/api/subscriptions/change/route.ts
+  Description: Using process.env.X! means if undefined, code throws runtime
+    error with no meaningful message.
+  Fix: Add runtime checks with clear error messages at startup.
+
+BUG #8 — Global search performs queries without firm scoping
+  File: src/components/global-search.tsx (lines 56-87)
+  Description: Global search queries cases, clients, documents, invoices,
+    hearings, and tags tables WITHOUT firm_id filtering. Users can see
+    ALL data from ALL firms. Severe data isolation breach.
+  Fix: Add firm_id filter to all search queries.
+
+BUG #9 — useEffect with supabase dependency causes infinite re-render
+  File: src/app/(dashboard)/dashboard/page.tsx (line 262)
+  File: src/app/(dashboard)/cases/[id]/page.tsx (line 159)
+  Description: useEffect depends on [supabase] but createClient() is called
+    on every render, creating new reference each time. Causes infinite fetch loop.
+  Fix: Create supabase client outside component or use useMemo.
+
+
+========================================
+MEDIUM BUGS (15)
+========================================
+
+BUG #10 — console.log statements in production API routes
+  Files: src/app/api/reminders/route.ts (lines 269, 313, 349),
+    src/app/api/reminders/cron/route.ts (line 245),
+    src/lib/notifications/service.ts (lines 75, 80, 111, 116, 143, 148, 179)
+  Description: Production API routes contain console.log() statements that
+    log operational data and can leak details.
+  Fix: Remove or replace with proper logging framework.
+
+BUG #11 — Push notifications are stub that does nothing
+  Files: src/lib/notifications/service.ts (line 179),
+    src/app/api/reminders/cron/route.ts (line 245)
+  Description: sendPushNotification() just does console.log(). System reports
+    it as "sent" even though nothing was sent. Users think they get push
+    notifications but never will.
+  Fix: Implement actual push notifications or remove the option.
+
+BUG #12 — Rate limiter uses in-memory Map (lost in serverless)
+  File: src/lib/rate-limit.ts (line 1)
+  Description: rateLimitMap is a module-level Map. On Vercel serverless, each
+    invocation gets a fresh instance, making rate limiter useless.
+  Fix: Use Redis or Supabase for rate limiting state.
+
+BUG #13 — XSS via unsanitized HTML in notification emails
+  Files: src/lib/notifications/service.ts (lines 92-101),
+    src/app/api/reminders/route.ts (lines 293-305),
+    src/app/api/daily-digest/route.ts (lines 104-113)
+  Description: User-provided data (case titles, client names) is directly
+    interpolated into HTML email templates without escaping.
+  Fix: Escape HTML entities in all user-provided data before interpolation.
+
+BUG #14 — Webhook reads request.text() after request.json() consumed body
+  File: src/app/api/subscriptions/webhook/route.ts (lines 6, 23)
+  Description: request.json() on line 6 consumes body. request.text() on
+    line 23 gets empty string, making signature verification fail silently.
+  Fix: Read request.text() FIRST, then JSON.parse() it.
+
+BUG #15 — Subscription activation stores wrong amount_paid
+  File: src/app/api/subscriptions/webhook/route.ts (line 58)
+  Description: Always stores plan.monthly.price regardless of billing cycle.
+    Annual billing info in notes.billing_cycle is not used.
+  Fix: Check notes.billing_cycle and use correct price.
+
+BUG #16 — Subscription always starts as "trialing" even for paid plans
+  File: src/app/api/subscriptions/route.ts (lines 116-131)
+  Description: New subscription always set to "trialing" with 14-day expiry
+    regardless of whether user is actually paying.
+  Fix: Set status based on actual payment/subscription state.
+
+BUG #17 — Missing deleted_at filter on cases queries
+  Files: src/app/(dashboard)/cases/page.tsx (line 51),
+    src/app/(dashboard)/dashboard/page.tsx (line 106)
+  Description: Cases listing does not filter by deleted_at, so soft-deleted
+    cases appear in the list.
+  Fix: Add .is("deleted_at", null) to cases queries.
+
+BUG #18 — total_amount column referenced but doesn't exist
+  File: src/app/api/daily-digest/route.ts (line 77)
+  Description: Query selects total_amount from invoices but invoices table
+    uses amount and tax_amount as separate fields. All overdue amounts
+    in digest email will be 0.
+  Fix: Change to select amount, tax_amount and calculate total.
+
+BUG #19 — Supabase client created at module scope in notification service
+  File: src/lib/notifications/service.ts (line 4)
+  Description: const supabase = createClient() at module scope. Client may
+    have stale auth tokens if module is loaded once and reused.
+  Fix: Create client inside each function or accept as parameter.
+
+BUG #20 — prompt() used in production UI for profit share
+  File: src/app/(dashboard)/cases/[id]/page.tsx (line 529)
+  Description: Uses browser prompt() to edit profit share. Value is not
+    converted to number — non-numeric text passed as string to API.
+  Fix: Use a proper modal with number input and validation.
+
+BUG #21 — dashboard/route.ts does not scope cases by firm_id
+  File: src/app/api/dashboard/route.ts (lines 13-17)
+  Description: Fetches cases by created_by/assigned_to only, not firm_id.
+    Firm owners see subset of data compared to firm-scoped listing.
+  Fix: Add firm_id filtering for owner/partner roles.
+
+BUG #22 — Empty catch blocks swallow errors silently (55 occurrences)
+  Files: Multiple files across codebase
+  Description: 55 instances of catch {} (empty catch blocks) that silently
+    swallow errors. Notable in settings, documents, research pages.
+  Fix: Add error logging or proper error handling.
+
+BUG #23 — handleDelete in case detail does not check intermediate errors
+  File: src/app/(dashboard)/cases/[id]/page.tsx (lines 220-233)
+  Description: Delete handler does sequential awaits but doesn't check errors
+    on intermediate steps. Also mixes soft-delete and hard-delete inconsistently.
+  Fix: Add error checking on each step. Use consistent soft-delete.
+
+BUG #24 — getPayments and getInvoices ignore userId parameter
+  File: src/lib/supabase/queries.ts (lines 155, 170)
+  Description: Both functions accept userId but never use it in query filter.
+    Returns ALL data regardless of user.
+  Fix: Add userId filter to queries.
+
+
+========================================
+LOW BUGS (10)
+========================================
+
+BUG #25 — DRAFTING_TEST = true flag left in production
+  File: src/lib/ai/drafting.ts (line 3)
+  Description: Test flag exported but never used. Leftover from development.
+  Fix: Remove the constant.
+
+BUG #26 — getClients in queries.ts only returns user-created clients
+  File: src/lib/supabase/queries.ts (line 23)
+  Description: Filters by created_by = userId, so employees can only see
+    clients they created. API route correctly handles firm scoping.
+  Fix: Use firm_id filtering instead.
+
+BUG #27 — Duplicate AI configuration constants in 3 files
+  Files: src/lib/ai/service.ts, src/lib/ai/drafting.ts,
+    src/app/api/ai/chat/route.ts
+  Description: AI_API_KEY, AI_BASE_URL, AI_MODEL defined identically in
+    three separate files. Maintenance risk.
+  Fix: Define in single config module and import.
+
+BUG #28 — sendWhatsAppMessage logs "sent" when Twilio not configured
+  File: src/lib/whatsapp.ts (lines 17-21)
+  Description: When Twilio not configured, returns { success: true } and
+    logs as "sent". Gives false impression messages were delivered.
+  Fix: Return { success: false } when not configured.
+
+BUG #29 — verifyPayment is async solely for dynamic import
+  File: src/lib/payments/razorpay.ts (line 65)
+  Description: Function is async only because of await import("crypto").
+    Crypto could be imported at top of file.
+  Fix: Move crypto import to top of file.
+
+BUG #30 — createClient shadowed by dynamic import in reminder helpers
+  Files: src/app/api/reminders/route.ts (lines 273, 317, 353)
+  Description: Dynamic import of createClient shadows module-level import.
+    Creates redundant Supabase instances.
+  Fix: Reuse existing supabase instance from parent scope.
+
+BUG #31 — invoices/route.ts POST does not verify firm ownership early
+  File: src/app/api/invoices/route.ts (lines 40-51)
+  Description: Client fetched without firm_id filter. GST calculated before
+    firm ownership check.
+  Fix: Add firm_id to client query.
+
+BUG #32 — useEffect missing fetchCases in dependency array
+  File: src/app/(dashboard)/cases/page.tsx (line 35-37)
+  Description: useEffect calls fetchCases but doesn't include it in deps.
+    Stale closure risk.
+  Fix: Add fetchCases to dependency array (with useCallback).
+
+BUG #33 — signup route bypasses email verification
+  File: src/app/api/auth/signup/route.ts (line 25)
+  Description: email_confirm: true creates user with confirmed email,
+    bypassing verification. Anyone can create accounts with any email.
+  Fix: Set email_confirm: false and require email verification.
+
+BUG #34 — getPayments filters by received_by instead of userId
+  File: src/lib/supabase/queries.ts (line 170)
+  Description: getPayments(userId) filters by received_by which may not
+    be the same as the calling user.
+  Fix: Use correct column or add firm_id filter.
+
+BUG #35 — Rate limiter key includes IP which may be same for all users
+  File: src/lib/rate-limit.ts
+  Description: Rate limiting by IP doesn't work behind proxies/load balancers
+    where all users share same IP.
+  Fix: Use user ID + IP combination.
+
+
+========================================
+END OF REPORT
+========================================

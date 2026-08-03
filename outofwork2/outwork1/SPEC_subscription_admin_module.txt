@@ -1,0 +1,388 @@
+================================================================================
+     CAUSLY - ADMIN PANEL: SUBSCRIPTION MANAGEMENT MODULE - SPECIFICATION
+================================================================================
+
+OVERVIEW
+--------
+A complete subscription management system for the admin panel that allows
+the owner/admin to manage all user subscriptions, pricing, discounts,
+and coupon codes from a single dashboard.
+
+Current state: Admin panel at /super-admin/subscriptions shows read-only
+subscription data. No ability to modify, discount, or manage coupons.
+
+================================================================================
+MODULE 1: SUBSCRIPTION OVERRIDE (Per User)
+================================================================================
+
+What: Admin can change any user's subscription plan, status, and pricing.
+
+Database changes needed:
+  ALTER TABLE user_subscriptions ADD COLUMN IF NOT EXISTS
+    discount_percent numeric(5,2) default 0,
+    custom_price numeric(10,2),
+    overridden_by uuid references profiles(id),
+    overridden_at timestamptz,
+    override_reason text;
+
+UI at /super-admin/subscriptions:
+  - Table showing all users with their current plan, status, expiry
+  - Click on a user opens "Subscription Override" panel:
+    * Dropdown to change plan (Free/Starter/Professional/Firm/Enterprise)
+    * Toggle: Active / Trialing / Past Due / Cancelled / Expired
+    * Set custom price (overrides plan price for this user)
+    * Set discount percentage (0-100%)
+    * Set new expiry date
+    * Text field for override reason (audit trail)
+    * "Apply Override" button
+  - Shows audit log of all overrides (who changed what, when, why)
+
+API endpoint:
+  POST /api/admin/subscription-override
+  Body: {
+    user_id, plan_id, status, custom_price, discount_percent,
+    expires_at, reason
+  }
+  - Validates admin/super_admin role
+  - Logs to audit trail
+  - Updates user_subscriptions record
+
+================================================================================
+MODULE 2: ENABLE/DISABLE SUBSCRIPTIONS
+================================================================================
+
+What: Admin can freeze or reactivate any user's subscription.
+
+Database changes needed:
+  ALTER TABLE user_subscriptions ADD COLUMN IF NOT EXISTS
+    is_enabled boolean default true,
+    disabled_at timestamptz,
+    disabled_reason text;
+
+Behavior:
+  - When disabled: user reverts to Free plan limits
+  - When reenabled: original plan limits restored
+  - Disabled users see "Your subscription is paused" message
+  - Admin can bulk disable/enable multiple users
+
+UI:
+  - Toggle switch per user in the subscription table
+  - Bulk action: select multiple users → "Disable Selected" / "Enable Selected"
+  - Confirmation modal before disabling
+  - Shows reason popup when disabling
+
+API endpoint:
+  POST /api/admin/subscription-toggle
+  Body: { user_ids: string[], enabled: boolean, reason: string }
+
+================================================================================
+MODULE 3: DISCOUNT MANAGEMENT
+================================================================================
+
+What: Admin can give percentage discounts to specific users.
+
+Database: Uses discount_percent field from Module 1.
+
+UI at /super-admin/subscriptions:
+  - "Discount" column in the user subscription table
+  - Inline edit: click discount number → type new percentage
+  - Shows original price → discounted price → savings
+  - Bulk discount: select users → "Apply 20% discount to selected"
+  - Discount history log
+
+Discount rules:
+  - 0-100% range
+  - Applied on top of plan price
+  - Displayed to user as "₹X/month (Y% off)"
+  - Cannot stack with coupon discounts (coupon takes priority)
+  - Admin can set expiry on discounts
+
+API endpoint:
+  POST /api/admin/subscription-discount
+  Body: { user_ids: string[], discount_percent: number, expires_at? }
+
+================================================================================
+MODULE 4: COUPON CODE GENERATION
+================================================================================
+
+What: Admin can create coupon codes for any plan.
+
+Database changes needed:
+  CREATE TABLE IF NOT EXISTS coupon_codes (
+    id uuid default uuid_generate_v4() primary key,
+    code text unique not null,
+    plan_id uuid references subscription_plans(id),
+    discount_type text check (discount_type in ('percent', 'fixed', 'free')),
+    discount_value numeric(10,2) default 0,
+    max_uses integer default -1,
+    current_uses integer default 0,
+    valid_from timestamptz default now(),
+    valid_until timestamptz,
+    is_active boolean default true,
+    created_by uuid references profiles(id),
+    description text,
+    created_at timestamptz default now()
+  );
+
+Coupon types:
+  a) PERCENTAGE: "SAVE20" → 20% off any plan
+  b) FIXED: "FLAT500" → ₹500 off any plan
+  c) FREE ACCESS: "FRIEND2026" → Free subscription bypass (special)
+  d) PLAN-SPECIFIC: "STARTER50" → 50% off Starter plan only
+
+UI at /super-admin/coupons (new page):
+  - "Generate New Coupon" button opens form:
+    * Code (auto-generated or custom)
+    * Plan (all plans or specific plan)
+    * Discount type: Percentage / Fixed Amount / Free Access
+    * Discount value
+    * Max uses (-1 = unlimited)
+    * Valid from / Valid until dates
+    * Description
+  - Table of all coupons with:
+    * Code, plan, discount, uses/max, validity, status
+    * Toggle active/inactive
+    * Edit / Delete
+  - Stats: total coupons, active, total uses, revenue impact
+
+API endpoints:
+  POST /api/admin/coupons          → Create coupon
+  GET /api/admin/coupons           → List all coupons
+  PUT /api/admin/coupons/[id]      → Update coupon
+  DELETE /api/admin/coupons/[id]   → Delete coupon
+
+================================================================================
+MODULE 5: COUPON USAGE TRACKING
+================================================================================
+
+What: Track who used which coupon and when.
+
+Database changes needed:
+  CREATE TABLE IF NOT EXISTS coupon_uses (
+    id uuid default uuid_generate_v4() primary key,
+    coupon_id uuid references coupon_codes(id) on delete cascade,
+    user_id uuid references profiles(id),
+    used_at timestamptz default now(),
+    plan_subscribed uuid references subscription_plans(id),
+    amount_before numeric(10,2),
+    amount_after numeric(10,2),
+    ip_address text
+  );
+
+UI at /super-admin/coupons:
+  - Click on any coupon → shows "Usage History" panel
+  - Table: user name, email, date used, plan, amount paid
+  - Filter by date range, plan, user
+  - Export to CSV button
+
+API endpoint:
+  GET /api/admin/coupons/[id]/uses → List coupon usage history
+
+================================================================================
+MODULE 6: SPECIAL FRIEND COUPONS (BYPASS)
+================================================================================
+
+What: Special coupons that give FREE full access to the app.
+      Friends use the code and get unlimited access without paying.
+
+This uses the "free" discount_type in coupon_codes:
+  - discount_type = 'free'
+  - discount_value = 0
+  - Plan = Enterprise (full access)
+  - max_uses = unlimited or limited
+
+When a user applies a FRIEND coupon:
+  1. Creates user_subscriptions record with:
+     - plan_id = Enterprise plan
+     - status = 'active'
+     - amount_paid = 0
+     - expires_at = 10 years from now (effectively lifetime)
+  2. Sets custom_price = 0 on the subscription
+  3. Marks it as "coupon_access" in override_reason
+
+UI:
+  - Special "Friend Coupons" section at top of coupon page
+  - Pre-generated codes like: FRIEND-{NAME}-{RANDOM}
+  - Shows list of friends who activated with their details
+  - Admin can revoke individual friend access
+  - Admin can set expiry per friend
+
+User-facing flow:
+  1. User goes to /pricing or /login
+  2. Enters coupon code in "Have a coupon?" field
+  3. If valid friend coupon → immediate free access
+  4. Shows "Welcome! You have free access via invitation"
+
+API endpoint:
+  POST /api/coupons/apply (public, requires auth)
+  Body: { code: string }
+  - Validates coupon
+  - Creates subscription
+  - Returns success + new subscription details
+
+================================================================================
+MODULE 7: COUPON REDEMPTION (USER-FACING)
+================================================================================
+
+What: Users can apply coupon codes during signup or from settings.
+
+UI changes:
+  - /signup page: add "Got a coupon code?" expandable field
+  - /settings subscription tab: add "Apply Coupon" input field
+  - Shows coupon benefit before applying: "20% off for 12 months"
+  - One-click apply with confirmation
+
+Validation:
+  - Coupon must be active
+  - Within validity dates
+  - Hasn't exceeded max uses
+  - User doesn't already have an active subscription (or override allowed)
+  - One coupon per user (enforced in DB)
+
+API endpoint:
+  POST /api/coupons/validate
+  Body: { code: string }
+  Returns: { valid, discount_type, discount_value, plan_name, description }
+
+================================================================================
+PAGES TO CREATE/MODIFY
+================================================================================
+
+New pages:
+  /super-admin/coupons           → Coupon management dashboard
+  /super-admin/coupons/[id]      → Coupon detail + usage history
+
+Modified pages:
+  /super-admin/subscriptions     → Add override actions, discount column
+  /settings (subscription tab)   → Add "Apply Coupon" field
+  /signup                        → Add coupon code field
+  /pricing                       → Add "Have a coupon?" prompt
+
+================================================================================
+API ROUTES TO CREATE
+================================================================================
+
+Admin (require super_admin):
+  POST   /api/admin/subscription-override    → Change user plan/status
+  POST   /api/admin/subscription-toggle      → Enable/disable subscriptions
+  POST   /api/admin/subscription-discount    → Apply bulk discounts
+  POST   /api/admin/coupons                  → Create coupon
+  GET    /api/admin/coupons                  → List all coupons
+  PUT    /api/admin/coupons/[id]             → Update coupon
+  DELETE /api/admin/coupons/[id]             → Delete coupon
+  GET    /api/admin/coupons/[id]/uses        → Coupon usage history
+
+Public (require auth):
+  POST   /api/coupons/validate               → Validate coupon code
+  POST   /api/coupons/apply                  → Apply coupon to subscription
+
+================================================================================
+DATABASE MIGRATION SQL
+================================================================================
+
+-- Coupon codes table
+CREATE TABLE IF NOT EXISTS public.coupon_codes (
+  id uuid default uuid_generate_v4() primary key,
+  code text unique not null,
+  plan_id uuid references public.subscription_plans(id),
+  discount_type text not null check (discount_type in ('percent', 'fixed', 'free')),
+  discount_value numeric(10,2) default 0,
+  max_uses integer default -1,
+  current_uses integer default 0,
+  valid_from timestamptz default now(),
+  valid_until timestamptz,
+  is_active boolean default true,
+  created_by uuid references public.profiles(id),
+  description text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- Coupon usage tracking
+CREATE TABLE IF NOT EXISTS public.coupon_uses (
+  id uuid default uuid_generate_v4() primary key,
+  coupon_id uuid references public.coupon_codes(id) on delete cascade,
+  user_id uuid references public.profiles(id),
+  used_at timestamptz default now(),
+  plan_subscribed uuid references public.subscription_plans(id),
+  amount_before numeric(10,2),
+  amount_after numeric(10,2),
+  ip_address text
+);
+
+-- Subscription override fields
+ALTER TABLE public.user_subscriptions
+  ADD COLUMN IF NOT EXISTS discount_percent numeric(5,2) default 0,
+  ADD COLUMN IF NOT EXISTS custom_price numeric(10,2),
+  ADD COLUMN IF NOT EXISTS overridden_by uuid references public.profiles(id),
+  ADD COLUMN IF NOT EXISTS overridden_at timestamptz,
+  ADD COLUMN IF NOT EXISTS override_reason text,
+  ADD COLUMN IF NOT EXISTS is_enabled boolean default true,
+  ADD COLUMN IF NOT EXISTS disabled_at timestamptz,
+  ADD COLUMN IF NOT EXISTS disabled_reason text;
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_coupon_codes_code ON public.coupon_codes(code);
+CREATE INDEX IF NOT EXISTS idx_coupon_codes_active ON public.coupon_codes(is_active);
+CREATE INDEX IF NOT EXISTS idx_coupon_uses_coupon_id ON public.coupon_uses(coupon_id);
+CREATE INDEX IF NOT EXISTS idx_coupon_uses_user_id ON public.coupon_uses(user_id);
+
+-- RLS policies
+ALTER TABLE public.coupon_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.coupon_uses ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can view active coupons"
+  ON public.coupon_codes FOR SELECT
+  TO authenticated
+  USING (is_active = true OR created_by = auth.uid());
+
+CREATE POLICY "Super admins can manage coupons"
+  ON public.coupon_codes FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (SELECT 1 FROM public.super_admins WHERE id = auth.uid())
+  );
+
+CREATE POLICY "Users can view own coupon uses"
+  ON public.coupon_uses FOR SELECT
+  TO authenticated
+  USING (user_id = auth.uid());
+
+CREATE POLICY "Super admins can view all coupon uses"
+  ON public.coupon_uses FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (SELECT 1 FROM public.super_admins WHERE id = auth.uid())
+  );
+
+================================================================================
+IMPLEMENTATION ORDER
+================================================================================
+
+Phase 1: Database + Core (do first)
+  1. Run migration SQL
+  2. Create /api/admin/coupons CRUD
+  3. Create /super-admin/coupons page
+
+Phase 2: Subscription Management
+  4. Add override fields to subscription tab
+  5. Create /api/admin/subscription-override
+  6. Create /api/admin/subscription-toggle
+  7. Create /api/admin/subscription-discount
+
+Phase 3: User-Facing Coupon Flow
+  8. Create /api/coupons/validate
+  9. Create /api/coupons/apply
+  10. Add coupon field to /signup
+  11. Add coupon field to /settings subscription tab
+
+Phase 4: Friend Bypass Coupons
+  12. Pre-generate friend coupons
+  13. Test free access flow
+  14. Add friend coupon management UI
+
+Estimated effort: ~4-5 hours of coding
+
+================================================================================
+END OF SPECIFICATION
+================================================================================

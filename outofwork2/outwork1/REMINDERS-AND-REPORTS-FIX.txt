@@ -1,0 +1,1082 @@
+================================================================================
+              REMINDERS IMPLEMENTATION + REPORTS FIX — COMPLETE GUIDE
+================================================================================
+  Date: July 2026
+  App: Causly (LawApp)
+  Goal: Implement free reminder system + fix all broken reports
+
+================================================================================
+PART 1: FREE REMINDER APIs & GATEWAYS
+================================================================================
+
+1.1 EMAIL — RESEND (Free Tier)
+─────────────────────────────
+  Website: https://resend.com
+  Free Tier: 100 emails/day, 3,000/month
+  Setup:
+    1. Sign up at resend.com
+    2. Verify your domain (causly.in or your domain)
+    3. Get API key from dashboard
+    4. Add to .env.local: RESEND_API_KEY=re_xxxxxxxxxxxx
+
+  Install:
+    npm install resend
+
+  Code:
+    import { Resend } from 'resend';
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
+    await resend.emails.send({
+      from: 'Causly <reminders@causly.in>',
+      to: clientEmail,
+      subject: `Reminder: ${title}`,
+      html: `<p>${message}</p><p>Date: ${reminderDate}</p>`
+    });
+
+  Why Resend:
+    - Free tier is generous (100/day)
+    - Easy setup (5 minutes)
+    - Good deliverability
+    - React email support
+    - No credit card required
+
+1.2 SMS — MSG91 (Free Tier for India)
+──────────────────────────────────────
+  Website: https://msg91.com
+  Free Tier: 100 SMS/month (trial)
+  Setup:
+    1. Sign up at msg91.com
+    2. Verify Indian phone number
+    3. Get API key from dashboard
+    4. Add to .env.local: MSG91_API_KEY=xxxxxxxxxxxxxx
+
+  Code (HTTP API):
+    const sendSMS = async (phone, message) => {
+      const response = await fetch('https://api.msg91.com/api/v5/flow', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'authkey': process.env.MSG91_API_KEY
+        },
+        body: JSON.stringify({
+          flow_id: 'YOUR_FLOW_ID',
+          mobiles: `91${phone}`,
+          message: message,
+          sender: 'CAUSLY'
+        })
+      });
+      return response.json();
+    };
+
+  Why MSG91:
+    - Built for India
+    - Supports DLT compliance (TRAI requirement)
+    - Cheap after free tier (₹0.15/SMS)
+    - WhatsApp Business API available
+    - Good for Indian phone numbers
+
+1.3 WHATSAPP — Interakt (Free Tier for India)
+─────────────────────────────────────────────
+  Website: https://www.interakt.shop
+  Free Tier: 100 messages/month
+  Setup:
+    1. Sign up at interakt.shop
+    2. Connect WhatsApp Business account
+    3. Get API credentials
+    4. Add to .env.local
+
+  Alternative: Twilio WhatsApp (free trial)
+    - Sign up at twilio.com
+    - Get $15 free credit
+    - Use WhatsApp Sandbox for testing
+
+1.4 IN-APP NOTIFICATIONS — Already Built
+────────────────────────────────────────
+  - Use existing scheduled_reminders table
+  - Show notifications in bell icon
+  - No external API needed
+
+1.5 PUSH NOTIFICATIONS — FCM (Free)
+────────────────────────────────────
+  Website: https://firebase.google.com
+  Free Tier: Unlimited (for web)
+  Setup:
+    1. Create Firebase project
+    2. Enable Cloud Messaging
+    3. Add firebase config to .env.local
+    4. Install: npm install firebase
+
+  Code:
+    // Service Worker (public/firebase-messaging-sw.js)
+    importScripts('https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js');
+    importScripts('https://www.gstatic.com/firebasejs/10.0.0/firebase-messaging-compat.js');
+    firebase.initializeApp({/* config */});
+    const messaging = firebase.messaging();
+
+    // Client side
+    import { getMessaging, getToken } from 'firebase/messaging';
+    const messaging = getMessaging();
+    const token = await getToken(messaging, { vapidKey: 'YOUR_KEY' });
+
+  Why FCM:
+    - Completely free
+    - Works on all browsers
+    - Good for hearing reminders
+    - No monthly limits
+
+================================================================================
+PART 2: DATABASE SECURITY — firm_id & user_id ON EVERY TABLE
+================================================================================
+
+2.1 CURRENT SCHEMA PROBLEM
+──────────────────────────
+  Most tables do NOT have firm_id. They rely on created_by/assigned_to
+  which link to profiles.firm_id. This works but is less secure:
+
+  PROBLEM: If RLS policy is wrong, user sees ALL data across firms
+  SOLUTION: Add firm_id to every table for double isolation
+
+2.2 TABLES NEEDING firm_id
+───────────────────────────
+  Table              Has firm_id?   Has user_id?   Action Needed
+  ───────────────────────────────────────────────────────────────
+  cases              NO             NO             ADD firm_id, created_by is user_id
+  clients            NO             NO             ADD firm_id, created_by is user_id
+  documents          NO             NO             ADD firm_id, user_id
+  payments           NO             NO             ADD firm_id, received_by is user_id
+  invoices           NO             NO             ADD firm_id, issued_by is user_id
+  hearings           NO             NO             ADD firm_id (via case)
+  time_entries       DOESN'T EXIST  DOESN'T EXIST  CREATE with firm_id, user_id
+  messages           NO             NO             ADD firm_id, sender_id is user_id
+  scheduled_reminders NO            NO             ADD firm_id, user_id
+  legal_resources    NO             NO             ADD firm_id (optional, shared)
+  document_templates NO             NO             ADD firm_id
+  notifications      NO             NO             ADD firm_id, user_id
+
+2.3 SQL MIGRATION — Add firm_id to All Tables
+──────────────────────────────────────────────
+
+  -- Cases table
+  ALTER TABLE cases ADD COLUMN IF NOT EXISTS firm_id uuid references profiles(id);
+  UPDATE cases SET firm_id = (
+    SELECT firm_id FROM profiles WHERE profiles.id = cases.created_by
+  );
+  ALTER TABLE cases ALTER COLUMN firm_id SET NOT NULL;
+  CREATE INDEX idx_cases_firm_id ON cases(firm_id);
+
+  -- Clients table
+  ALTER TABLE clients ADD COLUMN IF NOT EXISTS firm_id uuid references profiles(id);
+  UPDATE clients SET firm_id = (
+    SELECT firm_id FROM profiles WHERE profiles.id = clients.created_by
+  );
+  ALTER TABLE clients ALTER COLUMN firm_id SET NOT NULL;
+  CREATE INDEX idx_clients_firm_id ON clients(firm_id);
+
+  -- Documents table
+  ALTER TABLE documents ADD COLUMN IF NOT EXISTS firm_id uuid references profiles(id);
+  UPDATE documents SET firm_id = (
+    SELECT firm_id FROM profiles WHERE profiles.id = documents.user_id
+  );
+  ALTER TABLE documents ALTER COLUMN firm_id SET NOT NULL;
+  CREATE INDEX idx_documents_firm_id ON documents(firm_id);
+
+  -- Payments table
+  ALTER TABLE payments ADD COLUMN IF NOT EXISTS firm_id uuid references profiles(id);
+  UPDATE payments SET firm_id = (
+    SELECT firm_id FROM profiles WHERE profiles.id = payments.received_by
+  );
+  ALTER TABLE payments ALTER COLUMN firm_id SET NOT NULL;
+  CREATE INDEX idx_payments_firm_id ON payments(firm_id);
+
+  -- Invoices table
+  ALTER TABLE invoices ADD COLUMN IF NOT EXISTS firm_id uuid references profiles(id);
+  UPDATE invoices SET firm_id = (
+    SELECT firm_id FROM profiles WHERE profiles.id = invoices.issued_by
+  );
+  ALTER TABLE invoices ALTER COLUMN firm_id SET NOT NULL;
+  CREATE INDEX idx_invoices_firm_id ON invoices(firm_id);
+
+  -- Hearings table
+  ALTER TABLE hearings ADD COLUMN IF NOT EXISTS firm_id uuid references profiles(id);
+  UPDATE hearings SET firm_id = (
+    SELECT firm_id FROM profiles p
+    JOIN cases c ON c.id = hearings.case_id
+    WHERE p.id = c.created_by
+  );
+  ALTER TABLE hearings ALTER COLUMN firm_id SET NOT NULL;
+  CREATE INDEX idx_hearings_firm_id ON hearings(firm_id);
+
+  -- Messages table
+  ALTER TABLE messages ADD COLUMN IF NOT EXISTS firm_id uuid references profiles(id);
+  UPDATE messages SET firm_id = (
+    SELECT firm_id FROM profiles WHERE profiles.id = messages.sender_id
+  );
+  ALTER TABLE messages ALTER COLUMN firm_id SET NOT NULL;
+  CREATE INDEX idx_messages_firm_id ON messages(firm_id);
+
+  -- Scheduled Reminders table
+  ALTER TABLE scheduled_reminders ADD COLUMN IF NOT EXISTS firm_id uuid references profiles(id);
+  ALTER TABLE scheduled_reminders ADD COLUMN IF NOT EXISTS user_id uuid references profiles(id);
+  UPDATE scheduled_reminders SET
+    firm_id = (SELECT firm_id FROM profiles LIMIT 1),
+    user_id = (SELECT id FROM profiles LIMIT 1);
+  ALTER TABLE scheduled_reminders ALTER COLUMN firm_id SET NOT NULL;
+  ALTER TABLE scheduled_reminders ALTER COLUMN user_id SET NOT NULL;
+  CREATE INDEX idx_scheduled_reminders_firm_id ON scheduled_reminders(firm_id);
+  CREATE INDEX idx_scheduled_reminders_user_id ON scheduled_reminders(user_id);
+
+  -- Document Templates table
+  ALTER TABLE document_templates ADD COLUMN IF NOT EXISTS firm_id uuid references profiles(id);
+  UPDATE document_templates SET firm_id = (
+    SELECT firm_id FROM profiles WHERE profiles.id = document_templates.created_by
+  );
+  ALTER TABLE document_templates ALTER COLUMN firm_id SET NOT NULL;
+  CREATE INDEX idx_document_templates_firm_id ON document_templates(firm_id);
+
+  -- Notifications table
+  ALTER TABLE notifications ADD COLUMN IF NOT EXISTS firm_id uuid references profiles(id);
+  ALTER TABLE notifications ADD COLUMN IF NOT EXISTS user_id uuid references profiles(id);
+  UPDATE notifications SET
+    firm_id = (SELECT firm_id FROM profiles LIMIT 1),
+    user_id = (SELECT id FROM profiles LIMIT 1);
+  ALTER TABLE notifications ALTER COLUMN firm_id SET NOT NULL;
+  ALTER TABLE notifications ALTER COLUMN user_id SET NOT NULL;
+  CREATE INDEX idx_notifications_firm_id ON notifications(firm_id);
+  CREATE INDEX idx_notifications_user_id ON notifications(user_id);
+
+2.4 RLS POLICIES — Updated with firm_id
+─────────────────────────────────────────
+
+  -- Cases: Users see only their firm's cases
+  DROP POLICY IF EXISTS "cases_select" ON cases;
+  CREATE POLICY "cases_select" ON cases
+    FOR SELECT USING (
+      firm_id = (
+        SELECT firm_id FROM profiles WHERE id = auth.uid()
+      )
+    );
+
+  DROP POLICY IF EXISTS "cases_insert" ON cases;
+  CREATE POLICY "cases_insert" ON cases
+    FOR INSERT WITH CHECK (
+      firm_id = (
+        SELECT firm_id FROM profiles WHERE id = auth.uid()
+      )
+      AND created_by = auth.uid()
+    );
+
+  DROP POLICY IF EXISTS "cases_update" ON cases;
+  CREATE POLICY "cases_update" ON cases
+    FOR UPDATE USING (
+      firm_id = (
+        SELECT firm_id FROM profiles WHERE id = auth.uid()
+      )
+    );
+
+  DROP POLICY IF EXISTS "cases_delete" ON cases;
+  CREATE POLICY "cases_delete" ON cases
+    FOR DELETE USING (
+      firm_id = (
+        SELECT firm_id FROM profiles WHERE id = auth.uid()
+      )
+      AND role IN ('owner', 'partner')
+    );
+
+  -- Same pattern for ALL other tables:
+  -- clients, documents, payments, invoices, hearings,
+  -- messages, scheduled_reminders, document_templates, notifications
+
+2.5 NEW TABLE — time_entries (for Time Tracking)
+─────────────────────────────────────────────────
+
+  CREATE TABLE time_entries (
+    id uuid default gen_random_uuid() primary key,
+    firm_id uuid references profiles(id) not null,
+    user_id uuid references profiles(id) not null,
+    case_id uuid references cases(id),
+    description text,
+    hours numeric(5,2) not null default 0,
+    rate numeric(10,2) default 0,
+    amount numeric(12,2) generated always as (hours * rate) stored,
+    billable boolean default true,
+    status text default 'pending' check (status in ('pending', 'billed', 'paid')),
+    entry_date date default current_date,
+    start_time time,
+    end_time time,
+    created_at timestamptz default now(),
+    updated_at timestamptz default now()
+  );
+
+  ALTER TABLE time_entries ENABLE ROW LEVEL SECURITY;
+
+  CREATE POLICY "time_entries_select" ON time_entries
+    FOR SELECT USING (
+      firm_id = (SELECT firm_id FROM profiles WHERE id = auth.uid())
+    );
+
+  CREATE POLICY "time_entries_insert" ON time_entries
+    FOR INSERT WITH CHECK (
+      firm_id = (SELECT firm_id FROM profiles WHERE id = auth.uid())
+      AND user_id = auth.uid()
+    );
+
+  CREATE POLICY "time_entries_update" ON time_entries
+    FOR UPDATE USING (
+      firm_id = (SELECT firm_id FROM profiles WHERE id = auth.uid())
+    );
+
+  CREATE POLICY "time_entries_delete" ON time_entries
+    FOR DELETE USING (
+      firm_id = (SELECT firm_id FROM profiles WHERE id = auth.uid())
+      AND user_id = auth.uid()
+    );
+
+  CREATE INDEX idx_time_entries_firm_id ON time_entries(firm_id);
+  CREATE INDEX idx_time_entries_user_id ON time_entries(user_id);
+  CREATE INDEX idx_time_entries_case_id ON time_entries(case_id);
+
+2.6 NEW TABLE — notification_logs (for tracking sent notifications)
+──────────────────────────────────────────────────────────────────
+
+  CREATE TABLE notification_logs (
+    id uuid default gen_random_uuid() primary key,
+    firm_id uuid references profiles(id) not null,
+    user_id uuid references profiles(id) not null,
+    reminder_id uuid references scheduled_reminders(id),
+    channel text not null check (channel in ('email', 'sms', 'whatsapp', 'in_app', 'push')),
+    status text default 'sent' check (status in ('sent', 'failed', 'pending')),
+    error_message text,
+    metadata jsonb default '{}',
+    created_at timestamptz default now()
+  );
+
+  ALTER TABLE notification_logs ENABLE ROW LEVEL SECURITY;
+
+  CREATE POLICY "notification_logs_select" ON notification_logs
+    FOR SELECT USING (
+      firm_id = (SELECT firm_id FROM profiles WHERE id = auth.uid())
+    );
+
+  CREATE POLICY "notification_logs_insert" ON notification_logs
+    FOR INSERT WITH CHECK (
+      firm_id = (SELECT firm_id FROM profiles WHERE id = auth.uid())
+    );
+
+  CREATE INDEX idx_notification_logs_firm_id ON notification_logs(firm_id);
+
+================================================================================
+PART 3: REMINDER IMPLEMENTATION — STEP BY STEP
+================================================================================
+
+3.1 ENVIRONMENT VARIABLES (.env.local)
+───────────────────────────────────────
+
+  # Resend (Email)
+  RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxx
+  EMAIL_FROM=Causly <reminders@causly.in>
+
+  # MSG91 (SMS - India)
+  MSG91_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxx
+  MSG91_SENDER=CAUSLY
+
+  # Interakt (WhatsApp - India)
+  INTERAKT_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxx
+  INTERAKT_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxx
+
+  # Firebase Cloud Messaging (Push Notifications)
+  FIREBASE_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxx
+  FIREBASE_AUTH_DOMAIN=causly-xxxxx.firebaseapp.com
+  FIREBASE_PROJECT_ID=causly-xxxxx
+  FIREBASE_STORAGE_BUCKET=causly-xxxxx.appspot.com
+  FIREBASE_MESSAGING_SENDER_ID=xxxxxxxxxxxx
+  FIREBASE_APP_ID=1:xxxxxxxxxxxx:web:xxxxxxxxxxxx
+
+3.2 API ROUTE — /api/reminders/route.ts
+────────────────────────────────────────
+
+  File: src/app/api/reminders/route.ts
+
+  Purpose: CRUD for reminders + send notifications
+
+  Code Structure:
+
+    import { NextRequest, NextResponse } from 'next/server';
+    import { createClient } from '@/lib/supabase/server';
+    import { Resend } from 'resend';
+
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
+    // GET — Fetch reminders for current user's firm
+    export async function GET(request: NextRequest) {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
+      // Get user's firm_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('firm_id, role')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile) {
+        return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+      }
+
+      // Fetch reminders for this firm only
+      const { data: reminders, error } = await supabase
+        .from('scheduled_reminders')
+        .select(`
+          *,
+          case:cases(id, case_number, title),
+          client:clients(id, full_name, phone)
+        `)
+        .eq('firm_id', profile.firm_id)
+        .order('reminder_date', { ascending: true });
+
+      if (error) throw error;
+
+      return NextResponse.json({ reminders });
+    }
+
+    // POST — Create reminder + send notifications
+    export async function POST(request: NextRequest) {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('firm_id')
+        .eq('id', user.id)
+        .single();
+
+      const body = await request.json();
+      const { title, message, reminder_date, case_id, client_id, channels } = body;
+
+      // Insert reminder with firm_id and user_id
+      const { data: reminder, error } = await supabase
+        .from('scheduled_reminders')
+        .insert({
+          firm_id: profile.firm_id,
+          user_id: user.id,
+          title,
+          message,
+          reminder_date,
+          case_id: case_id || null,
+          client_id: client_id || null,
+          channels,
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Send immediate in-app notification
+      await supabase.from('notifications').insert({
+        firm_id: profile.firm_id,
+        user_id: user.id,
+        type: 'reminder',
+        title: `Reminder: ${title}`,
+        message,
+        data: { reminder_id: reminder.id }
+      });
+
+      // If reminder is for now, send immediately
+      const reminderTime = new Date(reminder_date);
+      const now = new Date();
+      if (reminderTime <= now) {
+        await sendNotifications(reminder, channels, profile.firm_id);
+      }
+
+      return NextResponse.json({ reminder });
+    }
+
+    // Helper: Send notifications via all channels
+    async function sendNotifications(reminder, channels, firmId) {
+      const results = { sent: [], failed: [] };
+
+      for (const channel of channels) {
+        try {
+          switch (channel) {
+            case 'email':
+              await sendEmail(reminder);
+              results.sent.push(channel);
+              break;
+            case 'sms':
+              await sendSMS(reminder);
+              results.sent.push(channel);
+              break;
+            case 'whatsapp':
+              await sendWhatsApp(reminder);
+              results.sent.push(channel);
+              break;
+            case 'in_app':
+              results.sent.push(channel);
+              break;
+            case 'push':
+              await sendPushNotification(reminder);
+              results.sent.push(channel);
+              break;
+          }
+        } catch (error) {
+          results.failed.push(channel);
+          console.error(`Failed to send ${channel}:`, error);
+        }
+      }
+
+      return results;
+    }
+
+    // Email sender
+    async function sendEmail(reminder) {
+      const { data: client } = await supabase
+        .from('clients')
+        .select('email, full_name')
+        .eq('id', reminder.client_id)
+        .single();
+
+      if (!client?.email) return;
+
+      await resend.emails.send({
+        from: process.env.EMAIL_FROM,
+        to: client.email,
+        subject: `Reminder: ${reminder.title}`,
+        html: `
+          <h2>${reminder.title}</h2>
+          <p>${reminder.message}</p>
+          <p><strong>Date:</strong> ${new Date(reminder.reminder_date).toLocaleString('en-IN')}</p>
+          ${reminder.case ? `<p><strong>Case:</strong> ${reminder.case.case_number}</p>` : ''}
+        `
+      });
+    }
+
+    // SMS sender (MSG91)
+    async function sendSMS(reminder) {
+      const { data: client } = await supabase
+        .from('clients')
+        .select('phone, full_name')
+        .eq('id', reminder.client_id)
+        .single();
+
+      if (!client?.phone) return;
+
+      await fetch('https://api.msg91.com/api/v5/flow', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'authkey': process.env.MSG91_API_KEY
+        },
+        body: JSON.stringify({
+          flow_id: 'YOUR_FLOW_ID',
+          mobiles: `91${client.phone}`,
+          message: `Causly Reminder: ${reminder.title}\n${reminder.message}\nDate: ${new Date(reminder.reminder_date).toLocaleString('en-IN')}`
+        })
+      });
+    }
+
+    // WhatsApp sender (Interakt)
+    async function sendWhatsApp(reminder) {
+      const { data: client } = await supabase
+        .from('clients')
+        .select('phone, full_name')
+        .eq('id', reminder.client_id)
+        .single();
+
+      if (!client?.phone) return;
+
+      await fetch('https://api.interakt.shop/v1/public/message/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${Buffer.from(`${process.env.INTERAKT_API_KEY}:${process.env.INTERAKT_TOKEN}`).toString('base64')}`
+        },
+        body: JSON.stringify({
+          countryCode: '+91',
+          phoneNumber: client.phone,
+          type: 'TEXT',
+          message: `Hi ${client.full_name},\n\nReminder: ${reminder.title}\n${reminder.message}\n\nDate: ${new Date(reminder.reminder_date).toLocaleString('en-IN')}\n\n- Causly`
+        })
+      });
+    }
+
+    // Push notification sender (FCM)
+    async function sendPushNotification(reminder) {
+      // Get user's FCM token from notifications table
+      const { data: tokens } = await supabase
+        .from('user_devices')
+        .select('fcm_token')
+        .eq('user_id', reminder.user_id);
+
+      if (!tokens?.length) return;
+
+      for (const { fcm_token } of tokens) {
+        await fetch('https://fcm.googleapis.com/v1/projects/' + process.env.FIREBASE_PROJECT_ID + '/messages:send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await getAccessToken()}`
+          },
+          body: JSON.stringify({
+            message: {
+              token: fcm_token,
+              notification: {
+                title: reminder.title,
+                body: reminder.message
+              },
+              data: {
+                reminder_id: reminder.id,
+                case_id: reminder.case_id
+              }
+            }
+          })
+        });
+      }
+    }
+
+3.3 CRON JOB — /api/reminders/cron/route.ts
+────────────────────────────────────────────
+
+  File: src/app/api/reminders/cron/route.ts
+
+  Purpose: Check for due reminders every minute and send
+
+  Code:
+
+    import { NextRequest, NextResponse } from 'next/server';
+    import { createClient } from '@/lib/supabase/server';
+
+    export async function GET(request: NextRequest) {
+      // Verify cron secret to prevent unauthorized access
+      const authHeader = request.headers.get('authorization');
+      if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
+      const supabase = await createClient();
+
+      // Find reminders that are due (status=pending and date <= now)
+      const { data: dueReminders, error } = await supabase
+        .from('scheduled_reminders')
+        .select(`
+          *,
+          case:cases(id, case_number, title),
+          client:clients(id, full_name, phone, email)
+        `)
+        .eq('status', 'pending')
+        .lte('reminder_date', new Date().toISOString());
+
+      if (error) throw error;
+
+      const results = [];
+
+      for (const reminder of dueReminders || []) {
+        // Send notifications
+        const sendResults = await sendNotifications(reminder, reminder.channels, reminder.firm_id);
+
+        // Update status
+        const newStatus = sendResults.failed.length > 0 ? 'partial' : 'sent';
+        await supabase
+          .from('scheduled_reminders')
+          .update({
+            status: newStatus,
+            sent_channels: sendResults.sent,
+            failed_channels: sendResults.failed
+          })
+          .eq('id', reminder.id);
+
+        // Log each notification
+        for (const channel of sendResults.sent) {
+          await supabase.from('notification_logs').insert({
+            firm_id: reminder.firm_id,
+            user_id: reminder.user_id,
+            reminder_id: reminder.id,
+            channel,
+            status: 'sent'
+          });
+        }
+
+        for (const channel of sendResults.failed) {
+          await supabase.from('notification_logs').insert({
+            firm_id: reminder.firm_id,
+            user_id: reminder.user_id,
+            reminder_id: reminder.id,
+            channel,
+            status: 'failed',
+            error_message: 'Failed to send'
+          });
+        }
+
+        results.push({ reminder_id: reminder.id, status: newStatus });
+      }
+
+      return NextResponse.json({ processed: results.length, results });
+    }
+
+  To run this automatically, use Vercel Cron Jobs (vercel.json):
+    {
+      "crons": [{
+        "path": "/api/reminders/cron",
+        "schedule": "* * * * *"
+      }]
+    }
+
+3.4 FRONTEND — Updated Reminders Page
+───────────────────────────────────────
+
+  File: src/app/(dashboard)/reminders/page.tsx
+
+  Changes needed:
+    1. Add firm_id filter to all queries
+    2. Add user_id to new reminder creation
+    3. Show notification channel status
+    4. Add "Test Notification" button
+    5. Show delivery logs
+
+  Key changes:
+
+    // In fetchReminders - filter by firm_id
+    const fetchReminders = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('firm_id')
+        .eq('id', user.id)
+        .single();
+
+      let query = supabase
+        .from('scheduled_reminders')
+        .select('*, case:cases(...), client:clients(...)')
+        .eq('firm_id', profile.firm_id)  // <-- ADD THIS
+        .order('reminder_date', { ascending: true });
+
+      // ... rest of query
+    };
+
+    // In handleAddReminder - include firm_id
+    const handleAddReminder = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('firm_id')
+        .eq('id', user.id)
+        .single();
+
+      await fetch('/api/reminders', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...newReminder,
+          firm_id: profile.firm_id,
+          user_id: user.id
+        })
+      });
+    };
+
+================================================================================
+PART 4: REPORTS FIX — ALL ISSUES
+================================================================================
+
+4.1 ISSUE: Wrong Column Name in Cases Report
+─────────────────────────────────────────────
+  File: src/app/(dashboard)/reports/cases/page.tsx
+  Line: 109
+  Problem: Uses "type" instead of "case_type"
+
+  FIX:
+    // BEFORE (line 109):
+    .select("id, status, type, court, created_at, next_hearing_date")
+
+    // AFTER:
+    .select("id, status, case_type, court, created_at, next_hearing_date")
+
+    // Also update all references from "type" to "case_type" in the file:
+    // Line ~120: cases.filter(c => c.type === "Civil") → c.case_type === "Civil"
+    // Line ~121: cases.filter(c => c.type === "Criminal") → c.case_type === "Criminal"
+    // Line ~122: cases.filter(c => c.type === "Family") → c.case_type === "Family"
+    // etc.
+
+4.2 ISSUE: No Error Handling on Supabase Queries
+─────────────────────────────────────────────────
+  All report pages need to destructure and check errors:
+
+  FIX (apply to ALL report pages):
+    // BEFORE:
+    const { data: cases } = await supabase.from("cases").select("...");
+
+    // AFTER:
+    const { data: cases, error: casesError } = await supabase
+      .from("cases")
+      .select("...");
+    if (casesError) {
+      console.error("Error fetching cases:", casesError);
+      throw casesError;
+    }
+
+4.3 ISSUE: Revenue Report Uses Non-Existent "total_amount" Column
+─────────────────────────────────────────────────────────────────
+  File: src/app/(dashboard)/reports/revenue/page.tsx
+  Line: 97
+
+  FIX:
+    // BEFORE (line 97):
+    .select("total_amount, status, tax_amount")
+
+    // AFTER:
+    .select("amount, status, tax_amount")
+
+    // Also update line 131:
+    // BEFORE:
+    .reduce((sum, i) => sum + (i.total_amount || 0), 0);
+
+    // AFTER:
+    .reduce((sum, i) => sum + (i.amount || 0), 0);
+
+4.4 ISSUE: Reports Don't Get Current User / No Firm-Level Filtering
+────────────────────────────────────────────────────────────────────
+  All report pages need to get user and filter by firm_id.
+
+  FIX (add to top of each report page's fetchData function):
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        // GET CURRENT USER AND PROFILE
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
+
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('firm_id, role')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError || !profile) throw new Error('Profile not found');
+
+        const isOwner = ['owner', 'partner'].includes(profile.role);
+
+        // BUILD QUERIES WITH FIRM FILTERING
+        let casesQuery = supabase
+          .from('cases')
+          .select('id, status, case_type, court, created_at, next_hearing_date')
+          .eq('firm_id', profile.firm_id);  // <-- ADD FIRM FILTER
+
+        // If employee, only show their cases
+        if (!isOwner) {
+          casesQuery = casesQuery.or(
+            `assigned_to.eq.${user.id},created_by.eq.${user.id}`
+          );
+        }
+
+        const { data: cases, error: casesError } = await casesQuery;
+        if (casesError) throw casesError;
+
+        // ... rest of queries with similar firm filtering
+      } catch (error) {
+        console.error('Error fetching report data:', error);
+        toast.error('Failed to load report data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+4.5 ISSUE: Missing Reports Pages (Client Report & Performance)
+──────────────────────────────────────────────────────────────
+
+  CREATE: src/app/(dashboard)/reports/clients/page.tsx
+
+    Purpose: Client statistics and analytics
+    Features:
+      - Total clients
+      - New clients this month
+      - Active vs inactive clients
+      - Clients by case type
+      - Client demographics (if available)
+      - Top clients by case count
+      - Client retention rate
+
+  CREATE: src/app/(dashboard)/reports/performance/page.tsx
+
+    Purpose: Team and individual performance metrics
+    Features:
+      - Cases per lawyer
+      - Win/loss ratio
+      - Average case duration
+      - Billable hours per lawyer
+      - Revenue per lawyer
+      - Client satisfaction scores
+      - Case load distribution
+      - Comparison with previous period
+
+4.6 EXISTING API ROUTE — /api/reports/route.ts
+────────────────────────────────────────────────
+  This file already exists and has proper auth/filtering.
+  Consider using it instead of client-side queries.
+
+  To use it, update report pages to fetch from API:
+
+    const fetchData = async () => {
+      const response = await fetch(
+        `/api/reports?start=${startDate}&end=${endDate}`
+      );
+      const data = await response.json();
+      // Use data.cases, data.clients, etc.
+    };
+
+================================================================================
+PART 5: STEP-BY-STEP IMPLEMENTATION ORDER
+================================================================================
+
+  WEEK 1: Database Security (firm_id on all tables)
+  ─────────────────────────────────────────────────
+  Day 1: Run migration to add firm_id to cases, clients
+  Day 2: Run migration to add firm_id to documents, payments
+  Day 3: Run migration to add firm_id to invoices, hearings
+  Day 4: Run migration to add firm_id to messages, notifications
+  Day 5: Update RLS policies for all tables
+  Day 6: Test all queries with firm_id filtering
+  Day 7: Fix reports to use firm_id filtering
+
+  WEEK 2: Fix Broken Reports
+  ───────────────────────────
+  Day 1: Fix cases report (column name + error handling)
+  Day 2: Fix revenue report (column name + error handling)
+  Day 3: Add firm_id filtering to all reports
+  Day 4: Create clients report page
+  Day 5: Create performance report page
+  Day 6: Add date range filters to all reports
+  Day 7: Test all reports with sample data
+
+  WEEK 3: Reminder System (Email + SMS)
+  ──────────────────────────────────────
+  Day 1: Set up Resend account + verify domain
+  Day 2: Create /api/reminders/route.ts with email sending
+  Day 3: Set up MSG91 account + create SMS flow
+  Day 4: Add SMS sending to /api/reminders/route.ts
+  Day 5: Create cron job for scheduled reminders
+  Day 6: Update reminders page with firm_id filtering
+  Day 7: Test email and SMS delivery
+
+  WEEK 4: Push Notifications + WhatsApp
+  ──────────────────────────────────────
+  Day 1: Set up Firebase project + FCM
+  Day 2: Create service worker for push notifications
+  Day 3: Add push notification sending to reminders
+  Day 4: Set up Interakt account for WhatsApp
+  Day 5: Add WhatsApp sending to reminders
+  Day 6: Create notification logs page
+  Day 7: Test all notification channels
+
+  WEEK 5: Time Tracking Module
+  ────────────────────────────
+  Day 1: Create time_entries table
+  Day 2: Create /api/time-entries/route.ts
+  Day 3: Create timer UI component
+  Day 4: Create timesheet view
+  Day 5: Integrate with billing (hourly rate)
+  Day 6: Add reports for time tracking
+  Day 7: Test complete time tracking flow
+
+================================================================================
+PART 6: FILE STRUCTURE — NEW FILES TO CREATE
+================================================================================
+
+  src/
+  ├── app/
+  │   ├── (dashboard)/
+  │   │   ├── reminders/
+  │   │   │   └── page.tsx (UPDATE - add firm_id filtering)
+  │   │   ├── time/
+  │   │   │   └── page.tsx (NEW - time tracking)
+  │   │   └── reports/
+  │   │       ├── page.tsx (UPDATE - add firm_id filtering)
+  │   │       ├── cases/
+  │   │       │   └── page.tsx (FIX - column name + error handling)
+  │   │       ├── revenue/
+  │   │       │   └── page.tsx (FIX - column name + error handling)
+  │   │       ├── clients/
+  │   │       │   └── page.tsx (NEW - client report)
+  │   │       └── performance/
+  │   │           └── page.tsx (NEW - performance report)
+  │   └── api/
+  │       ├── reminders/
+  │       │   ├── route.ts (UPDATE - add firm_id + notifications)
+  │       │   └── cron/
+  │       │       └── route.ts (NEW - cron job)
+  │       ├── time-entries/
+  │       │   └── route.ts (NEW - time tracking API)
+  │       └── reports/
+  │           └── route.ts (UPDATE - add all report types)
+  ├── components/
+  │   ├── reminders/
+  │   │   └── NotificationBell.tsx (NEW - notification bell)
+  │   ├── time/
+  │   │   ├── TimerWidget.tsx (NEW - timer component)
+  │   │   └── TimesheetView.tsx (NEW - timesheet view)
+  │   └── reports/
+  │       ├── CaseReport.tsx (NEW - case report component)
+  │       ├── RevenueReport.tsx (NEW - revenue report component)
+  │       ├── ClientReport.tsx (NEW - client report component)
+  │       └── PerformanceReport.tsx (NEW - performance report component)
+  ├── lib/
+  │   ├── notifications/
+  │   │   ├── email.ts (NEW - email sending utilities)
+  │   │   ├── sms.ts (NEW - SMS sending utilities)
+  │   │   ├── whatsapp.ts (NEW - WhatsApp sending utilities)
+  │   │   └── push.ts (NEW - push notification utilities)
+  │   └── reports/
+  │       └── queries.ts (NEW - shared report queries)
+  └── supabase/
+      └── migrations/
+          └── 20260731_add_firm_id_to_all_tables.sql (NEW)
+
+================================================================================
+PART 7: TESTING CHECKLIST
+================================================================================
+
+  DATABASE SECURITY
+  □ Run firm_id migration
+  □ Verify firm_id is NOT NULL on all tables
+  □ Test RLS policies (user A cannot see user B's firm data)
+  □ Test owner can see all firm data
+  □ Test employee can only see their own data
+
+  REPORTS
+  □ Cases report shows correct data
+  □ Revenue report shows correct data
+  □ New client report shows correct data
+  □ New performance report shows correct data
+  □ Date range filters work
+  □ Error messages show when queries fail
+  □ Loading states work
+
+  REMINDERS
+  □ Create reminder with all channels
+  □ Email notification received
+  □ SMS notification received
+  □ WhatsApp notification received
+  □ In-app notification appears
+  □ Push notification received
+  □ Cron job sends due reminders
+  □ Notification logs are recorded
+  □ firm_id is set on all reminders
+  □ user_id is set on all reminders
+
+  TIME TRACKING
+  □ Start/stop timer works
+  □ Manual time entry works
+  □ Billable/non-billable toggle works
+  □ Time entries show in timesheet
+  □ Billable amount calculates correctly
+  □ firm_id and user_id are set
+
+================================================================================
+                              END OF GUIDE
+================================================================================

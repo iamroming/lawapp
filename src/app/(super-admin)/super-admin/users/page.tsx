@@ -1,0 +1,214 @@
+"use client";
+import React, { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
+import { EmptyState } from "@/components/ui/empty-state";
+import { formatDate, formatCurrency } from "@/lib/utils";
+import { Users, Search, Mail, Phone, Shield, Crown, UserX, UserCheck, Briefcase, FileText, Receipt, Eye } from "lucide-react";
+import { ROLE_DISPLAY_NAMES } from "@/types/database";
+import Link from "next/link";
+import toast from "react-hot-toast";
+
+interface UserProfile {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  role: string;
+  firm_name: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+interface UserStats {
+  cases: number;
+  clients: number;
+  documents: number;
+  revenue: number;
+  subscription: string;
+}
+
+export default function SuperAdminUsersPage() {
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [userStats, setUserStats] = useState<Record<string, UserStats>>({});
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [expandedUser, setExpandedUser] = useState<string | null>(null);
+  const supabase = createClient();
+
+  useEffect(() => { fetchUsers(); }, []);
+
+  const fetchUsers = async () => {
+    const { data } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+    const userList = (data as UserProfile[]) || [];
+    setUsers(userList);
+
+    // Fetch stats for each user
+    const stats: Record<string, UserStats> = {};
+    for (const u of userList) {
+      const [casesRes, clientsRes, docsRes, paymentsRes, subsRes] = await Promise.all([
+        supabase.from("cases").select("id", { count: "exact", head: true }).eq("created_by", u.id).is("deleted_at", null),
+        supabase.from("clients").select("id", { count: "exact", head: true }).eq("created_by", u.id).is("deleted_at", null),
+        supabase.from("documents").select("id", { count: "exact", head: true }).eq("uploaded_by", u.id),
+        supabase.from("payments").select("amount").eq("received_by", u.id),
+        supabase.from("user_subscriptions").select("status").eq("user_id", u.id).in("status", ["active", "trialing"]).limit(1),
+      ]);
+      stats[u.id] = {
+        cases: casesRes.count || 0,
+        clients: clientsRes.count || 0,
+        documents: docsRes.count || 0,
+        revenue: (paymentsRes.data || []).reduce((sum, p) => sum + (p.amount || 0), 0),
+        subscription: subsRes.data?.[0]?.status || "none",
+      };
+    }
+    setUserStats(stats);
+    setLoading(false);
+  };
+
+  const filteredUsers = users.filter((u) => {
+    const match = u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+      u.email?.toLowerCase().includes(search.toLowerCase()) ||
+      u.phone?.includes(search);
+    const role = roleFilter === "all" || u.role === roleFilter;
+    return match && role;
+  });
+
+  const toggleActive = async (userId: string, isActive: boolean) => {
+    await supabase.from("profiles").update({ is_active: !isActive }).eq("id", userId);
+    toast.success(isActive ? "User deactivated" : "User activated");
+    fetchUsers();
+  };
+
+  const changeRole = async (userId: string, newRole: string) => {
+    await supabase.from("profiles").update({ role: newRole }).eq("id", userId);
+    toast.success(`Role changed to ${newRole}`);
+    fetchUsers();
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Users className="h-6 w-6 text-blue-500" />
+            All Users
+          </h1>
+          <p className="text-gray-500">Full control over every user account ({users.length} total)</p>
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input placeholder="Search by name, email, or phone..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+        </div>
+        <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm">
+          <option value="all">All Roles</option>
+          <option value="owner">Owner</option>
+          <option value="partner">Partner</option>
+          <option value="senior_associate">Senior Associate</option>
+          <option value="associate">Associate</option>
+          <option value="junior_associate">Junior Associate</option>
+          <option value="paralegal">Paralegal</option>
+          <option value="intern">Intern</option>
+          <option value="office_admin">Office Admin</option>
+          <option value="super_admin">Super Admin</option>
+        </select>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">Loading users...</div>
+      ) : filteredUsers.length === 0 ? (
+        <EmptyState icon={<Users className="h-12 w-12" />} title="No users found" description="No users match your search" />
+      ) : (
+        <div className="grid gap-3">
+          {filteredUsers.map((user) => {
+            const stats = userStats[user.id];
+            const isExpanded = expandedUser === user.id;
+            return (
+              <Card key={user.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-4">
+                      <Avatar name={user.full_name || user.email || "U"} size="lg" />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">{user.full_name || "Unnamed"}</h3>
+                          <Badge variant={
+                            user.role === "owner" || user.role === "super_admin" ? "destructive" :
+                            user.role === "partner" ? "default" :
+                            "secondary"
+                          }>
+                            {(user.role === "owner" || user.role === "partner" || user.role === "super_admin") && <Shield className="h-3 w-3 mr-1" />}
+                            {ROLE_DISPLAY_NAMES[user.role] || user.role}
+                          </Badge>
+                          {!user.is_active && <Badge variant="outline" className="text-red-500 border-red-300">Inactive</Badge>}
+                          {stats?.subscription === "active" && <Badge variant="success" className="bg-green-100 text-green-700">Pro</Badge>}
+                        </div>
+                        <p className="text-sm text-gray-500">{user.email}</p>
+                        <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                          {user.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{user.phone}</span>}
+                          {user.firm_name && <span>{user.firm_name}</span>}
+                          <span>Joined {formatDate(user.created_at)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {stats && (
+                        <div className="hidden md:flex items-center gap-4 text-xs text-gray-500 mr-4">
+                          <span className="flex items-center gap-1"><Briefcase className="h-3 w-3" />{stats.cases}</span>
+                          <span className="flex items-center gap-1"><Users className="h-3 w-3" />{stats.clients}</span>
+                          <span className="flex items-center gap-1"><FileText className="h-3 w-3" />{stats.documents}</span>
+                          <span className="flex items-center gap-1"><Receipt className="h-3 w-3" />{formatCurrency(stats.revenue)}</span>
+                        </div>
+                      )}
+                      <select
+                        value={user.role}
+                        onChange={(e) => changeRole(user.id, e.target.value)}
+                        className="h-8 rounded border border-gray-300 text-xs px-2"
+                      >
+                        <option value="owner">Owner</option>
+                        <option value="partner">Partner</option>
+                        <option value="senior_associate">Senior Associate</option>
+                        <option value="associate">Associate</option>
+                        <option value="junior_associate">Junior Associate</option>
+                        <option value="paralegal">Paralegal</option>
+                        <option value="intern">Intern</option>
+                        <option value="office_admin">Office Admin</option>
+                        <option value="super_admin">Super Admin</option>
+                      </select>
+                      <Button
+                        variant={user.is_active ? "outline" : "default"}
+                        size="sm"
+                        onClick={() => toggleActive(user.id, user.is_active)}
+                      >
+                        {user.is_active ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                      </Button>
+                      <Link href={`/super-admin/users/${user.id}`}>
+                        <Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button>
+                      </Link>
+                    </div>
+                  </div>
+                  {/* Expanded stats on mobile */}
+                  {stats && (
+                    <div className="md:hidden mt-3 pt-3 border-t grid grid-cols-4 gap-2 text-center text-xs">
+                      <div><p className="font-bold text-lg">{stats.cases}</p><p className="text-gray-500">Cases</p></div>
+                      <div><p className="font-bold text-lg">{stats.clients}</p><p className="text-gray-500">Clients</p></div>
+                      <div><p className="font-bold text-lg">{stats.documents}</p><p className="text-gray-500">Docs</p></div>
+                      <div><p className="font-bold text-lg">{formatCurrency(stats.revenue)}</p><p className="text-gray-500">Revenue</p></div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

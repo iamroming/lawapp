@@ -1,0 +1,276 @@
+================================================================================
+                    CAUSLY - FEATURES TO BUILD
+                    Generated: 2026-07-27
+================================================================================
+
+
+================================================================================
+SECTION 1: CRITICAL MISSING FEATURES
+================================================================================
+
+1.  EMAIL/PASSWORD AUTHENTICATION
+    Login and signup pages only support Google OAuth. A law practice app used
+    by Indian lawyers needs email/password login as a primary auth method.
+    - Add email + password signup form with name, email, phone, firm details
+    - Add email + password login form
+    - Add forgot password flow
+    - Keep Google OAuth as secondary option
+
+2.  CLIENT PORTAL PAYMENT PROCESSING
+    "Pay Now" button on client payments page is a stub showing "coming soon".
+    Razorpay integration exists in the API but is not connected to the UI.
+    - Connect existing /api/payments/razorpay endpoint to client portal UI
+    - Add Razorpay checkout modal or redirect flow
+    - Show payment confirmation after successful payment
+    - Update invoice status automatically
+
+3.  PDF INVOICE GENERATION
+    "Download PDF" button on billing page shows "PDF generation coming soon!".
+    The API route exists (/api/invoices/[id]/pdf) but the frontend doesn't use it.
+    - Implement PDF generation using a library (e.g., @react-pdf/renderer or puppeteer)
+    - Include firm branding, GST breakdown, payment details
+    - Add download button that actually triggers PDF download
+    - Allow sharing PDF via email/WhatsApp
+
+4.  CSV/PDF REPORT EXPORT
+    Export buttons on reports page are non-functional placeholders.
+    - Implement CSV export for case reports, revenue reports, client reports
+    - Implement PDF export with charts and summaries
+    - Add date range selector for export
+    - Add column selection for CSV export
+
+5.  SERVER-SIDE ROLE-BASED ACCESS CONTROL
+    Admin and super-admin routes rely entirely on client-side rendering.
+    A malicious user can navigate directly to /super-admin/settings or
+    /super-admin/users without server-side enforcement.
+    - Add middleware role checks for /admin/* and /super-admin/* routes
+    - Add RLS policies on Supabase tables for row-level access control
+    - Verify user role on every API route handler
+    - Redirect unauthorized users to appropriate page
+
+
+================================================================================
+SECTION 2: TEAM & USER MANAGEMENT
+================================================================================
+
+6.  TEAM MEMBER INVITATIONS
+    Settings page "Add Member" form is a no-op. No actual invitation or user
+    creation API is called.
+    - Create invitation API endpoint
+    - Send invitation email with unique link
+    - Allow invitee to set password and join the firm
+    - Track invitation status (pending, accepted, expired)
+
+7.  USER PROFILE EDITING
+    Users cannot edit their own profile (name, email, phone, firm details)
+    from the dashboard settings page.
+    - Add profile edit form with avatar upload
+    - Allow changing email (with verification)
+    - Allow changing password
+    - Allow updating firm details and bar council number
+
+8.  SUBSCRIPTION MANAGEMENT FROM USER SIDE
+    Downgrade/Upgrade buttons on settings page have no handlers.
+    - Implement plan comparison modal
+    - Add Razorpay subscription checkout
+    - Handle plan changes (upgrade immediately, downgrade at period end)
+    - Show current plan usage (cases, users, storage)
+
+
+================================================================================
+SECTION 3: NOTIFICATIONS & COMMUNICATION
+================================================================================
+
+9.  NOTIFICATION PREFERENCES PERSISTENCE
+    The notification preferences form looks functional but never saves to database.
+    - Save preferences to notification_preferences table
+    - Load preferences on page mount
+    - Apply preferences when sending notifications
+    - Add email/SMS/WhatsApp channel integration
+
+10. REAL-TIME NOTIFICATIONS
+    The notification system fetches on mount but has no real-time subscription
+    for new notifications.
+    - Add Supabase real-time subscription for notifications table
+    - Show unread count badge in header
+    - Add desktop push notifications
+    - Add notification sound option
+
+11. HEARING REMINDER INTEGRATION
+    The reminders page exists but hearing reminders don't integrate with
+    the notification preferences system.
+    - Auto-create reminders for upcoming hearings
+    - Send reminders via preferred channel (email/SMS/push)
+    - Allow snoozing reminders
+    - Add calendar integration (Google Calendar, Outlook)
+
+
+================================================================================
+SECTION 4: CASE & DOCUMENT MANAGEMENT
+================================================================================
+
+12. CLIENT-SIDE CASE DELETION CASCADE
+    Deleting a case or client doesn't clean up related records (hearings,
+    documents, time entries, invoices, payments). Orphaned records accumulate.
+    - Add database cascade delete or soft-delete propagation
+    - Show related records count before deletion
+    - Allow soft-delete with recovery option
+    - Add bulk delete with confirmation
+
+13. CALENDAR CASE PRE-SELECTION
+    Case detail page links to calendar with ?case_id= param but the calendar
+    page ignores it entirely.
+    - Read searchParams.case_id on calendar page
+    - Pre-select the case in the hearing form
+    - Highlight the case in the calendar view
+    - Add "Schedule Hearing" button on case detail page
+
+14. E-COURTS CASE LINKING
+    The "Link to Existing Case" dropdown in eCourts page has no options.
+    - Load user's cases into the dropdown
+    - Allow linking eCourts record to existing case
+    - Auto-populate case details from eCourts data
+    - Sync hearing dates from eCourts to calendar
+
+15. DOCUMENT VERSION HISTORY
+    No version tracking for uploaded documents. No way to see previous versions.
+    - Store version number with each upload
+    - Keep previous versions accessible
+    - Show version history timeline
+    - Allow reverting to previous version
+
+16. CASE STATUS CHANGE HISTORY
+    No audit trail for case status changes. The activity_logs table exists
+    but case status changes may not be logged there.
+    - Log all status changes with timestamp and user
+    - Show status change timeline on case detail page
+    - Allow adding notes with status changes
+    - Export status change history
+
+
+================================================================================
+SECTION 5: BILLING & FINANCE
+================================================================================
+
+17. BILLABLE TIME TRACKING FROM CLIENT PORTAL
+    Time entries exist in the billing system but clients have no visibility
+    into hours spent on their cases.
+    - Show time entries on client portal case detail page
+    - Add narrative descriptions for time entries
+    - Allow clients to approve/dispute time entries
+    - Generate detailed billing statements
+
+18. GST AUTO-CALCULATION ON INVOICES
+    Currently GST is calculated manually. Should auto-calculate based on
+    place of supply and firm state.
+    - Auto-detect inter-state vs intra-state from addresses
+    - Calculate CGST/SGST or IGST automatically
+    - Show GST breakdown on invoice
+    - Generate GST-compliant invoices
+
+19. PAYMENT RECEIPTS
+    No automatic receipt generation after payment.
+    - Generate PDF receipt after payment
+    - Include payment details, GST info, case reference
+    - Send receipt via email automatically
+    - Allow manual receipt generation
+
+
+================================================================================
+SECTION 6: SEARCH & DISCOVERY
+================================================================================
+
+20. GLOBAL SEARCH
+    No global search functionality. Users must navigate to each section
+    individually to search within that section.
+    - Add search bar in header accessible from all pages
+    - Search across cases, clients, documents, invoices
+    - Show results grouped by entity type
+    - Add keyboard shortcut (Ctrl+K) to open search
+
+21. BARE ACTS DATA FROM API
+    ~300 lines of hardcoded legal data in the component. Should be fetched
+    from an API or stored in a separate data file for maintainability.
+    - Move bare acts data to a JSON file or database
+    - Add API endpoint for searching bare acts
+    - Allow users to add custom acts/sections
+    - Add bookmarking for frequently referenced sections
+
+
+================================================================================
+SECTION 7: UX IMPROVEMENTS
+================================================================================
+
+22. CONFIRMATION DIALOGS FOR DESTRUCTIVE ACTIONS
+    Many destructive operations (deactivate user, change subscription status,
+    delete notification, remove team member) lack confirmation dialogs.
+    - Add confirm() or custom modal for all destructive actions
+    - Show consequences of action in the confirmation
+    - Add undo functionality where possible
+    - Use red color for destructive button text
+
+23. ERROR BOUNDARIES
+    No React error boundaries exist in the dashboard layout. A rendering
+    error in any child page crashes the entire dashboard with a white screen.
+    - Add error boundary wrapper around dashboard layout
+    - Show friendly error page with retry button
+    - Log errors to monitoring service
+    - Add "Report Issue" button on error page
+
+24. LOADING STATES FOR NAVIGATION
+    No Suspense boundaries or loading UI for dashboard page transitions.
+    - Add loading skeletons for each page
+    - Add top loading bar for page transitions
+    - Show spinner during data fetches
+    - Add skeleton screens for list pages
+
+25. INPUT VALIDATION ON FORMS
+    Phone, email, pincode, GST number, and other fields have no format
+    validation beyond HTML type="email" and required attributes.
+    - Add phone number format validation (10 digits, optional +91)
+    - Add pincode validation (6 digits)
+    - Add GST number regex validation (15 characters)
+    - Add real-time validation feedback on blur
+
+26. DARK MODE / THEME CUSTOMIZATION
+    No dark mode or theme customization support.
+    - Add dark mode toggle in settings
+    - Persist theme preference in database
+    - Support system preference detection
+    - Ensure all components work in both themes
+
+27. OFFLINE SUPPORT / PWA
+    No service worker or offline capability for field lawyers who may have
+    intermittent connectivity.
+    - Add service worker for caching static assets
+    - Cache API responses for offline reading
+    - Show offline indicator in UI
+    - Queue actions for when connection is restored
+
+28. MARKETING SITE PRICING FROM DATABASE
+    Pricing page has hardcoded plan data. Should sync with the actual
+    subscription_plans table.
+    - Fetch plans from subscription_plans table
+    - Show current pricing and features
+    - Highlight recommended plan
+    - Add "Most Popular" badge from database
+
+29. CONTACT/SALES PAGE
+    "Contact Sales" CTA links to /help instead of a dedicated contact page.
+    - Create contact form with name, email, phone, message
+    - Add firm size and current tools fields
+    - Send notification to admin on submission
+    - Add auto-reply confirmation email
+
+30. PAGINATION FOR LIST PAGES
+    Super-admin activity logs, documents, and other list pages load all records
+    at once (up to 500). No pagination or infinite scroll.
+    - Add cursor-based pagination
+    - Add page size selector (25, 50, 100)
+    - Add "Load More" button or infinite scroll
+    - Show total count and current range
+
+
+================================================================================
+                              END OF LIST
+================================================================================

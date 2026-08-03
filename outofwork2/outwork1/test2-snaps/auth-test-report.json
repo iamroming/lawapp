@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-08-01T16:25:57.256Z",
+  "authTests": {
+    "loginElements": {
+      "emailInput": true,
+      "passwordInput": true,
+      "submitButton": true,
+      "loginText": true,
+      "googleButton": true
+    },
+    "signupElements": {
+      "fullNameInput": false,
+      "emailInput": false,
+      "passwordInput": false,
+      "submitButton": false
+    },
+    "dashCheck": {
+      "hasRedirect": true,
+      "currentUrl": "http://localhost:3000/login",
+      "hasDashboardContent": true
+    }
+  },
+  "apiTests": [
+    "/api/expenses",
+    "/api/timesheets",
+    "/api/tasks",
+    "/api/case-alerts",
+    "/api/case-alerts/history",
+    "/api/case-alerts/check"
+  ],
+  "errors": [],
+  "consoleErrors": []
+}

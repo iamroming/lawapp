@@ -1,0 +1,302 @@
+============================================================
+CAUSLY - PRICING ANALYSIS & RECOMMENDATIONS
+============================================================
+Date: 2026-07-28
+============================================================
+
+============================================================
+PART 1: CURRENT CAUSLY PRICING PLANS
+============================================================
+
+Plan           Price        Cases    Users  Storage    AI        Client Portal
+-----------    ----------   ------   -----  --------   --------  ------------
+Free           ₹0/mo        10       1      Basic      No        No
+Starter        ₹499/mo      50       3      Unlimited  100/mo    Yes
+Professional   ₹999/mo      Unlim.   10     Unlimited  Unlim.   Yes
+Enterprise     ₹2,999/mo    Unlim.   25     Unlimited  Unlim.   Yes
+
+Issues with current pricing:
+- Too many plans (4) for early-stage product
+- Free tier too generous (10 cases, 1 user)
+- Starter/Professional gap too small (₹500 diff for 7 more users)
+- No annual billing discount
+- Enterprise priced too low for "enterprise"
+- No per-user pricing model option
+- No trial period mentioned
+
+============================================================
+PART 2: COMPETITOR PRICING RESEARCH (INDIAN MARKET)
+============================================================
+
+--- LawSathi (lawsathi.in) ---
+Standard:   ₹699/seat/mo  |  ₹6,999/seat/yr (17% off)
+Professional: ₹1,299/seat/mo  |  ₹12,999/seat/yr
+Enterprise: Custom quote (10+ seats)
+
+--- LegalDoc360 (legaldoc360.com) ---
+Solo:       ₹0/mo (free forever)
+Standard:   ₹799/mo  |  ₹7,990/yr
+Premium:    ₹1,799/mo  |  ₹17,990/yr
+Law Firm:   ₹8,999/mo  |  ₹89,990/yr
+
+--- Vakilbase (vakilbase.com) ---
+Essential:  ₹699/mo (annual, save 15%)
+Professional: ₹1,299/mo (annual, save 20%)
+Enterprise: ₹2,999/mo (annual)
+
+--- Bharat.Law (bharat.law) ---
+Plus:       ₹599/mo (annual) | ₹899/mo (monthly)
+Pro:        ₹1,099/mo (annual) | ₹1,499/mo (monthly)
+Teams:      ₹2,999/mo (annual, 3 seats) | ₹3,999/mo (monthly)
+Enterprise: Custom
+
+--- Barrister24 (barrister24.com) ---
+Starter:    ₹999/mo  |  ₹9,999/yr
+Pro:        ₹2,499/mo  |  ₹24,999/yr
+Elite:      ₹4,999/mo  |  ₹49,999/yr
+
+--- LexEdge (lexedge.ai) ---
+Basic:      ₹100/mo
+Professional: ₹250/mo
+Enterprise: Custom
+
+--- THEO (theo.co.in) ---
+Entry:      ₹500-2,000/user/mo (basic features)
+Mid-tier:   ₹2,000-8,000/user/mo (advanced features)
+Enterprise: ₹8,000-25,000+/user/mo
+
+--- Market Averages (2026 data) ---
+Solo/small (1-4 users):    ₹500-2,000/user/mo
+Mid-size (5-20 users):     ₹2,000-8,000/user/mo
+Enterprise (20+ users):    ₹8,000-25,000+/user/mo
+
+Annual discount typical: 15-25% off
+
+============================================================
+PART 3: INTERNATIONAL COMPARISON (CONVERTED TO INR)
+============================================================
+(1 USD ≈ ₹85)
+
+--- Clio (Global #1) ---
+EasyStart:  ~₹4,165/mo ($49/user/mo)
+Essentials: ~₹7,650/mo ($89/user/mo)
+Advanced:   ~₹11,050/mo ($129/user/mo)
+
+--- GeniusLaw ---
+Essentials: ~₹2,465/mo ($29/user/mo)
+Pro:        ~₹5,015/mo ($59/user/mo)
+Elite:      ~₹10,965/mo ($129/user/mo)
+
+--- Legience ---
+Solo:       ~₹8,415/mo ($99/mo)
+Practice:   ~₹14,365/mo/user ($169/mo/user)
+Firm:       ~₹21,165/mo/user ($249/mo/user)
+
+--- Lexitio ---
+Solo:       ~₹8,415/mo ($99/mo)
+Practice:   ~₹21,165/mo ($249/mo)
+Firm:       ~₹42,415/mo ($499/mo)
+
+============================================================
+PART 4: KEY INSIGHTS FROM COMPETITORS
+============================================================
+
+1. PER-USER PRICING IS STANDARD
+   - Most Indian competitors use per-seat/per-user pricing
+   - Allows revenue to scale with firm growth
+   - Clio, LawSathi, Bharat.Law all use this model
+
+2. 3 PLANS IS THE SWEET SPOT
+   - Solo/Free → Professional → Enterprise
+   - Too many plans causes decision paralysis
+   - LegalDoc360, Vakilbase, Bharat.Law all use 3-4 tiers
+
+3. ANNUAL BILLING = 15-25% DISCOUNT
+   - Universal across all competitors
+   - Improves cash flow and reduces churn
+   - Bharat.Law: ~33% discount annually
+
+4. FREE TIER IS LIGHTWEIGHT
+   - 5-10 cases max, limited users
+   - Acts as lead generation, not a real plan
+   - Most free tiers are 1 user only
+
+5. AI IS A PREMIUM FEATURE
+   - Most charge extra for AI or limit credits
+   - Barrister24: ₹75/draft overage
+   - LawSathi: ₹1,299/mo for AI features
+   - AI should be a differentiator, not free
+
+6. INDIAN PRICE SENSITIVITY
+   - Sweet spot: ₹500-2,000/mo for small firms
+   - Professional tier: ₹1,000-3,000/mo
+   - Enterprise starts at ₹3,000+/mo
+
+7. STORAGE IS A REVENUE STREAM
+   - Extra storage bundles: ₹200/mo for 50GB
+   - Most plans cap at 5-25 GB on base tier
+
+8. 14-DAY FREE TRIAL IS STANDARD
+   - LawSathi, Vakilbase, Bharat.Law all offer 14 days
+   - No credit card required
+
+============================================================
+PART 5: RECOMMENDED CAUSLY PRICING
+============================================================
+
+STRATEGY: Per-user pricing with 3 plans + free trial
+
+--- FREE TRIAL (14 days) ---
+- Full Professional features
+- No credit card required
+- Convert to paid plan after trial
+
+--- SOLO (For individual advocates) ---
+  Monthly: ₹599/mo (1 user)
+  Annual:  ₹5,999/yr (₹499/mo - save 17%)
+  
+  Features:
+  - 1 user
+  - 25 active cases
+  - 5 GB document storage
+  - Court calendar + reminders
+  - Basic billing & invoicing
+  - Client portal (read-only)
+  - Email support
+  - GST-compliant invoices
+  - Indian court hierarchy
+  - Basic document templates
+
+--- PROFESSIONAL (For small firms) ---
+  Monthly: ₹1,499/mo (up to 3 users)
+  Annual:  ₹14,999/yr (₹1,249/mo - save 17%)
+  
+  Additional users: ₹499/user/mo
+  
+  Features:
+  - Up to 3 users included
+  - Unlimited active cases
+  - 25 GB document storage
+  - Advanced calendar + sync
+  - Full billing + Razorpay payments
+  - Client portal (full access)
+  - AI legal assistant (100 queries/mo)
+  - All document templates
+  - Activity logging & audit trail
+  - Priority email support
+  - Reports & analytics
+  - Hindi UI support
+
+--- ENTERPRISE (For growing firms) ---
+  Monthly: ₹3,999/mo (up to 10 users)
+  Annual:  ₹39,999/yr (₹3,333/mo - save 17%)
+  
+  Additional users: ₹399/user/mo
+  
+  Features:
+  - Up to 10 users included
+  - Unlimited cases
+  - 100 GB document storage
+  - AI legal assistant (unlimited)
+  - WhatsApp/SMS reminders
+  - Custom branding
+  - API access
+  - Dedicated account manager
+  - Phone + email support
+  - Data migration assistance
+  - Custom integrations
+  - SLA guarantee
+
+--- ADD-ONS ---
+  Extra storage: ₹200/mo per 50GB
+  Extra AI credits: ₹300 per 500 queries
+  WhatsApp reminders: ₹199/mo
+  SMS reminders: ₹99/mo
+  Priority support: ₹499/mo
+
+============================================================
+PART 6: COMPARISON TABLE
+============================================================
+
+Causly Solo vs Competitors:
+  Causly Solo:     ₹599/mo (1 user, 25 cases)
+  LawSathi:        ₹699/mo (1 user, features vary)
+  LegalDoc360:     ₹799/mo (unlimited cases)
+  Vakilbase:       ₹699/mo (50 cases)
+  Bharat.Law:      ₹599/mo (limited features)
+
+  VERDICT: Competitive. ₹599 is attractive entry point.
+
+Causly Professional vs Competitors:
+  Causly Pro:      ₹1,499/mo (3 users, unlimited)
+  LawSathi:        ₹1,299/mo (1 user, AI)
+  LegalDoc360:     ₹1,799/mo (unlimited)
+  Vakilbase:       ₹1,299/mo (unlimited)
+  Bharat.Law:      ₹1,099/mo (1 user, limited)
+
+  VERDICT: Good value. 3 users included is a differentiator.
+
+Causly Enterprise vs Competitors:
+  Causly Ent:      ₹3,999/mo (10 users)
+  LegalDoc360:     ₹8,999/mo (law firm tier)
+  Barrister24:     ₹4,999/mo (elite)
+  Bharat.Law:      ₹2,999/mo (3 seats)
+
+  VERDICT: Well-priced for 10 users. Room to increase.
+
+============================================================
+PART 7: REVENUE PROJECTIONS
+============================================================
+
+Conservative estimate (Year 1):
+  - 100 Solo users × ₹599 = ₹59,900/mo
+  - 30 Professional × ₹1,499 = ₹44,970/mo
+  - 10 Enterprise × ₹3,999 = ₹39,990/mo
+  - Total: ₹1,44,860/mo = ₹17,38,320/yr (~₹17.4L)
+
+Aggressive estimate (Year 2):
+  - 500 Solo × ₹599 = ₹2,99,500/mo
+  - 100 Professional × ₹1,499 = ₹1,49,900/mo
+  - 30 Enterprise × ₹3,999 = ₹1,19,970/mo
+  - Total: ₹5,69,370/mo = ₹68,32,440/yr (~₹68.3L)
+
+============================================================
+PART 8: IMPLEMENTATION CHECKLIST
+============================================================
+
+[ ] Update pricing page with new plans
+[ ] Add annual/monthly toggle
+[ ] Create Razorpay subscription plans
+[ ] Add user limit enforcement in subscription-limits.ts
+[ ] Add storage limit enforcement
+[ ] Create upgrade/downgrade flow
+[ ] Add billing portal for users
+[ ] Update .env.local with new plan IDs
+[ ] Test checkout flow end-to-end
+[ ] Add trial expiration logic (14 days)
+[ ] Create email templates for trial/expiry
+[ ] Add usage dashboard in settings
+
+============================================================
+RECOMMENDATION SUMMARY
+============================================================
+
+Best plan structure for Causly:
+  1. Free Trial (14 days, full features)
+  2. Solo (₹599/mo, 1 user, 25 cases)
+  3. Professional (₹1,499/mo, 3 users, unlimited)
+  4. Enterprise (₹3,999/mo, 10 users, unlimited)
+
+Key differentiators to highlight:
+  - Indian court hierarchy built-in
+  - GST-compliant invoicing
+  - Hindi language support
+  - Document templates (Vakalatnama, Legal Notice, Affidavit)
+  - Client portal included on all paid plans
+  - Per-firm pricing (not per-user) on higher tiers
+
+Annual billing: 17% discount (2 months free)
+Payment: Razorpay (UPI, cards, net banking)
+Trial: 14 days, no credit card required
+
+============================================================

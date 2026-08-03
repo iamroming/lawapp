@@ -1,0 +1,261 @@
+# Employee Salary Module - Plan
+
+## Overview
+Add salary/compensation management for employees with two payment types:
+1. **Fixed Salary** - Monthly salary regardless of cases
+2. **Case Percentage** - Get a % of fees collected from assigned cases
+
+---
+
+## How Other Legal Apps Handle This
+
+### Clio
+- Tracks billable hours per attorney
+- Generates revenue reports by attorney
+- No built-in salary module (uses QuickBooks integration)
+
+### MyCase
+- Financial reporting by attorney
+- Tracks billable time and collections
+- Salary management via external accounting
+
+### PracticePanther
+- Time tracking with billing rates
+- Compensation tracking in reports
+- Links payments to specific cases/attorneys
+
+### LeanLaw
+- Compensation tracking reports
+- Profit-sharing calculations
+- Links attorney work to revenue
+
+### Indian Legal Apps (LegalForce, CaseFox)
+- Simple salary modules
+- Some have percentage-based payment for advocates
+
+---
+
+## Recommended Model for Causly
+
+### Payment Types
+
+#### 1. Fixed Salary (Monthly)
+- Set monthly salary amount
+- Attendance tracking (optional)
+- Deductions (PF, ESI, TDS)
+- Payment date (1st/15th of month)
+- Bonus provisions
+
+#### 2. Case Percentage
+- Set percentage (e.g., 30% of collected fees)
+- Only applies to cases where employee is assigned
+- Calculated on collected amount (not billed)
+- Can set different % per case type
+- Monthly settlement or per-case settlement
+
+#### 3. Hybrid (Optional - Phase 2)
+- Base salary + smaller percentage
+- Best for associates who bring clients
+
+---
+
+## Database Schema
+
+### employees (existing - add columns)
+```sql
+ALTER TABLE employees ADD COLUMN payment_type TEXT DEFAULT 'salary';
+-- Values: 'salary', 'percentage', 'hybrid'
+
+ALTER TABLE employees ADD COLUMN monthly_salary NUMERIC DEFAULT 0;
+ALTER TABLE employees ADD COLUMN percentage_rate NUMERIC DEFAULT 0;
+-- e.g., 30 means 30%
+
+ALTER TABLE employees ADD COLUMN payment_day INTEGER DEFAULT 1;
+-- Day of month for salary payment
+
+ALTER TABLE employees ADD COLUMN pf_enabled BOOLEAN DEFAULT false;
+ALTER TABLE employees ADD COLUMN esi_enabled BOOLEAN DEFAULT false;
+ALTER TABLE employees ADD COLUMN tds_rate NUMERIC DEFAULT 0;
+-- e.g., 10 means 10% TDS
+```
+
+### salary_payments (new table)
+```sql
+CREATE TABLE salary_payments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  employee_id UUID REFERENCES employees(id),
+  payment_type TEXT NOT NULL,
+  -- 'salary', 'percentage', 'bonus', 'deduction'
+  
+  period_start DATE,
+  period_end DATE,
+  
+  base_salary NUMERIC DEFAULT 0,
+  percentage_earned NUMERIC DEFAULT 0,
+  total_earnings NUMERIC DEFAULT 0,
+  
+  pf_deduction NUMERIC DEFAULT 0,
+  esi_deduction NUMERIC DEFAULT 0,
+  tds_deduction NUMERIC DEFAULT 0,
+  other_deductions NUMERIC DEFAULT 0,
+  total_deductions NUMERIC DEFAULT 0,
+  
+  net_payable NUMERIC DEFAULT 0,
+  status TEXT DEFAULT 'pending',
+  -- 'pending', 'paid', 'cancelled'
+  
+  paid_at TIMESTAMPTZ,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### case_earnings (new table)
+```sql
+CREATE TABLE case_earnings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  case_id UUID REFERENCES cases(id),
+  employee_id UUID REFERENCES employees(id),
+  invoice_id UUID REFERENCES invoices(id),
+  
+  invoice_amount NUMERIC DEFAULT 0,
+  collected_amount NUMERIC DEFAULT 0,
+  percentage_rate NUMERIC DEFAULT 0,
+  earned_amount NUMERIC DEFAULT 0,
+  
+  settled BOOLEAN DEFAULT false,
+  settled_in UUID REFERENCES salary_payments(id),
+  
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+---
+
+## UI/UX
+
+### Employee Create/Edit Form
+```
+Payment Type: [Fixed Salary ▼]  or  [Case Percentage ▼]
+
+IF Fixed Salary:
+  Monthly Salary: [₹ 50,000]
+  Payment Day: [1st ▼]
+  Enable PF: [✓]
+  Enable ESI: [ ]
+  TDS Rate: [10%]
+
+IF Case Percentage:
+  Default %: [30%]
+  (Can override per case)
+```
+
+### Employee Profile Page
+```
+┌─────────────────────────────────────────────┐
+│ ADV: Rahul Sharma                           │
+│ Payment Type: Case Percentage (30%)         │
+├─────────────────────────────────────────────┤
+│ This Month's Earnings:                      │
+│   Case 1: Rajesh vs State - ₹6,000         │
+│   Case 2: ABC Corp vs XYZ - ₹4,500         │
+│   Total: ₹10,500                            │
+├─────────────────────────────────────────────┤
+│ Payment History                              │
+│ Jul 2026: ₹28,500 [Paid]                   │
+│ Jun 2026: ₹32,000 [Paid]                   │
+│ May 2026: ₹25,800 [Paid]                   │
+└─────────────────────────────────────────────┘
+```
+
+### Salary Dashboard (Owner View)
+```
+┌─────────────────────────────────────────────┐
+│ Payroll - July 2026                         │
+├─────────────────────────────────────────────┤
+│ Employee        Type      Amount   Status   │
+│ Rahul Sharma    30%       ₹10,500  Pending  │
+│ Priya Patel     Salary    ₹50,000  Pending  │
+│ Amit Kumar      Salary    ₹40,000  Paid     │
+├─────────────────────────────────────────────┤
+│ Total Payable: ₹1,00,500                    │
+│ Total Paid: ₹40,000                         │
+│ [Generate Payslips]  [Mark as Paid]         │
+└─────────────────────────────────────────────┘
+```
+
+---
+
+## Calculation Logic
+
+### Percentage Payment
+```
+For each case assigned to employee:
+  earnings = collected_amount * (percentage_rate / 100)
+  
+Total monthly = sum(earnings for all cases in month)
+Deductions = PF + ESI + TDS
+Net = Total - Deductions
+```
+
+### Salary Payment
+```
+Base = monthly_salary
+Deductions = PF (12%) + ESI (0.75%) + TDS
+Net = Base - Deductions
+```
+
+---
+
+## Files to Create/Modify
+
+### New Files
+1. `src/app/(dashboard)/employees/salary/page.tsx` - Salary dashboard
+2. `src/app/(dashboard)/employees/salary/[id]/page.tsx` - Employee salary detail
+3. `src/app/api/salary/route.ts` - Salary CRUD API
+4. `src/app/api/salary/calculate/route.ts` - Auto-calculate earnings
+5. `src/components/salary/salary-form.tsx` - Create/edit salary payment
+6. `src/components/salary/payslip.tsx` - Payslip generation
+
+### Modified Files
+1. `src/app/(admin)/admin/employees/page.tsx` - Add payment type to form
+2. `src/components/employees/employee-form.tsx` - Payment type fields
+3. `src/app/(dashboard)/cases/[id]/page.tsx` - Track case earnings
+
+### Database
+1. `supabase/salary-migration.sql` - New tables + columns
+
+---
+
+## Implementation Phases
+
+### Phase 1: Basic (1 week)
+- [ ] Add payment_type to employee form
+- [ ] Create salary_payments table
+- [ ] Auto-calculate monthly salary
+- [ ] Employee salary view page
+- [ ] Owner payroll dashboard
+
+### Phase 2: Percentage (1 week)
+- [ ] Create case_earnings table
+- [ ] Auto-track when invoice is paid
+- [ ] Calculate % per employee per case
+- [ ] Generate payslips
+
+### Phase 3: Reports (3 days)
+- [ ] Salary reports by month/employee
+- [ ] Export to PDF/Excel
+- [ ] Tax deduction reports
+
+---
+
+## Settings Page Updates
+Add Salary tab to Settings:
+```
+Salary Settings:
+  Default PF Rate: [12%]
+  Default ESI Rate: [0.75%]
+  Default TDS Rate: [10%]
+  Payment Cycle: [Monthly ▼]
+  Payment Day: [1st ▼]
+```

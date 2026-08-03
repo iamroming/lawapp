@@ -1,0 +1,526 @@
+================================================================================
+LAWAPP - MISSING FEATURES & TODO TO SELL THIS SAAS
+Generated: July 15, 2026
+================================================================================
+
+TABLE OF CONTENTS
+-----------------
+PART A: MISSING FEATURES (vs Best Law Apps)
+  A1. CRITICAL - India Market Must-Haves
+  A2. IMPORTANT - Core Product Gaps
+  A3. NICE-TO-HAVE - Differentiators
+
+PART B: TODO STEPS TO SELL THIS SAAS
+  B1. Phase 1: Fix Foundations (Weeks 1-3)
+  B2. Phase 2: India-Specific Features (Weeks 4-7)
+  B3. Phase 3: Notifications & Communication (Weeks 8-10)
+  B4. Phase 4: Client Portal & Payments (Weeks 11-14)
+  B5. Phase 5: Advanced Features (Weeks 15-18)
+  B6. Phase 6: Scale & Sell (Weeks 19-24)
+  B7. Pricing Strategy
+  B8. Priority Matrix
+
+================================================================================
+PART A: MISSING FEATURES
+================================================================================
+(Compared to Clio, MyCase, ManageMyLawsuits, Provakil, Legistify, PracticePanther)
+
+--------------------------------------------------------------------------------
+A1. CRITICAL - INDIA MARKET MUST-HAVES
+--------------------------------------------------------------------------------
+
+[1] e-COURT INTEGRATION
+    Why   : Indian courts have e-filing and e-court status systems. Direct
+            integration is THE biggest differentiator for Indian lawyers.
+    What   : Fetch case status, next hearing dates, orders/judgments directly
+            from eCourts.gov.in API.
+    Who    : Legistify, Provakil already do this.
+    Impact : Without this, you're just another generic CRM.
+
+[2] LIMITATION PERIOD CALCULATOR
+    Why   : Missing a filing deadline (limitation period) can cost a case.
+            Lawyers need to calculate appeal (30/60/90 days), revision
+            (90 days), review (30 days) deadlines constantly.
+    What   : Auto-calculate based on case type, section, and state.
+    Who    : ManageMyLawsuits, Indian Kanoon.
+    Impact : This single feature saves lawyers from malpractice.
+
+[3] COURT FEE / STAMP DUTY CALCULATOR
+    Why   : Court fees and stamp duty vary by state, case type, and claim
+            amount. Manual calculation is error-prone.
+    What   : State-wise calculator with automatic computation.
+    Who    : Indian-specific legal tools.
+    Impact : Essential for filing any case.
+
+[4] GST-COMPLIANT INVOICES
+    Why   : Indian law requires GST-compliant invoices. Current invoices
+            don't have GSTIN, HSN/SAC codes, state codes, or proper format.
+    What   : Full GST invoice format with all required fields.
+    Who    : Every billing software in India.
+    Impact : Cannot legally bill clients without this.
+
+[5] WHATSAPP/SMS NOTIFICATIONS
+    Why   : Indian lawyers live on WhatsApp. Hearing reminders, payment
+            due alerts, and case updates via WhatsApp are essential.
+    What   : WhatsApp Business API integration for automated reminders.
+    Who    : ManageMyLawsuits, most Indian legal apps.
+    Impact : Lawyers will not check email regularly. WhatsApp is how they work.
+
+[6] MULTI-LANGUAGE SUPPORT (HINDI + ENGLISH)
+    Why   : Many Indian lawyers (especially outside metros) prefer Hindi
+            or regional languages. Documents often need to be in Hindi.
+    What   : Hindi UI at minimum. Hindi document templates.
+    Who    : Provakil, Legistify support multiple Indian languages.
+    Impact : Limits adoption to English-speaking urban lawyers only.
+
+[7] VAKALATNAMA & CASE DIARY TEMPLATES
+    Why   : Vakalatnama is the authority letter from client to lawyer.
+            Case diary is mandatory in many courts.
+    What   : Digital vakalatnama template, case diary management.
+    Who    : Indian-specific legal apps.
+    Impact : Paper-based processes that need digitization.
+
+[8] e-FILING INTEGRATION
+    Why   : Indian courts increasingly require e-filing. Direct integration
+            saves hours of manual work.
+    What   : Direct filing with court portals from within the app.
+    Who    : Provakil, MCA21 integration tools.
+    Impact : Future-proofing for mandatory e-filing.
+
+[9] INDIAN COURT HIERARCHY IN DROPDOWNS
+    Why   : Current dropdowns have generic court names. Indian court system
+            is: Supreme Court → High Court → District → Sessions → Magistrate.
+    What   : Proper Indian court hierarchy with state-wise mapping.
+    Who    : All Indian legal apps.
+    Impact : Users have to type court names manually, leading to inconsistency.
+
+[10] STATE-WISE JURISDICTION MAPPING
+     Why   : Different states have different courts, fees, and procedures.
+     What   : Auto-map court based on state/district selection.
+     Who   : Indian-specific apps.
+     Impact : Current app has generic court list without state context.
+
+--------------------------------------------------------------------------------
+A2. IMPORTANT - CORE PRODUCT GAPS
+--------------------------------------------------------------------------------
+
+[11] CLIENT PORTAL
+     Why   : Clients want to see their case status without calling the
+             lawyer. This reduces back-and-forth communication.
+     What   : Separate client login, view case status, download documents,
+             view and pay invoices.
+     Who    : Clio (Clio for Clients), MyCase, PracticePanther.
+     Impact : Major differentiator. Lawyers can offer better client service.
+
+[12] CONFLICT OF INTEREST CHECK
+     Why   : Lawyers MUST check if a new client conflicts with existing
+             clients before taking the case. Ethical obligation.
+     What   : Auto-check new client name/party against existing database.
+     Who    : Clio, PracticePanther, most enterprise legal tools.
+     Impact : Legal liability if not checked.
+
+[13] TASK MANAGEMENT PER CASE
+     Why   : Cases have multiple tasks (draft petition, file response,
+             prepare witness, etc.) that need tracking.
+     What   : Per-case tasks with assignees, deadlines, status, reminders.
+     Who    : Clio, MyCase, PracticePanther.
+     Impact : Lawyers juggle dozens of tasks across cases. Need tracking.
+
+[14] EMAIL INTEGRATION
+     Why   : Lawyers communicate with clients and courts via email.
+             Emails related to cases should be linked to the case.
+     What   : Auto-link emails to cases, send from within app, email templates.
+     Who    : Clio, PracticePanther.
+     Impact : Email threads get lost. Case context is scattered.
+
+[15] DOCUMENT TEMPLATES
+     Why   : Lawyers draft the same types of documents repeatedly.
+             Templates save hours of work.
+     What   : Pre-built templates for petition, notice, agreement, affidavit,
+             legal notice, reply, application, etc.
+     Who    : Clio Draft, PracticePanther, Indian legal apps.
+     Impact : Drastic time savings for routine documents.
+
+[16] CLAUSE LIBRARY
+     Why   : Contract lawyers need common clauses readily available.
+     What   : Searchable library of common contract clauses.
+     Who    : Contract management tools.
+     Impact : Speeds up contract drafting significantly.
+
+[17] LEGAL RESEARCH INTEGRATION
+     Why   : Lawyers need to research case law. Quick access saves time.
+     What   : Direct links to Indian Kanoon, LiveLaw, SCC Online from
+             within case records.
+     Who    : Provakil, Legistify.
+     Impact : Keeps lawyers in the app instead of switching tools.
+
+[18] TRUST ACCOUNTING
+     Why   : Many jurisdictions require client trust accounts (IOLTA).
+             Mishandling trust funds is a serious ethical violation.
+     What   : Client trust account management with proper accounting.
+     Who    : Clio, MyCase (LawPay).
+     Impact : Required for compliance in many jurisdictions.
+
+[19] E-SIGNATURE
+     Why   : Documents need signatures. Digital signatures save time.
+     What   : E-signature support for documents within the app.
+     Who    : Clio (DocuSign integration), PracticePanther.
+     Impact : Eliminates need for physical document signing.
+
+[20] LEAD MANAGEMENT
+     Why   : Law firms need to track potential clients from first contact
+             through engagement.
+     What   : Lead capture, follow-up tracking, conversion analytics.
+     Who    : Clio Grow, Lawmatics.
+     Impact : Firms lose potential clients without lead tracking.
+
+[21] PAYMENT GATEWAY (RAZORPAY/UPI)
+     Why   : Clients want to pay online. UPI is dominant in India.
+     What   : Razorpay integration for UPI, cards, net banking payments.
+     Who    : MyCase (LawPay), Clio Payments.
+     Impact : Faster payment collection, better cash flow.
+
+[22] PROPER AUDIT TRAIL
+     Why   : Legal data requires accountability. Who changed what and when?
+     What   : Track all changes with before/after values, timestamp, user.
+     Who    : Clio, PracticePanther, all enterprise tools.
+     Impact : Compliance requirement for many firms.
+
+[23] DATA EXPORT (EXCEL/CSV)
+     Why   : Lawyers need to export data for reports, external analysis.
+     What   : Export cases, clients, invoices to Excel/CSV.
+     Who    : All competitors.
+     Impact : Users feel locked in without export capability.
+
+[24] BULK OPERATIONS
+     Why   : Managing one case at a time is slow.
+     What   : Select multiple cases, send bulk updates, bulk invoice.
+     Who    : PracticePanther, enterprise tools.
+     Impact   : Time savings for firms with many cases.
+
+[25] NOTES WITH @MENTIONS
+     Why   : Team members need to collaborate on cases.
+     What   : Tag team members in case notes, notifications on mention.
+     Who    : Clio, collaborative tools.
+     Impact : Improves team communication.
+
+[26] VOICE NOTES
+     Why   : Lawyers dictate notes during/after court visits.
+     What   : Record voice notes, auto-transcribe, attach to case.
+     Who    : MyCase.
+     Impact : Mobile-first feature for lawyers on the go.
+
+[27] OCR FOR DOCUMENTS
+     Why   : Many legal documents are scanned PDFs. Search requires text.
+     What   : Extract text from scanned judgments/orders.
+     Who    : Provakil.
+     Impact : Makes scanned documents searchable.
+
+[28] AI CASE SUMMARY
+     Why   : Judgments are often 50+ pages. Quick summaries save time.
+     What   : Auto-summarize judgments, extract key dates and orders.
+     Who    : Emerging feature in legal tech.
+     Impact : Major time saver for research.
+
+--------------------------------------------------------------------------------
+A3. NICE-TO-HAVE - DIFFERENTIATORS
+--------------------------------------------------------------------------------
+
+[29] MOBILE APP (REACT NATIVE)
+     Why   : Lawyers need access in court, on the go.
+     What   : Native iOS/Android app or PWA.
+     Who    : Clio, MyCase, PracticePanther all have mobile apps.
+     Impact : Critical for adoption.
+
+[30] API FOR THIRD-PARTY INTEGRATIONS
+     Why   : Firms use multiple tools (Google Calendar, Outlook, accounting).
+     What   : REST API, Zapier integration, Google/Outlook sync.
+     Who    : Clio (300+ integrations), PracticePanther.
+     Impact : Extends functionality without building everything.
+
+[31] WHITE LABEL
+     Why   : Large firms want to brand the software as their own.
+     What   : Custom branding, custom domain.
+     Who    : Enterprise legal tools.
+     Impact : Premium pricing opportunity.
+
+[32] MULTI-OFFICE SUPPORT
+     Why   : Firms with branches need centralized management.
+     What   : Office-wise data segregation and reporting.
+     Who    : Enterprise tools.
+     Impact : Required for larger firms.
+
+[33] CLIENT INTAKE FORMS
+     Why   : Firms need a way to capture new client inquiries.
+     What   : Embeddable web forms for potential clients.
+     Who    : Clio Grow, Lawmatics.
+     Impact : Automated lead capture.
+
+[34] ANALYTICS DASHBOARD
+     Why   : Firm owners need business intelligence.
+     What   : Revenue by case type, win rate, avg case duration, utilization.
+     Who    : Clio, PracticePanther.
+     Impact : Data-driven decisions.
+
+[35] COURT FEE ONLINE PAYMENT
+     Why   : Courts increasingly accept online fee payment.
+     What   : Pay court fees through the app.
+     Who    : Emerging feature.
+     Impact : Convenience.
+
+[36] LEGAL NOTICE GENERATOR
+     Why   : Legal notices are common and repetitive.
+     What   : Auto-generate legal notices from templates.
+     Who    : Indian legal apps.
+     Impact : Time savings.
+
+[37] WILL / TRUST DRAFTING
+     Why   : Common service offered by many lawyers.
+     What   : Template-based will and trust document generation.
+     Who    : Legal document tools.
+     Impact : Additional revenue stream for firms.
+
+================================================================================
+PART B: TODO STEPS TO SELL THIS SAAS
+================================================================================
+
+--------------------------------------------------------------------------------
+B1. PHASE 1: FIX FOUNDATIONS (Weeks 1-3)
+    MUST DO FIRST - Without this, you cannot demo to anyone
+--------------------------------------------------------------------------------
+
+SECURITY (Non-negotiable)
+[ ] Move super admin check to server-side middleware
+[ ] Remove hardcoded credentials - use env var + server-side validation only
+[ ] Fix ALL RLS policies - add user_id = auth.uid() conditions on every table
+[ ] Add tenant isolation - firm_id or user_id on all data
+[ ] Use signed URLs for document storage instead of public URLs
+[ ] Add rate limiting on auth endpoints
+[ ] Add input validation with Zod on all forms
+[ ] Add CSRF protection
+[ ] Enforce strong password requirements (12+ chars, mixed case, numbers)
+
+ARCHITECTURE
+[ ] Create API routes for all mutations (src/app/api/*)
+[ ] Convert data-fetching pages to Server Components where possible
+[ ] Add React Query or SWR for client-side data fetching + caching
+[ ] Add error boundaries on all route segments
+[ ] Add loading.tsx files for all routes
+[ ] Add not-found.tsx and error.tsx pages
+[ ] Add environment variable validation (@t3-oss/env-nextjs)
+[ ] Add proper TypeScript types for all Supabase tables (generated types)
+
+CODE QUALITY
+[ ] Create shared type definitions (src/types/*)
+[ ] Create shared fetch hooks (useCases, useClients, etc.)
+[ ] Fix Array.isArray flattening with a shared helper
+[ ] Remove unused date-fns dependency
+[ ] Fix 'any' types in super-admin pages
+[ ] Fix case number / invoice number generation (UUID-based)
+[ ] Create shared Sidebar base component
+[ ] Add useCallback/useMemo where needed
+
+--------------------------------------------------------------------------------
+B2. PHASE 2: INDIA-SPECIFIC FEATURES (Weeks 4-7)
+    YOUR COMPETITIVE EDGE - This is why Indian lawyers will pay
+--------------------------------------------------------------------------------
+
+LEGAL TOOLS
+[ ] Limitation period calculator (appeal: 30/60/90 days, revision: 90 days)
+[ ] Court fee calculator (state-wise)
+[ ] Stamp duty calculator (state-wise)
+[ ] Indian court hierarchy in all dropdowns (SC → HC → District → Sessions → Magistrate)
+[ ] State → District → Court mapping
+[ ] Vakalatnama template
+[ ] Legal notice template
+[ ] Common petition templates (10+ types)
+[ ] Affidavit template
+[ ] Case diary management
+
+BILLING
+[ ] GST-compliant invoice format (GSTIN, HSN/SAC, state codes)
+[ ] TDS calculation support
+[ ] Payment receipt format
+
+LOCALIZATION
+[ ] Hindi language UI (at minimum)
+[ ] Hindi document templates
+[ ] Indian date/time formatting (DD/MM/YYYY everywhere)
+[ ] Indian phone number validation (+91 format)
+
+DATABASE
+[ ] Add activity logging to ALL mutations (call log_activity())
+[ ] Add soft delete (deleted_at column) on cases, clients
+[ ] Add unique constraint on client phone/email per firm
+[ ] Add tags/labels table for flexible categorization
+[ ] Add court_dates table for notification scheduling
+
+--------------------------------------------------------------------------------
+B3. PHASE 3: NOTIFICATIONS & COMMUNICATION (Weeks 8-10)
+    This is what makes users stay
+--------------------------------------------------------------------------------
+
+NOTIFICATIONS
+[ ] Email notifications (hearing reminders, payment due, case updates)
+[ ] WhatsApp Business API integration (hearing reminders)
+[ ] SMS reminders (for areas with poor internet)
+[ ] Push notifications (PWA / web push)
+[ ] Daily digest email - "Your hearings tomorrow"
+[ ] Client notification - "Your case status updated"
+[ ] Automated payment reminders
+
+COMMUNICATION
+[ ] In-app messaging between lawyer and client
+[ ] Client portal (separate login, view-only access)
+[ ] Client can download documents
+[ ] Client can view invoices and pay online
+
+--------------------------------------------------------------------------------
+B4. PHASE 4: CLIENT PORTAL & PAYMENTS (Weeks 11-14)
+    This is what makes them refer others
+--------------------------------------------------------------------------------
+
+CLIENT PORTAL
+[ ] Separate client login flow
+[ ] Client dashboard - their cases, documents, invoices
+[ ] Client can upload documents
+[ ] Client communication thread
+[ ] Client feedback/rating system
+
+PAYMENTS
+[ ] Razorpay integration (UPI, cards, net banking)
+[ ] Online invoice payment
+[ ] Payment receipts with GST
+[ ] Auto-reconcile payments with invoices
+[ ] Subscription billing (for YOUR SaaS revenue)
+
+--------------------------------------------------------------------------------
+B5. PHASE 5: ADVANCED FEATURES (Weeks 15-18)
+    This is what makes you competitive with Clio
+--------------------------------------------------------------------------------
+
+PRODUCTIVITY
+[ ] Task management per case (assignee, deadline, status)
+[ ] Conflict of interest check
+[ ] Document templates with fillable fields
+[ ] Email integration (auto-link emails to cases)
+[ ] Calendar sync (Google Calendar, Outlook)
+[ ] Bulk operations (select multiple, bulk update)
+[ ] Custom fields per case type
+[ ] Global search (Ctrl+K) across all data
+
+ANALYTICS
+[ ] Revenue by case type / client / month
+[ ] Win rate analytics
+[ ] Average case duration
+[ ] Outstanding payments report
+[ ] Lawyer performance metrics
+[ ] Export reports to Excel/PDF
+
+--------------------------------------------------------------------------------
+B6. PHASE 6: SCALE & SELL (Weeks 19-24)
+    This is how you acquire users
+--------------------------------------------------------------------------------
+
+PRODUCT
+[ ] Mobile app (React Native or PWA)
+[ ] Offline support for court visits
+[ ] Dark mode
+[ ] Keyboard shortcuts throughout
+[ ] Onboarding wizard for new users
+[ ] In-app help / tooltips
+[ ] API for third-party integrations
+
+SALES & MARKETING
+[ ] Landing page (features, pricing, testimonials, demo video)
+[ ] Free trial (14 days) with onboarding flow
+[ ] Pricing page with 3 tiers
+[ ] Help documentation / knowledge base
+[ ] SEO - target "law practice management software India"
+[ ] Google Ads campaigns
+[ ] List on G2, Capterra, SoftwareSuggest
+[ ] Bar Council partnerships
+[ ] Law firm association partnerships
+[ ] Content marketing blog
+
+INFRASTRUCTURE
+[ ] CI/CD pipeline (GitHub Actions)
+[ ] Error tracking (Sentry)
+[ ] Performance monitoring (Vercel Analytics)
+[ ] Automated backups
+[ ] Uptime monitoring
+[ ] GDPR/DPDP compliance
+[ ] Terms of Service & Privacy Policy
+
+--------------------------------------------------------------------------------
+B7. PRICING STRATEGY (India Market)
+--------------------------------------------------------------------------------
+
+  Free:         Rs 0/month   - 1 user, 3 cases, basic features
+  Starter:      Rs 499/month - 1 user, 20 cases, notifications
+  Professional: Rs 999/month - 1 user, unlimited cases, all features
+  Firm:         Rs 2,999/month - 5 users, client portal, all features
+  Enterprise:   Rs 9,999/month - unlimited users, API, white label, priority support
+
+--------------------------------------------------------------------------------
+B8. PRIORITY MATRIX
+--------------------------------------------------------------------------------
+
+  PRIORITY  WHAT                                    WHY
+  --------  ----                                    ---
+  P0        Fix RLS, remove hardcoded creds,        Without this you can't demo
+            server-side auth                        to anyone. Security breach
+                                                    waiting to happen.
+
+  P1        India-specific tools                    This is why Indian lawyers
+            (limitation calc, court fees,           pay. Nobody else does this
+            GST invoices, multi-language)            well.
+
+  P2        WhatsApp notifications,                 This is what makes them stay
+            client portal, payment gateway          and refer others.
+
+  P3        Mobile app, landing page,               This is how you acquire
+            marketing, SEO, ads                     users.
+
+================================================================================
+PART C: FEATURE COMPARISON WITH COMPETITORS
+================================================================================
+
+FEATURE                      | LAWAPP | CLIO | MYCASE | PROVAKIL | MANAGEMY
+-----------------------------|--------|------|--------|----------|---------
+Case Management              |   Y    |  Y   |   Y    |    Y     |    Y
+Client Management            |   Y    |  Y   |   Y    |    Y     |    Y
+Calendar                     |   Y    |  Y   |   Y    |    Y     |    Y
+Document Management          |   Y    |  Y   |   Y    |    Y     |    Y
+Billing & Invoicing          |   Y    |  Y   |   Y    |    Y     |    Y
+Time Tracking                |   Y    |  Y   |   Y    |    Y     |    Y
+Client Portal                |   N    |  Y   |   Y    |    N     |    N
+Task Management              |   N    |  Y   |   Y    |    Y     |    N
+Email Integration            |   N    |  Y   |   Y    |    Y     |    N
+Document Templates           |   N    |  Y   |   N    |    Y     |    N
+Conflict Check               |   N    |  Y   |   N    |    Y     |    N
+WhatsApp Notifications       |   N    |  N   |   N    |    Y     |    Y
+e-Court Integration          |   N    |  N   |   N    |    Y     |    Y
+GST Invoices                 |   N    |  N   |   N    |    Y     |    N
+Limitation Calculator        |   N    |  N   |   N    |    N     |    Y
+Court Fee Calculator         |   N    |  N   |   N    |    N     |    Y
+Multi-Language               |   N    |  N   |   N    |    Y     |    N
+Mobile App                   |   N    |  Y   |   Y    |    Y     |    N
+API / Integrations           |   N    |  Y   |   Y    |    Y     |    N
+Payment Gateway              |   N    |  Y   |   Y    |    N     |    N
+Analytics / Reports          |   N    |  Y   |   Y    |    Y     |    N
+Bare Acts Reference          |   Y    |  N   |   N    |    N     |    N
+Indian Court Hierarchy       |   N    |  N   |   N    |    Y     |    Y
+Vakalatnama Templates        |   N    |  N   |   N    |    Y     |    N
+
+SUMMARY:
+  LawApp has:        7 features
+  LawApp is missing: 18 features that competitors have
+  LawApp unique:     Bare Acts Reference (no competitor has this)
+
+================================================================================
+END OF FEATURES & TODO REPORT
+Total Missing Features: 37
+Total TODO Items: 120+
+Estimated Timeline: 24 weeks (6 months)
+================================================================================
