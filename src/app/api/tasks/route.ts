@@ -90,11 +90,22 @@ export async function PATCH(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
-    const { id, ...updates } = body;
+    const { id, title, description, status, priority, due_date, assigned_to, case_id, client_id } = body;
     if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
     const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.id).single();
     const firmId = profile?.firm_id;
+
+    const updates: Record<string, unknown> = {};
+    if (title !== undefined) updates.title = title;
+    if (description !== undefined) updates.description = description;
+    if (status !== undefined) updates.status = status;
+    if (priority !== undefined) updates.priority = priority;
+    if (due_date !== undefined) updates.due_date = due_date;
+    if (assigned_to !== undefined) updates.assigned_to = assigned_to;
+    if (case_id !== undefined) updates.case_id = case_id;
+    if (client_id !== undefined) updates.client_id = client_id;
+    updates.updated_at = new Date().toISOString();
 
     const { data, error } = await supabase
       .from("tasks")

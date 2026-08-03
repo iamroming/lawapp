@@ -34,8 +34,14 @@ export async function POST(request: NextRequest) {
   formData.append("api_key", apiKey);
   formData.append("signature", signature);
 
+  // Auto-detect resource type from file extension
+  const ext = publicId.split(".").pop()?.toLowerCase() || "";
+  let resourceType = "image";
+  if (ext === "pdf") resourceType = "raw";
+  else if (["doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv"].includes(ext)) resourceType = "raw";
+
   const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`,
+    `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/destroy`,
     { method: "POST", body: formData }
   );
 

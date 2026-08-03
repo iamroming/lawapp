@@ -39,6 +39,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Coupon usage limit reached" }, { status: 400 });
   }
 
+  // Atomically increment usage count (only if under limit) — prevents TOCTOU race
+  const { data: incremented, error: incError } = await supabase
+    .from("coupon_codes")
+    .update({ current_uses: coupon.current_uses + 1 })
+    .eq("id", coupon.id)
+    .lt("current_uses", coupon.max_uses)
+    .select("id")
+    .single();
+
+  if (incError || !incremented) {
+    return NextResponse.json({ error: "Coupon usage limit reached" }, { status: 400 });
+  }
+
   // Check if already used this coupon
   const { data: alreadyUsed } = await supabase
     .from("coupon_uses")
@@ -113,9 +126,6 @@ export async function POST(request: NextRequest) {
     amount_before: plan.price,
     amount_after: amountAfter,
   });
-
-  // Increment coupon use count
-  await supabase.from("coupon_codes").update({ current_uses: coupon.current_uses + 1 }).eq("id", coupon.id);
 
   // Log activity
   await supabase.rpc("log_activity", {

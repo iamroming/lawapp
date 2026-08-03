@@ -74,11 +74,23 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { id, ...updates } = body;
+    const { id, client_name, client_email, client_phone, scheduled_at, duration_minutes, consultation_type, notes, fee, status } = body;
 
     if (!id) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
     }
+
+    const updates: Record<string, unknown> = {};
+    if (client_name !== undefined) updates.client_name = client_name;
+    if (client_email !== undefined) updates.client_email = client_email;
+    if (client_phone !== undefined) updates.client_phone = client_phone;
+    if (scheduled_at !== undefined) updates.scheduled_at = scheduled_at;
+    if (duration_minutes !== undefined) updates.duration_minutes = duration_minutes;
+    if (consultation_type !== undefined) updates.consultation_type = consultation_type;
+    if (notes !== undefined) updates.notes = notes;
+    if (fee !== undefined) updates.fee = fee;
+    if (status !== undefined) updates.status = status;
+    updates.updated_at = new Date().toISOString();
 
     const { data, error } = await supabase
       .from("consultations")

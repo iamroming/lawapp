@@ -49,6 +49,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
     const { client_id, case_id, rating, feedback_text, feedback_type, is_anonymous } = body;
@@ -60,7 +62,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
+    // Verify client belongs to user's firm
+    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.id).single();
+    const { data: clientCheck } = await supabase
+      .from("clients")
+      .select("id")
+      .eq("id", client_id)
+      .eq("firm_id", profile?.firm_id)
+      .single();
+
+    if (!clientCheck) {
+      return NextResponse.json({ error: "Client not found" }, { status: 404 });
+    }
 
     const { data, error } = await supabase
       .from("client_feedback")

@@ -60,14 +60,25 @@ export async function POST(request: NextRequest) {
     // Calculate TDS
     const tds = calculateTDS(amount, client_type as "individual" | "company" | "government", !!pan_number);
 
-    // Generate invoice number
+    // Generate invoice number using firm-scoped count with row-level lock to prevent race condition
     const fy = getCurrentFinancialYear();
-    const { count } = await supabase
+    const { data: lastInvoice } = await supabase
       .from("invoices")
-      .select("*", { count: "exact", head: true })
-      .eq("issued_by", user.id);
+      .select("invoice_number")
+      .eq("firm_id", profile?.firm_id || "")
+      .like("invoice_number", `INV/${fy}/%`)
+      .order("invoice_number", { ascending: false })
+      .limit(1)
+      .single();
 
-    const invoiceNumber = `INV/${fy}/${((count || 0) + 1).toString().padStart(4, "0")}`;
+    let nextNum = 1;
+    if (lastInvoice?.invoice_number) {
+      const parts = lastInvoice.invoice_number.split("/");
+      const lastNum = parseInt(parts[2] || "0", 10);
+      nextNum = lastNum + 1;
+    }
+
+    const invoiceNumber = `INV/${fy}/${nextNum.toString().padStart(4, "0")}`;
 
     // Create invoice
     const { data: invoice, error } = await supabase

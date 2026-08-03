@@ -11,6 +11,14 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { full_name, email, phone, company_name } = body;
 
+  // Get user's firm_id for firm-wide conflict checks
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("firm_id")
+    .eq("id", user.id)
+    .single();
+
+  const firmId = profile?.firm_id;
   const conflicts: { type: string; entity: string; id: string; reason: string }[] = [];
 
   if (full_name) {
@@ -18,7 +26,7 @@ export async function POST(request: NextRequest) {
       .from("clients")
       .select("id, full_name, company_name")
       .ilike("full_name", `%${full_name}%`)
-      .eq("created_by", user.id)
+      .eq("firm_id", firmId)
       .is("deleted_at", null)
       .limit(5);
 
@@ -39,7 +47,7 @@ export async function POST(request: NextRequest) {
       .from("clients")
       .select("id, full_name, email")
       .eq("email", email)
-      .eq("created_by", user.id)
+      .eq("firm_id", firmId)
       .is("deleted_at", null)
       .limit(5);
 
@@ -60,7 +68,7 @@ export async function POST(request: NextRequest) {
       .from("clients")
       .select("id, full_name, phone")
       .eq("phone", phone)
-      .eq("created_by", user.id)
+      .eq("firm_id", firmId)
       .is("deleted_at", null)
       .limit(5);
 
@@ -81,7 +89,7 @@ export async function POST(request: NextRequest) {
       .from("clients")
       .select("id, full_name, company_name")
       .ilike("company_name", `%${company_name}%`)
-      .eq("created_by", user.id)
+      .eq("firm_id", firmId)
       .is("deleted_at", null)
       .limit(5);
 
