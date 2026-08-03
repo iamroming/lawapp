@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
 import type { NotificationType, NotificationChannel, Notification } from "./types";
 
 function escapeHtml(str: string): string {
@@ -25,7 +25,7 @@ interface SendNotificationParams {
 }
 
 export async function sendNotification(params: SendNotificationParams): Promise<void> {
-  const supabase = await createClient();
+  const supabase = createClient();
   // Store in Supabase (convert camelCase to snake_case for DB columns)
   const dbNotification = {
     user_id: params.userId,
@@ -170,7 +170,7 @@ async function sendPushNotification(params: SendNotificationParams): Promise<{ s
 }
 
 export async function getNotifications(userId: string, limit = 50): Promise<Notification[]> {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data, error } = await supabase
     .from("notifications")
     .select("*")
@@ -187,7 +187,7 @@ export async function getNotifications(userId: string, limit = 50): Promise<Noti
 }
 
 export async function getUnreadCount(userId: string): Promise<number> {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { count, error } = await supabase
     .from("notifications")
     .select("*", { count: "exact", head: true })
@@ -203,7 +203,7 @@ export async function getUnreadCount(userId: string): Promise<number> {
 }
 
 export async function markAsRead(notificationId: string): Promise<void> {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { error } = await supabase
     .from("notifications")
     .update({ read: true })
@@ -215,7 +215,7 @@ export async function markAsRead(notificationId: string): Promise<void> {
 }
 
 export async function markAllAsRead(userId: string): Promise<void> {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { error } = await supabase
     .from("notifications")
     .update({ read: true })
@@ -228,7 +228,7 @@ export async function markAllAsRead(userId: string): Promise<void> {
 }
 
 export async function deleteNotification(notificationId: string): Promise<void> {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { error } = await supabase
     .from("notifications")
     .delete()
