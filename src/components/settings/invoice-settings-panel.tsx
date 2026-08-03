@@ -98,7 +98,7 @@ export function InvoiceSettingsPanel() {
             <Building className="h-5 w-5" />
             Firm Details
           </CardTitle>
-          <p className="text-sm text-gray-500">Show or hide your firm information on invoices</p>
+          <p className="text-sm text-[var(--text-secondary)]">Show or hide your firm information on invoices</p>
         </CardHeader>
         <CardContent className="space-y-0 divide-y">
           <ToggleRow label="Firm Name" sub="Display your firm name in the header" checked={settings.show_firm_name} onChange={() => toggle("show_firm_name")} />
@@ -116,7 +116,7 @@ export function InvoiceSettingsPanel() {
             <Receipt className="h-5 w-5" />
             Bank & Payment Details
           </CardTitle>
-          <p className="text-sm text-gray-500">Configure payment information shown on invoices</p>
+          <p className="text-sm text-[var(--text-secondary)]">Configure payment information shown on invoices</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-0 divide-y">
@@ -153,7 +153,7 @@ export function InvoiceSettingsPanel() {
             <Settings className="h-5 w-5" />
             Client & Case Details
           </CardTitle>
-          <p className="text-sm text-gray-500">Control what client and case info appears</p>
+          <p className="text-sm text-[var(--text-secondary)]">Control what client and case info appears</p>
         </CardHeader>
         <CardContent className="space-y-0 divide-y">
           <ToggleRow label="Client Company Name" sub="Show company name (if available)" checked={settings.show_client_company} onChange={() => toggle("show_client_company")} />
@@ -166,7 +166,7 @@ export function InvoiceSettingsPanel() {
       <Card>
         <CardHeader>
           <CardTitle>GST & Tax</CardTitle>
-          <p className="text-sm text-gray-500">Configure tax-related fields</p>
+          <p className="text-sm text-[var(--text-secondary)]">Configure tax-related fields</p>
         </CardHeader>
         <CardContent className="space-y-0 divide-y">
           <ToggleRow label="HSN / SAC Code" sub="Show HSN or SAC code column" checked={settings.show_hsn_code} onChange={() => toggle("show_hsn_code")} />
@@ -180,7 +180,7 @@ export function InvoiceSettingsPanel() {
       <Card>
         <CardHeader>
           <CardTitle>Footer & Terms</CardTitle>
-          <p className="text-sm text-gray-500">Customize invoice footer content</p>
+          <p className="text-sm text-[var(--text-secondary)]">Customize invoice footer content</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-0 divide-y">
@@ -217,9 +217,9 @@ function ToggleRow({ label, sub, checked, onChange }: { label: string; sub: stri
     <div className="flex items-center justify-between py-3">
       <div>
         <p className="font-medium text-sm">{label}</p>
-        <p className="text-xs text-gray-500">{sub}</p>
+        <p className="text-xs text-[var(--text-secondary)]">{sub}</p>
       </div>
-      <button type="button" onClick={onChange} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${checked ? "bg-blue-600" : "bg-gray-200"}`}>
+      <button type="button" onClick={onChange} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${checked ? "bg-[var(--text-accent)]" : "bg-gray-200"}`}>
         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? "translate-x-6" : "translate-x-1"}`} />
       </button>
     </div>

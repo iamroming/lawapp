@@ -335,12 +335,12 @@ export default function BareActsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Bare Acts Reference</h1>
-        <p className="text-gray-500">Searchable Indian legal codes and statutes</p>
+        <p className="text-[var(--text-secondary)]">Searchable Indian legal codes and statutes</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
           <Input
             placeholder="Search by act name, section number, or keyword..."
             value={search}
@@ -351,7 +351,7 @@ export default function BareActsPage() {
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          className="h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+          className="h-10 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm"
         >
           <option value="all">All Categories</option>
           {categories.map((cat) => (
@@ -371,28 +371,28 @@ export default function BareActsPage() {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                    <BookOpen className="h-5 w-5 text-blue-600" />
+                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[var(--surface-subtle)] flex items-center justify-center">
+                    <BookOpen className="h-5 w-5 text-[var(--text-accent)]" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
                       <CardTitle className="text-base">{act.name}</CardTitle>
                       <Badge variant="secondary">{act.category}</Badge>
                     </div>
-                    <p className="text-sm text-gray-500">{act.description}</p>
+                    <p className="text-sm text-[var(--text-secondary)]">{act.description}</p>
                   </div>
                 </div>
                 {expandedAct === act.id ? (
-                  <ChevronUp className="h-5 w-5 text-gray-400" />
+                  <ChevronUp className="h-5 w-5 text-[var(--text-tertiary)]" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-gray-400" />
+                  <ChevronDown className="h-5 w-5 text-[var(--text-tertiary)]" />
                 )}
               </div>
             </CardHeader>
             {expandedAct === act.id && (
               <CardContent className="border-t">
                 <div className="space-y-3">
-                  <h4 className="font-medium text-sm text-gray-700">Key Sections:</h4>
+                  <h4 className="font-medium text-sm text-[var(--text-primary)]">Key Sections:</h4>
                   {act.sections
                     .filter(
                       (s) =>
@@ -403,14 +403,14 @@ export default function BareActsPage() {
                         s.content.toLowerCase().includes(search.toLowerCase())
                     )
                     .map((section) => (
-                      <div key={section.number} className="p-3 rounded-lg bg-gray-50 border">
+                      <div key={section.number} className="p-3 rounded-lg bg-[var(--background)] border">
                         <div className="flex items-start gap-2">
                           <Badge variant="outline" className="shrink-0">
                             Sec. {section.number}
                           </Badge>
                           <div>
                             <p className="font-medium text-sm">{section.title}</p>
-                            <p className="text-sm text-gray-600 mt-1">{section.content}</p>
+                            <p className="text-sm text-[var(--text-secondary)] mt-1">{section.content}</p>
                           </div>
                         </div>
                       </div>
@@ -419,7 +419,7 @@ export default function BareActsPage() {
                     href={act.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline mt-2"
+                    className="inline-flex items-center gap-1 text-sm text-[var(--text-accent)] hover:underline mt-2"
                   >
                     View full text on India Code
                     <ExternalLink className="h-3 w-3" />
@@ -432,7 +432,7 @@ export default function BareActsPage() {
       </div>
 
       {filteredActs.length === 0 && (
-        <div className="text-center py-12 text-gray-500">
+        <div className="text-center py-12 text-[var(--text-secondary)]">
           No bare acts found matching your search.
         </div>
       )}

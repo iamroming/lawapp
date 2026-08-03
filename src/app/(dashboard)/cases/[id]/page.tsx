@@ -312,11 +312,11 @@ export default function CaseDetailPage() {
   };
 
   if (loading) {
-    return <div className="text-center py-12 text-gray-500">Loading case details...</div>;
+    return <div className="text-center py-12 text-[var(--text-secondary)]">Loading case details...</div>;
   }
 
   if (!caseData) {
-    return <div className="text-center py-12 text-gray-500">Case not found</div>;
+    return <div className="text-center py-12 text-[var(--text-secondary)]">Case not found</div>;
   }
 
   return (
@@ -332,7 +332,7 @@ export default function CaseDetailPage() {
             <h1 className="text-xl sm:text-2xl font-bold truncate">{caseData.title}</h1>
             <Badge className={getStatusColor(caseData.status)}>{caseData.status}</Badge>
           </div>
-          <p className="text-gray-500 text-sm">{caseData.case_number}</p>
+          <p className="text-[var(--text-secondary)] text-sm">{caseData.case_number}</p>
         </div>
         <div className="flex gap-2 flex-shrink-0">
           <Link href={`/cases/${caseData.id}/edit`}>
@@ -368,35 +368,35 @@ export default function CaseDetailPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-gray-500">Case Type</p>
+                  <p className="text-[var(--text-secondary)]">Case Type</p>
                   <p className="font-medium">{caseData.case_type}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Court</p>
+                  <p className="text-[var(--text-secondary)]">Court</p>
                   <p className="font-medium">{caseData.court || "Not specified"}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Judge</p>
+                  <p className="text-[var(--text-secondary)]">Judge</p>
                   <p className="font-medium">{caseData.judge_name || "Not specified"}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Filing Date</p>
+                  <p className="text-[var(--text-secondary)]">Filing Date</p>
                   <p className="font-medium">
                     {caseData.filing_date ? formatDate(caseData.filing_date) : "Not specified"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Opposing Party</p>
+                  <p className="text-[var(--text-secondary)]">Opposing Party</p>
                   <p className="font-medium">{caseData.opposing_party || "Not specified"}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Opposing Counsel</p>
+                  <p className="text-[var(--text-secondary)]">Opposing Counsel</p>
                   <p className="font-medium">{caseData.opposing_counsel || "Not specified"}</p>
                 </div>
               </div>
               {caseData.description && (
                 <div>
-                  <p className="text-gray-500 text-sm mb-1">Description</p>
+                  <p className="text-[var(--text-secondary)] text-sm mb-1">Description</p>
                   <p className="text-sm">{caseData.description}</p>
                 </div>
               )}
@@ -439,7 +439,7 @@ export default function CaseDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {showAddTeam && (
-                <div className="p-4 bg-gray-50 rounded-lg space-y-3 border">
+                <div className="p-4 bg-[var(--background)] rounded-lg space-y-3 border">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-medium mb-1">Counsel *</label>
@@ -495,14 +495,14 @@ export default function CaseDetailPage() {
               )}
 
               {caseTeam.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">No team members assigned yet.</p>
+                <p className="text-sm text-[var(--text-secondary)] text-center py-4">No team members assigned yet.</p>
               ) : (
                 <div className="space-y-3">
                   {caseTeam.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50">
+                    <div key={member.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-[var(--surface-subtle)]">
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                          <span className="text-sm font-medium text-blue-600">
+                        <div className="h-8 w-8 rounded-full bg-[var(--surface-accent)] flex items-center justify-center">
+                          <span className="text-sm font-medium text-[var(--text-accent)]">
                             {(member.employee?.full_name || "?")[0].toUpperCase()}
                           </span>
                         </div>
@@ -511,7 +511,7 @@ export default function CaseDetailPage() {
                             <p className="font-medium text-sm">{member.employee?.full_name}</p>
                             {member.is_lead && <Badge variant="default" className="text-xs">Lead</Badge>}
                           </div>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-[var(--text-secondary)]">
                             {member.employee?.role}
                             {member.brought_by && <> · Brought by: {member.brought_by}</>}
                           </p>
@@ -520,7 +520,7 @@ export default function CaseDetailPage() {
                       <div className="flex items-center gap-4">
                         <div className="text-right">
                           <p className="text-sm font-bold">{member.profit_share_percentage || 0}%</p>
-                          <p className="text-xs text-gray-500">profit share</p>
+                          <p className="text-xs text-[var(--text-secondary)]">profit share</p>
                         </div>
                         <div className="flex gap-1">
                           <Button
@@ -550,7 +550,7 @@ export default function CaseDetailPage() {
                   ))}
 
                   {/* Total profit share */}
-                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center justify-between p-3 bg-[var(--surface-subtle)] rounded-lg border border-blue-200">
                     <span className="text-sm font-medium text-blue-800">Total Profit Share Allocated</span>
                     <span className="text-lg font-bold text-blue-900">
                       {caseTeam.reduce((sum, m) => sum + (m.profit_share_percentage || 0), 0)}%
@@ -578,12 +578,12 @@ export default function CaseDetailPage() {
             <CardContent className="space-y-4">
               {!courtLinked ? (
                 <>
-                  <p className="text-sm text-gray-500">Link this case to eCourts to fetch live status and orders.</p>
+                  <p className="text-sm text-[var(--text-secondary)]">Link this case to eCourts to fetch live status and orders.</p>
                   <div className="grid grid-cols-2 gap-3">
                     <select
                       value={courtForm.court_code}
                       onChange={(e) => setCourtForm({ ...courtForm, court_code: e.target.value })}
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                      className="flex h-10 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm"
                     >
                       <option value="">Select Court</option>
                       <option value="delhi">Delhi High Court</option>
@@ -627,29 +627,29 @@ export default function CaseDetailPage() {
                 <div className="space-y-4">
                   {courtStatus.length > 0 ? (
                     courtStatus.map((c: any, i: number) => (
-                      <div key={i} className="p-3 rounded-lg border bg-gray-50">
+                      <div key={i} className="p-3 rounded-lg border bg-[var(--background)]">
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           <div>
-                            <span className="text-gray-500">CNR:</span>
+                            <span className="text-[var(--text-secondary)]">CNR:</span>
                             <span className="ml-2 font-medium">{c.cnr_number || "N/A"}</span>
                           </div>
                           <div>
-                            <span className="text-gray-500">Type:</span>
+                            <span className="text-[var(--text-secondary)]">Type:</span>
                             <span className="ml-2 font-medium">{c.case_type}</span>
                           </div>
                           <div>
-                            <span className="text-gray-500">Petitioner:</span>
+                            <span className="text-[var(--text-secondary)]">Petitioner:</span>
                             <span className="ml-2">{c.petitioner}</span>
                           </div>
                           <div>
-                            <span className="text-gray-500">Respondent:</span>
+                            <span className="text-[var(--text-secondary)]">Respondent:</span>
                             <span className="ml-2">{c.respondent}</span>
                           </div>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-gray-500">No court records found.</p>
+                    <p className="text-sm text-[var(--text-secondary)]">No court records found.</p>
                   )}
 
                   {courtOrders.length > 0 && (
@@ -660,8 +660,8 @@ export default function CaseDetailPage() {
                           <div key={i} className="flex items-center justify-between p-2 rounded border text-sm">
                             <div>
                               <span className="font-medium">{o.order_date}</span>
-                              <span className="ml-2 text-gray-500">{o.order_type}</span>
-                              {o.judge && <span className="ml-2 text-gray-400">- {o.judge}</span>}
+                              <span className="ml-2 text-[var(--text-secondary)]">{o.order_type}</span>
+                              {o.judge && <span className="ml-2 text-[var(--text-tertiary)]">- {o.judge}</span>}
                             </div>
                             {o.pdf_url && (
                               <Button
@@ -731,23 +731,23 @@ export default function CaseDetailPage() {
                     <CheckCircle className="h-4 w-4" />
                     <span>Monitoring for status changes. You&apos;ll be notified via WhatsApp, Email, and in-app.</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-xs text-gray-500">
-                    <div className="p-2 bg-gray-50 rounded">
-                      <span className="block font-medium text-gray-700">Last Status</span>
+                  <div className="grid grid-cols-3 gap-2 text-xs text-[var(--text-secondary)]">
+                    <div className="p-2 bg-[var(--background)] rounded">
+                      <span className="block font-medium text-[var(--text-primary)]">Last Status</span>
                       {caseAlert.last_known_status || "Pending"}
                     </div>
-                    <div className="p-2 bg-gray-50 rounded">
-                      <span className="block font-medium text-gray-700">Last Hearing</span>
+                    <div className="p-2 bg-[var(--background)] rounded">
+                      <span className="block font-medium text-[var(--text-primary)]">Last Hearing</span>
                       {caseAlert.last_known_hearing_date || "N/A"}
                     </div>
-                    <div className="p-2 bg-gray-50 rounded">
-                      <span className="block font-medium text-gray-700">Last Checked</span>
+                    <div className="p-2 bg-[var(--background)] rounded">
+                      <span className="block font-medium text-[var(--text-primary)]">Last Checked</span>
                       {caseAlert.last_checked_at ? new Date(caseAlert.last_checked_at).toLocaleString() : "Never"}
                     </div>
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-[var(--text-secondary)]">
                   Enable alerts to get notified when the court status, hearing date, or case stage changes.
                   Notifications are sent via Email, WhatsApp, and in-app alerts.
                 </p>
@@ -768,7 +768,7 @@ export default function CaseDetailPage() {
             </CardHeader>
             <CardContent>
               {hearings.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">No hearings recorded yet.</p>
+                <p className="text-[var(--text-secondary)] text-center py-4">No hearings recorded yet.</p>
               ) : (
                 <div className="space-y-3">
                   {hearings.map((h) => (
@@ -779,7 +779,7 @@ export default function CaseDetailPage() {
                           {h.is_completed ? "Completed" : "Upcoming"}
                         </Badge>
                       </div>
-                      {h.purpose && <p className="text-sm text-gray-500 mt-1">{h.purpose}</p>}
+                      {h.purpose && <p className="text-sm text-[var(--text-secondary)] mt-1">{h.purpose}</p>}
                       {h.outcome && (
                         <p className="text-sm mt-1">
                           <span className="font-medium">Outcome:</span> {h.outcome}
@@ -802,7 +802,7 @@ export default function CaseDetailPage() {
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   {caseLawsSource === "cache" && (
-                    <span className="text-xs text-gray-400">Cached</span>
+                    <span className="text-xs text-[var(--text-tertiary)]">Cached</span>
                   )}
                   <Button
                     variant="outline"
@@ -838,12 +838,12 @@ export default function CaseDetailPage() {
                     </span>
                   ))}
                   {(caseData.sections || []).map((s) => (
-                    <span key={s} className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                    <span key={s} className="px-2 py-0.5 bg-[var(--surface-accent)] text-blue-800 rounded text-xs font-medium">
                       S. {s}
                     </span>
                   ))}
                   {(caseData.clauses || []).map((c, i) => (
-                    <span key={i} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                    <span key={i} className="px-2 py-0.5 bg-gray-100 text-[var(--text-secondary)] rounded text-xs">
                       {c}
                     </span>
                   ))}
@@ -852,10 +852,10 @@ export default function CaseDetailPage() {
                 {caseLawsLoading ? (
                   <div className="text-center py-8">
                     <RefreshCw className="h-6 w-6 animate-spin mx-auto text-blue-500 mb-2" />
-                    <p className="text-sm text-gray-500">Searching Indian Kanoon for relevant judgments...</p>
+                    <p className="text-sm text-[var(--text-secondary)]">Searching Indian Kanoon for relevant judgments...</p>
                   </div>
                 ) : caseLaws.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">
+                  <p className="text-sm text-[var(--text-secondary)] text-center py-4">
                     No relevant case laws found. Click &quot;Refresh&quot; to search.
                   </p>
                 ) : (
@@ -875,35 +875,35 @@ export default function CaseDetailPage() {
                               <Badge variant="outline" className="text-xs shrink-0">
                                 {law.court}
                               </Badge>
-                              <span className="text-xs text-gray-400 shrink-0">
+                              <span className="text-xs text-[var(--text-tertiary)] shrink-0">
                                 {Math.round(law.relevance_score * 100)}% match
                               </span>
                             </div>
                             <p className="font-medium text-sm line-clamp-2">{law.title}</p>
                             {law.citation && (
-                              <p className="text-xs text-gray-500 mt-0.5">{law.citation}</p>
+                              <p className="text-xs text-[var(--text-secondary)] mt-0.5">{law.citation}</p>
                             )}
                           </div>
                           {expandedLaw === i ? (
-                            <ChevronUp className="h-4 w-4 text-gray-400 mt-1 shrink-0" />
+                            <ChevronUp className="h-4 w-4 text-[var(--text-tertiary)] mt-1 shrink-0" />
                           ) : (
-                            <ChevronDown className="h-4 w-4 text-gray-400 mt-1 shrink-0" />
+                            <ChevronDown className="h-4 w-4 text-[var(--text-tertiary)] mt-1 shrink-0" />
                           )}
                         </button>
 
                         {expandedLaw === i && (
-                          <div className="px-3 pb-3 border-t bg-gray-50 space-y-2">
+                          <div className="px-3 pb-3 border-t bg-[var(--background)] space-y-2">
                             {law.excerpt && (
-                              <p className="text-sm text-gray-600 mt-2 line-clamp-4">{law.excerpt}</p>
+                              <p className="text-sm text-[var(--text-secondary)] mt-2 line-clamp-4">{law.excerpt}</p>
                             )}
-                            <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                            <div className="flex flex-wrap gap-4 text-xs text-[var(--text-secondary)]">
                               {law.judgment_date && <span>Date: {law.judgment_date}</span>}
                               {law.judges?.length > 0 && <span>Bench: {law.judges.join(", ")}</span>}
                             </div>
                             {law.matched_sections?.length > 0 && (
                               <div className="flex flex-wrap gap-1">
                                 {law.matched_sections.map((s: string) => (
-                                  <span key={s} className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                                  <span key={s} className="px-1.5 py-0.5 bg-[var(--surface-accent)] text-blue-700 rounded text-xs">
                                     S. {s}
                                   </span>
                                 ))}
@@ -914,7 +914,7 @@ export default function CaseDetailPage() {
                                 href={law.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                                className="inline-flex items-center gap-1 text-xs text-[var(--text-accent)] hover:underline"
                               >
                                 <ExternalLink className="h-3 w-3" />
                                 View on Indian Kanoon
@@ -940,17 +940,17 @@ export default function CaseDetailPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-gray-500">Total Fee</span>
+                <span className="text-[var(--text-secondary)]">Total Fee</span>
                 <span className="font-medium">{formatCurrency(caseData.total_fee)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Received</span>
+                <span className="text-[var(--text-secondary)]">Received</span>
                 <span className="font-medium text-green-600">
                   {formatCurrency(caseData.amount_received)}
                 </span>
               </div>
               <div className="flex justify-between border-t pt-3">
-                <span className="text-gray-500">Pending</span>
+                <span className="text-[var(--text-secondary)]">Pending</span>
                 <span className="font-medium text-red-600">
                   {formatCurrency(caseData.total_fee - caseData.amount_received)}
                 </span>
@@ -966,7 +966,7 @@ export default function CaseDetailPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-gray-400" />
+                  <User className="h-4 w-4 text-[var(--text-tertiary)]" />
                   <Link
                     href={`/clients/${caseData.client.id}`}
                     className="font-medium hover:underline"
@@ -975,10 +975,10 @@ export default function CaseDetailPage() {
                   </Link>
                 </div>
                 {caseData.client.phone && (
-                  <p className="text-sm text-gray-500">Phone: {caseData.client.phone}</p>
+                  <p className="text-sm text-[var(--text-secondary)]">Phone: {caseData.client.phone}</p>
                 )}
                 {caseData.client.email && (
-                  <p className="text-sm text-gray-500">Email: {caseData.client.email}</p>
+                  <p className="text-sm text-[var(--text-secondary)]">Email: {caseData.client.email}</p>
                 )}
               </CardContent>
             </Card>
@@ -992,8 +992,8 @@ export default function CaseDetailPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0 w-14 h-14 rounded-lg bg-blue-50 flex flex-col items-center justify-center">
-                    <span className="text-xs font-medium text-blue-600">
+                  <div className="flex-shrink-0 w-14 h-14 rounded-lg bg-[var(--surface-subtle)] flex flex-col items-center justify-center">
+                    <span className="text-xs font-medium text-[var(--text-accent)]">
                       {new Date(caseData.next_hearing_date).toLocaleDateString("en-IN", { month: "short" })}
                     </span>
                     <span className="text-xl font-bold text-blue-700">
@@ -1002,7 +1002,7 @@ export default function CaseDetailPage() {
                   </div>
                   <div>
                     <p className="font-medium">{formatDate(caseData.next_hearing_date)}</p>
-                    <p className="text-sm text-gray-500">{caseData.court}</p>
+                    <p className="text-sm text-[var(--text-secondary)]">{caseData.court}</p>
                   </div>
                 </div>
               </CardContent>

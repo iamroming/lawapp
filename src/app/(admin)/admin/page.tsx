@@ -106,7 +106,7 @@ export default function AdminDashboardPage() {
   }, [supabase]);
 
   if (loading) {
-    return <div className="text-center py-12 text-gray-500">Loading owner dashboard...</div>;
+    return <div className="text-center py-12 text-[var(--text-secondary)]">Loading owner dashboard...</div>;
   }
 
   if (!firmId) {
@@ -114,7 +114,7 @@ export default function AdminDashboardPage() {
       <div className="text-center py-12">
         <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
         <h2 className="text-xl font-bold mb-2">No Firm Found</h2>
-        <p className="text-gray-500">You don&apos;t have a firm assigned yet.</p>
+        <p className="text-[var(--text-secondary)]">You don&apos;t have a firm assigned yet.</p>
       </div>
     );
   }
@@ -123,7 +123,7 @@ export default function AdminDashboardPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Firm Dashboard</h1>
-        <p className="text-gray-500">Overview of your firm&apos;s data</p>
+        <p className="text-[var(--text-secondary)]">Overview of your firm&apos;s data</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -153,13 +153,13 @@ export default function AdminDashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Employees</CardTitle>
-            <Link href="/admin/employees" className="text-sm text-blue-600 hover:underline">
+            <Link href="/admin/employees" className="text-sm text-[var(--text-accent)] hover:underline">
               View All
             </Link>
           </CardHeader>
           <CardContent>
             {stats.employees.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No employees yet.</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">No employees yet.</p>
             ) : (
               <div className="space-y-3">
                 {stats.employees.map((emp) => (
@@ -169,7 +169,7 @@ export default function AdminDashboardPage() {
                   >
                     <div>
                       <p className="font-medium text-sm">{emp.full_name || "Unnamed"}</p>
-                      <p className="text-xs text-gray-500">{emp.email}</p>
+                      <p className="text-xs text-[var(--text-secondary)]">{emp.email}</p>
                     </div>
                     <Badge variant="secondary">{emp.role}</Badge>
                   </div>
@@ -182,13 +182,13 @@ export default function AdminDashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Recent Clients</CardTitle>
-            <Link href="/clients" className="text-sm text-blue-600 hover:underline">
+            <Link href="/clients" className="text-sm text-[var(--text-accent)] hover:underline">
               View All
             </Link>
           </CardHeader>
           <CardContent>
             {stats.recentClients.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No clients yet.</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">No clients yet.</p>
             ) : (
               <div className="space-y-3">
                 {stats.recentClients.map((client) => (
@@ -198,7 +198,7 @@ export default function AdminDashboardPage() {
                   >
                     <div>
                       <p className="font-medium text-sm">{client.full_name || "Unnamed"}</p>
-                      <p className="text-xs text-gray-500">{client.email}</p>
+                      <p className="text-xs text-[var(--text-secondary)]">{client.email}</p>
                     </div>
                     <Badge variant={client.status === "active" ? "default" : "secondary"}>
                       {client.status}
@@ -218,7 +218,7 @@ export default function AdminDashboardPage() {
         <CardContent>
           <div className="flex flex-wrap gap-4">
             {stats.roleDistribution.length === 0 ? (
-              <p className="text-gray-500">No roles configured.</p>
+              <p className="text-[var(--text-secondary)]">No roles configured.</p>
             ) : (
               stats.roleDistribution.map((item) => (
                 <div
@@ -244,7 +244,7 @@ export default function AdminDashboardPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">Salary Management</h3>
-                  <p className="text-sm text-gray-500">Manage employee salaries, payments & settings</p>
+                  <p className="text-sm text-[var(--text-secondary)]">Manage employee salaries, payments & settings</p>
                 </div>
               </div>
             </CardContent>
@@ -254,12 +254,12 @@ export default function AdminDashboardPage() {
           <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <Settings className="h-6 w-6 text-blue-600" />
+                <div className="p-3 bg-[var(--surface-accent)] rounded-lg">
+                  <Settings className="h-6 w-6 text-[var(--text-accent)]" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">Role Salary Settings</h3>
-                  <p className="text-sm text-gray-500">Set default salary & profit share per role</p>
+                  <p className="text-sm text-[var(--text-secondary)]">Set default salary & profit share per role</p>
                 </div>
               </div>
             </CardContent>

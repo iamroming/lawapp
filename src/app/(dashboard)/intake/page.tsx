@@ -170,7 +170,7 @@ export default function IntakePage() {
           <ClipboardList className="h-8 w-8 text-blue-600" />
           <div>
             <h1 className="text-2xl font-bold">Intake Forms</h1>
-            <p className="text-gray-500">
+            <p className="text-[var(--text-secondary)]">
               Build forms and manage client submissions
             </p>
           </div>
@@ -192,7 +192,7 @@ export default function IntakePage() {
               <CardContent>
                 <form onSubmit={handleCreateForm} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                       Form Title *
                     </label>
                     <Input
@@ -203,7 +203,7 @@ export default function IntakePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                       Description
                     </label>
                     <textarea
@@ -215,7 +215,7 @@ export default function IntakePage() {
                   </div>
 
                   <div className="space-y-3">
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-[var(--text-primary)]">
                       Fields
                     </label>
                     {newForm.fields.map((field) => (
@@ -283,7 +283,7 @@ export default function IntakePage() {
             </CardHeader>
             <CardContent>
               {forms.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
+                <p className="text-[var(--text-secondary)] text-center py-8">
                   No forms created yet.
                 </p>
               ) : (
@@ -298,7 +298,7 @@ export default function IntakePage() {
                       >
                         <div>
                           <p className="font-medium">{form.title}</p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-[var(--text-secondary)]">
                             {form.fields.length} fields • Created{" "}
                             {new Date(form.created_at).toLocaleDateString("en-IN")}
                           </p>
@@ -317,7 +317,7 @@ export default function IntakePage() {
                       {expandedForm === form.id && (
                         <div className="mt-3 pt-3 border-t">
                           {form.description && (
-                            <p className="text-sm text-gray-600 mb-2">{form.description}</p>
+                              <p className="text-sm text-[var(--text-secondary)] mb-2">{form.description}</p>
                           )}
                           <div className="space-y-1">
                             {form.fields.map((field) => (
@@ -347,7 +347,7 @@ export default function IntakePage() {
           </CardHeader>
           <CardContent>
             {submissions.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">
+              <p className="text-[var(--text-secondary)] text-center py-8">
                 No submissions yet.
               </p>
             ) : (
@@ -359,7 +359,7 @@ export default function IntakePage() {
                         <p className="font-medium">
                           {sub.submitter_name || "Anonymous"}
                         </p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-[var(--text-secondary)]">
                           {sub.intake_forms?.title || "Unknown Form"}
                         </p>
                       </div>
@@ -371,7 +371,7 @@ export default function IntakePage() {
                         {sub.status}
                       </Badge>
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-[var(--text-secondary)]">
                       {Object.entries(sub.responses || {}).map(([key, value]) => (
                         <p key={key}>
                           <span className="font-medium">{key}:</span>{" "}
@@ -379,7 +379,7 @@ export default function IntakePage() {
                         </p>
                       ))}
                     </div>
-                    <p className="text-xs text-gray-400 mt-2">
+                    <p className="text-xs text-[var(--text-tertiary)] mt-2">
                       {new Date(sub.created_at).toLocaleString("en-IN")}
                     </p>
                   </div>

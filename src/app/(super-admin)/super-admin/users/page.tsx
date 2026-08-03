@@ -98,16 +98,16 @@ export default function SuperAdminUsersPage() {
             <Users className="h-6 w-6 text-blue-500" />
             All Users
           </h1>
-          <p className="text-gray-500">Full control over every user account ({users.length} total)</p>
+          <p className="text-[var(--text-secondary)]">Full control over every user account ({users.length} total)</p>
         </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
           <Input placeholder="Search by name, email, or phone..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
         </div>
-        <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm">
+        <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="h-10 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm">
           <option value="all">All Roles</option>
           <option value="owner">Owner</option>
           <option value="partner">Partner</option>
@@ -122,7 +122,7 @@ export default function SuperAdminUsersPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-gray-500">Loading users...</div>
+        <div className="text-center py-12 text-[var(--text-secondary)]">Loading users...</div>
       ) : filteredUsers.length === 0 ? (
         <EmptyState icon={<Users className="h-12 w-12" />} title="No users found" description="No users match your search" />
       ) : (
@@ -150,8 +150,8 @@ export default function SuperAdminUsersPage() {
                           {!user.is_active && <Badge variant="outline" className="text-red-500 border-red-300">Inactive</Badge>}
                           {stats?.subscription === "active" && <Badge variant="success" className="bg-green-100 text-green-700">Pro</Badge>}
                         </div>
-                        <p className="text-sm text-gray-500">{user.email}</p>
-                        <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                        <p className="text-sm text-[var(--text-secondary)]">{user.email}</p>
+                        <div className="flex items-center gap-3 text-xs text-[var(--text-secondary)] mt-1">
                           {user.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{user.phone}</span>}
                           {user.firm_name && <span>{user.firm_name}</span>}
                           <span>Joined {formatDate(user.created_at)}</span>
@@ -160,7 +160,7 @@ export default function SuperAdminUsersPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {stats && (
-                        <div className="hidden md:flex items-center gap-4 text-xs text-gray-500 mr-4">
+                        <div className="hidden md:flex items-center gap-4 text-xs text-[var(--text-secondary)] mr-4">
                           <span className="flex items-center gap-1"><Briefcase className="h-3 w-3" />{stats.cases}</span>
                           <span className="flex items-center gap-1"><Users className="h-3 w-3" />{stats.clients}</span>
                           <span className="flex items-center gap-1"><FileText className="h-3 w-3" />{stats.documents}</span>
@@ -170,7 +170,7 @@ export default function SuperAdminUsersPage() {
                       <select
                         value={user.role}
                         onChange={(e) => changeRole(user.id, e.target.value)}
-                        className="h-8 rounded border border-gray-300 text-xs px-2"
+                        className="h-8 rounded border border-[var(--border)] text-xs px-2"
                       >
                         <option value="owner">Owner</option>
                         <option value="partner">Partner</option>
@@ -197,10 +197,10 @@ export default function SuperAdminUsersPage() {
                   {/* Expanded stats on mobile */}
                   {stats && (
                     <div className="md:hidden mt-3 pt-3 border-t grid grid-cols-4 gap-2 text-center text-xs">
-                      <div><p className="font-bold text-lg">{stats.cases}</p><p className="text-gray-500">Cases</p></div>
-                      <div><p className="font-bold text-lg">{stats.clients}</p><p className="text-gray-500">Clients</p></div>
-                      <div><p className="font-bold text-lg">{stats.documents}</p><p className="text-gray-500">Docs</p></div>
-                      <div><p className="font-bold text-lg">{formatCurrency(stats.revenue)}</p><p className="text-gray-500">Revenue</p></div>
+                      <div><p className="font-bold text-lg">{stats.cases}</p><p className="text-[var(--text-secondary)]">Cases</p></div>
+                      <div><p className="font-bold text-lg">{stats.clients}</p><p className="text-[var(--text-secondary)]">Clients</p></div>
+                      <div><p className="font-bold text-lg">{stats.documents}</p><p className="text-[var(--text-secondary)]">Docs</p></div>
+                      <div><p className="font-bold text-lg">{formatCurrency(stats.revenue)}</p><p className="text-[var(--text-secondary)]">Revenue</p></div>
                     </div>
                   )}
                 </CardContent>

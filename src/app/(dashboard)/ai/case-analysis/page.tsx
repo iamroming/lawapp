@@ -145,7 +145,7 @@ export default function AICaseAnalysisPage() {
       case "medium": return "bg-yellow-100 text-yellow-800";
       case "high": return "bg-red-100 text-red-800";
       case "critical": return "bg-red-200 text-red-900";
-      default: return "bg-gray-100 text-gray-800";
+      default: return "bg-[var(--border)] text-[var(--text-primary)]";
     }
   };
 
@@ -156,7 +156,7 @@ export default function AICaseAnalysisPage() {
           <Brain className="h-6 w-6 text-purple-600" />
           AI Case Analysis
         </h1>
-        <p className="text-gray-500">Get AI-powered insights on your case strength and strategy</p>
+        <p className="text-[var(--text-secondary)]">Get AI-powered insights on your case strength and strategy</p>
       </div>
 
       <Card>
@@ -166,7 +166,7 @@ export default function AICaseAnalysisPage() {
         <CardContent className="space-y-4">
           {cases.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Select Existing Case</label>
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Select Existing Case</label>
               <select
                 value={selectedCaseId}
                 onChange={(e) => handleCaseSelect(e.target.value)}
@@ -182,12 +182,12 @@ export default function AICaseAnalysisPage() {
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Case Type</label>
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Case Type</label>
             <select
               value={caseType}
               onChange={(e) => setCaseType(e.target.value)}
               disabled={!!selectedCaseId}
-              className={`w-full px-3 py-2 border rounded-md text-sm ${selectedCaseId ? "bg-gray-100 cursor-not-allowed" : ""}`}
+              className={`w-full px-3 py-2 border rounded-md text-sm ${selectedCaseId ? "bg-[var(--border)] cursor-not-allowed" : ""}`}
             >
               <option value="civil">Civil</option>
               <option value="criminal">Criminal</option>
@@ -200,7 +200,7 @@ export default function AICaseAnalysisPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Case Facts & Description *</label>
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Case Facts & Description *</label>
             <textarea
               placeholder={selectedCase ? "Case details auto-filled from your selection. Edit if needed..." : "Describe the facts of your case, the legal issues involved, and what outcome you're seeking..."}
               value={caseDescription}
@@ -230,7 +230,7 @@ export default function AICaseAnalysisPage() {
           {/* Summary */}
           <Card>
             <CardContent className="p-4">
-              <p className="text-sm text-gray-700">{result.summary}</p>
+              <p className="text-sm text-[var(--text-primary)]">{result.summary}</p>
             </CardContent>
           </Card>
 
@@ -240,7 +240,7 @@ export default function AICaseAnalysisPage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Strength</p>
+                    <p className="text-sm text-[var(--text-secondary)]">Strength</p>
                     <p className="text-xl font-bold">{result.strength}%</p>
                   </div>
                   <Badge className={getStrengthColor(result.strength)}>
@@ -253,7 +253,7 @@ export default function AICaseAnalysisPage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Risk Level</p>
+                    <p className="text-sm text-[var(--text-secondary)]">Risk Level</p>
                     <p className="text-xl font-bold capitalize">{result.riskLevel}</p>
                   </div>
                   <Badge className={getRiskColor(result.riskLevel)}>
@@ -264,13 +264,13 @@ export default function AICaseAnalysisPage() {
             </Card>
             <Card>
               <CardContent className="p-4">
-                <p className="text-sm text-gray-500">Duration</p>
+                <p className="text-sm text-[var(--text-secondary)]">Duration</p>
                 <p className="text-xl font-bold">{result.estimatedDuration}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <p className="text-sm text-gray-500">Outcome</p>
+                <p className="text-sm text-[var(--text-secondary)]">Outcome</p>
                 <p className="text-sm font-bold">{result.potentialOutcome}</p>
               </CardContent>
             </Card>
@@ -315,9 +315,9 @@ export default function AICaseAnalysisPage() {
                         <h4 className="font-medium">{strategy.title}</h4>
                         <Badge variant="outline">{strategy.probability}% success</Badge>
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">{strategy.description}</p>
+                      <p className="text-sm text-[var(--text-secondary)] mb-2">{strategy.description}</p>
                       {strategy.estimatedCost && (
-                        <p className="text-xs text-gray-500">Est. Cost: {strategy.estimatedCost}</p>
+                        <p className="text-xs text-[var(--text-secondary)]">Est. Cost: {strategy.estimatedCost}</p>
                       )}
                       {strategy.benefits.length > 0 && (
                         <div className="mt-2">
@@ -338,15 +338,15 @@ export default function AICaseAnalysisPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Scale className="h-5 w-5 text-blue-600" />
+                  <Scale className="h-5 w-5 text-[var(--text-accent)]" />
                   Next Steps
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   {result.nextSteps.map((step, i) => (
-                    <div key={i} className="flex items-start gap-2 p-2 rounded bg-blue-50">
-                      <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center flex-shrink-0">
+                    <div key={i} className="flex items-start gap-2 p-2 rounded bg-[var(--surface-subtle)]">
+                      <span className="w-5 h-5 rounded-full bg-[var(--text-accent)] text-white text-xs flex items-center justify-center flex-shrink-0">
                         {i + 1}
                       </span>
                       <span className="text-sm">{step}</span>
@@ -369,13 +369,13 @@ export default function AICaseAnalysisPage() {
               <CardContent>
                 <div className="space-y-3">
                   {result.relevantPrecedents.map((prec, i) => (
-                    <div key={i} className="p-3 rounded border hover:bg-gray-50">
+                    <div key={i} className="p-3 rounded border hover:bg-[var(--surface-subtle)]">
                       <div className="flex items-center justify-between">
                         <h4 className="font-medium text-sm">{prec.caseName}</h4>
                         <Badge variant="outline">{prec.relevance}%</Badge>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">{prec.citation} - {prec.court} ({prec.year})</p>
-                      <p className="text-xs text-gray-600 mt-2">{prec.summary}</p>
+                      <p className="text-xs text-[var(--text-secondary)] mt-1">{prec.citation} - {prec.court} ({prec.year})</p>
+                      <p className="text-xs text-[var(--text-secondary)] mt-2">{prec.summary}</p>
                     </div>
                   ))}
                 </div>

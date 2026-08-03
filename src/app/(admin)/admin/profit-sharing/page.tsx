@@ -99,7 +99,7 @@ export default function ProfitSharingPage() {
   const totalPercentage = Object.values(profitShares).reduce((sum, v) => sum + v, 0);
 
   if (loading) {
-    return <div className="text-center py-12 text-gray-500">Loading profit sharing settings...</div>;
+    return <div className="text-center py-12 text-[var(--text-secondary)]">Loading profit sharing settings...</div>;
   }
 
   if (!isOwner) {
@@ -107,7 +107,7 @@ export default function ProfitSharingPage() {
       <div className="text-center py-12">
         <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
         <h2 className="text-xl font-bold mb-2">Access Denied</h2>
-        <p className="text-gray-500">Only firm owners can manage profit sharing settings.</p>
+        <p className="text-[var(--text-secondary)]">Only firm owners can manage profit sharing settings.</p>
       </div>
     );
   }
@@ -116,7 +116,7 @@ export default function ProfitSharingPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Profit Sharing</h1>
-        <p className="text-gray-500">Configure profit share percentages for each role in your firm</p>
+        <p className="text-[var(--text-secondary)]">Configure profit share percentages for each role in your firm</p>
       </div>
 
       {message && (
@@ -150,7 +150,7 @@ export default function ProfitSharingPage() {
               <div key={role.value} className="flex items-center gap-4 p-4 rounded-lg border">
                 <div className="flex-1">
                   <span className="font-medium">{role.label}</span>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-[var(--text-secondary)] mt-1">
                     Percentage of firm profit shared with {role.label.toLowerCase()}s
                   </p>
                 </div>
@@ -169,13 +169,13 @@ export default function ProfitSharingPage() {
                     }
                     className="w-24 text-right"
                   />
-                  <Percent className="h-4 w-4 text-gray-500" />
+                  <Percent className="h-4 w-4 text-[var(--text-secondary)]" />
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+          <div className="mt-6 p-4 bg-[var(--background)] rounded-lg">
             <div className="flex items-center justify-between">
               <span className="font-medium">Total Profit Share:</span>
               <Badge variant={totalPercentage <= 100 ? "default" : "destructive"}>

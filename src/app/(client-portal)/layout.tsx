@@ -81,7 +81,7 @@ export default function ClientPortalLayout({
 
   return (
     <ThemeProvider>
-      <div className="flex h-screen bg-gray-50">
+      <div className="flex h-screen bg-[var(--background)]">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -92,7 +92,7 @@ export default function ClientPortalLayout({
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] transform bg-white shadow-lg transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] transform bg-[var(--surface)] shadow-lg transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -101,10 +101,10 @@ export default function ClientPortalLayout({
           <div className="flex items-center justify-between border-b px-6 py-5">
             <Link href="/client/dashboard" className="flex items-center gap-2">
               <Scale className="h-7 w-7 text-primary" />
-              <span className="text-xl font-bold text-gray-900">LawXP</span>
+              <span className="text-xl font-bold text-[var(--text-primary)]">LawXP</span>
             </Link>
             <button className="lg:hidden" onClick={() => setSidebarOpen(false)}>
-              <X className="h-5 w-5 text-gray-500" />
+              <X className="h-5 w-5 text-[var(--text-secondary)]" />
             </button>
           </div>
 
@@ -120,7 +120,7 @@ export default function ClientPortalLayout({
                   className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                     isActive
                       ? "bg-primary/10 text-primary"
-                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                      : "text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)]"
                   }`}
                 >
                   <item.icon className="h-5 w-5" />
@@ -133,12 +133,12 @@ export default function ClientPortalLayout({
           {/* User & Logout */}
           <div className="border-t px-3 py-4">
             <div className="mb-2 px-3">
-              <p className="text-sm font-medium text-gray-900">{clientName}</p>
-              <p className="text-xs text-gray-500">Client</p>
+              <p className="text-sm font-medium text-[var(--text-primary)]">{clientName}</p>
+              <p className="text-xs text-[var(--text-secondary)]">Client</p>
             </div>
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 text-gray-600"
+              className="w-full justify-start gap-3 text-[var(--text-secondary)]"
               onClick={handleLogout}
             >
               <LogOut className="h-5 w-5" />
@@ -151,15 +151,15 @@ export default function ClientPortalLayout({
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="flex items-center border-b bg-white px-3 py-2.5 shadow-sm lg:px-6 h-14 lg:h-auto">
+        <header className="flex items-center border-b bg-[var(--surface)] px-3 py-2.5 shadow-sm lg:px-6 h-14 lg:h-auto">
           <button
             className="mr-3 lg:hidden p-1"
             onClick={() => setSidebarOpen(true)}
           >
-            <Menu className="h-6 w-6 text-gray-600" />
+            <Menu className="h-6 w-6 text-[var(--text-secondary)]" />
           </button>
           <div className="flex-1" />
-          <span className="text-sm text-gray-500">Client Portal</span>
+          <span className="text-sm text-[var(--text-secondary)]">Client Portal</span>
         </header>
 
         {/* Page content */}

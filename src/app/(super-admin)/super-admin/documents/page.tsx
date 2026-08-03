@@ -49,14 +49,14 @@ export default function SuperAdminDocumentsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold flex items-center gap-2"><FileText className="h-6 w-6 text-indigo-500" />All Documents</h1>
-      <p className="text-gray-500">Every document uploaded across the platform ({docs.length} total)</p>
+      <p className="text-[var(--text-secondary)]">Every document uploaded across the platform ({docs.length} total)</p>
 
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
         <Input placeholder="Search documents..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
       </div>
 
-      {loading ? <div className="text-center py-12 text-gray-500">Loading...</div> : (
+      {loading ? <div className="text-center py-12 text-[var(--text-secondary)]">Loading...</div> : (
         <div className="grid gap-3">
           {filtered.map((doc) => (
             <Card key={doc.id} className="hover:shadow-md transition-shadow">
@@ -68,8 +68,8 @@ export default function SuperAdminDocumentsPage() {
                     </div>
                     <div className="min-w-0">
                       <h3 className="font-medium truncate">{doc.title}</h3>
-                      <p className="text-sm text-gray-500 truncate">{doc.file_name}{doc.file_size != null ? ` | ${formatSize(doc.file_size)}` : ""}</p>
-                      <div className="flex items-center gap-3 text-xs text-gray-400 mt-1 flex-wrap">
+                      <p className="text-sm text-[var(--text-secondary)] truncate">{doc.file_name}{doc.file_size != null ? ` | ${formatSize(doc.file_size)}` : ""}</p>
+                      <div className="flex items-center gap-3 text-xs text-[var(--text-tertiary)] mt-1 flex-wrap">
                         {doc.uploader && <span>By: {doc.uploader.full_name}</span>}
                         {doc.case && <span>Case: {doc.case.case_number}</span>}
                         <span>{formatDate(doc.created_at)}</span>

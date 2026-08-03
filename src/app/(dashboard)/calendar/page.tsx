@@ -196,7 +196,7 @@ export default function CalendarPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Court Calendar</h1>
-          <p className="text-gray-500">Track your hearings and court dates</p>
+          <p className="text-[var(--text-secondary)]">Track your hearings and court dates</p>
         </div>
         <Button onClick={() => {
           if (selectedDate) {
@@ -237,7 +237,7 @@ export default function CalendarPage() {
         <CardContent>
           <div className="grid grid-cols-7 gap-1">
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-              <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
+              <div key={day} className="text-center text-xs font-medium text-[var(--text-secondary)] py-2">
                 <span className="hidden sm:inline">{day}</span>
                 <span className="sm:hidden">{day.charAt(0)}</span>
               </div>
@@ -259,25 +259,25 @@ export default function CalendarPage() {
                 <div
                   key={day.toISOString()}
                   className={`min-h-[60px] sm:min-h-[80px] p-1 rounded-lg border cursor-pointer transition-colors ${
-                    isToday ? "border-blue-500 bg-blue-50" : "hover:bg-gray-50"
+                    isToday ? "border-blue-500 bg-[var(--surface-subtle)]" : "hover:bg-[var(--surface-subtle)]"
                   } ${isSelected ? "ring-2 ring-blue-500" : ""}`}
                   onClick={() => setSelectedDate(day)}
                 >
                   <div
-                    className={`text-sm font-medium ${isToday ? "text-blue-600" : ""}`}
+                    className={`text-sm font-medium ${isToday ? "text-[var(--text-accent)]" : ""}`}
                   >
                     {day.getDate()}
                   </div>
                   {dayHearings.slice(0, 2).map((h) => (
                     <div
                       key={h.id}
-                      className="text-xs bg-blue-100 text-blue-700 rounded px-1 py-0.5 mt-0.5 truncate"
+                      className="text-xs bg-[var(--surface-accent)] text-[var(--text-primary)] rounded px-1 py-0.5 mt-0.5 truncate"
                     >
                       {h.case?.title}
                     </div>
                   ))}
                   {dayHearings.length > 2 && (
-                    <div className="text-xs text-gray-500 mt-0.5">
+                    <div className="text-xs text-[var(--text-secondary)] mt-0.5">
                       +{dayHearings.length - 2} more
                     </div>
                   )}
@@ -298,7 +298,7 @@ export default function CalendarPage() {
           </CardHeader>
           <CardContent>
             {getHearingsForDate(selectedDate).length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No hearings on this date.</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">No hearings on this date.</p>
             ) : (
               <div className="space-y-3">
                 {getHearingsForDate(selectedDate).map((h) => (
@@ -311,9 +311,9 @@ export default function CalendarPage() {
                             {h.case?.status}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-500">{h.case?.case_number}</p>
+                        <p className="text-sm text-[var(--text-secondary)]">{h.case?.case_number}</p>
                         {h.purpose && <p className="text-sm">{h.purpose}</p>}
-                        <div className="flex gap-4 text-xs text-gray-500">
+                        <div className="flex gap-4 text-xs text-[var(--text-secondary)]">
                           {h.court && <span>Court: {h.court}</span>}
                           {h.court_room && <span>Room: {h.court_room}</span>}
                           {h.judge_name && <span>Judge: {h.judge_name}</span>}

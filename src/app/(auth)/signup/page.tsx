@@ -131,11 +131,11 @@ export default function SignupPage() {
 
   if (!mode) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4 py-8">
         <Card className="w-full max-w-lg">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-              <Scale className="h-6 w-6 text-blue-600" />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface-accent)]">
+              <Scale className="h-6 w-6 text-[var(--text-accent)]" />
             </div>
             <CardTitle className="text-2xl">Join LawXP</CardTitle>
             <CardDescription>How would you like to get started?</CardDescription>
@@ -143,15 +143,15 @@ export default function SignupPage() {
           <CardContent className="space-y-4">
             <button
               onClick={() => setMode("owner")}
-              className="w-full p-6 border-2 rounded-lg text-left hover:border-blue-500 hover:bg-blue-50 transition-all group"
+              className="w-full p-6 border-2 rounded-lg text-left hover:border-blue-500 hover:bg-[var(--surface-subtle)] transition-all group"
             >
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors">
-                  <Briefcase className="h-6 w-6 text-blue-600" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface-accent)] group-hover:bg-blue-200 transition-colors">
+                  <Briefcase className="h-6 w-6 text-[var(--text-accent)]" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">I&apos;m a Firm Owner</h3>
-                  <p className="text-sm text-gray-500">Create my own firm, invite team members, manage everything</p>
+                  <p className="text-sm text-[var(--text-secondary)]">Create my own firm, invite team members, manage everything</p>
                 </div>
               </div>
             </button>
@@ -166,7 +166,7 @@ export default function SignupPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">I&apos;m a Team Member</h3>
-                  <p className="text-sm text-gray-500">Join an existing firm using an invite code from my owner/partner</p>
+                  <p className="text-sm text-[var(--text-secondary)]">Join an existing firm using an invite code from my owner/partner</p>
                 </div>
               </div>
             </button>
@@ -176,7 +176,7 @@ export default function SignupPage() {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-500">or</span>
+                <span className="bg-[var(--surface)] px-2 text-[var(--text-secondary)]">or</span>
               </div>
             </div>
 
@@ -190,9 +190,9 @@ export default function SignupPage() {
               {googleLoading ? "Signing up..." : "Continue with Google"}
             </Button>
 
-            <p className="text-center text-sm text-gray-500">
+            <p className="text-center text-sm text-[var(--text-secondary)]">
               Already have an account?{" "}
-              <Link href="/login" className="text-blue-600 hover:underline font-medium">
+              <Link href="/login" className="text-[var(--text-accent)] hover:underline font-medium">
                 Sign in
               </Link>
             </p>
@@ -203,16 +203,16 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4 py-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex items-center justify-between">
-            <button onClick={() => setMode(null)} className="text-sm text-gray-500 hover:text-gray-700">
+            <button onClick={() => setMode(null)} className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
               ← Back
             </button>
-            <div className={`mx-auto flex h-10 w-10 items-center justify-center rounded-full ${mode === "owner" ? "bg-blue-100" : "bg-green-100"}`}>
+            <div className={`mx-auto flex h-10 w-10 items-center justify-center rounded-full ${mode === "owner" ? "bg-[var(--surface-accent)]" : "bg-green-100"}`}>
               {mode === "owner" ? (
-                <Briefcase className={`h-5 w-5 text-blue-600`} />
+                <Briefcase className={`h-5 w-5 text-[var(--text-accent)]`} />
               ) : (
                 <Users className={`h-5 w-5 text-green-600`} />
               )}
@@ -233,7 +233,7 @@ export default function SignupPage() {
             <div className={`p-4 rounded-lg border-2 ${
               inviteValid === true ? "border-green-500 bg-green-50" :
               inviteValid === false ? "border-red-500 bg-red-50" :
-              "border-gray-200"
+              "border-[var(--border)]"
             }`}>
               <label className="text-sm font-medium flex items-center gap-2 mb-2">
                 <KeyRound className="h-4 w-4" />
@@ -253,7 +253,7 @@ export default function SignupPage() {
                 />
               </div>
               {validatingCode && (
-                <p className="text-xs text-gray-500 mt-1">Validating...</p>
+                <p className="text-xs text-[var(--text-secondary)] mt-1">Validating...</p>
               )}
               {inviteValid === true && (
                 <p className="text-sm text-green-600 mt-1 flex items-center gap-1">
@@ -273,7 +273,7 @@ export default function SignupPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Full Name *</label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
                 <Input
                   placeholder="Advocate Rahul Sharma"
                   value={formData.full_name}
@@ -286,7 +286,7 @@ export default function SignupPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Email *</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
                 <Input
                   type="email"
                   placeholder="you@example.com"
@@ -300,7 +300,7 @@ export default function SignupPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Password *</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
                 <Input
                   type="password"
                   placeholder="Min. 8 characters"
@@ -315,7 +315,7 @@ export default function SignupPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Phone</label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
                 <Input
                   type="tel"
                   placeholder="+91 98765 43210"
@@ -329,7 +329,7 @@ export default function SignupPage() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Firm / Chamber Name</label>
                 <div className="relative">
-                  <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
                   <Input
                     placeholder="Sharma & Associates"
                     value={formData.firm_name}
@@ -352,9 +352,9 @@ export default function SignupPage() {
             </Button>
           </form>
 
-          <p className="text-center text-sm text-gray-500">
+          <p className="text-center text-sm text-[var(--text-secondary)]">
             Already have an account?{" "}
-            <Link href="/login" className="text-blue-600 hover:underline font-medium">
+            <Link href="/login" className="text-[var(--text-accent)] hover:underline font-medium">
               Sign in
             </Link>
           </p>

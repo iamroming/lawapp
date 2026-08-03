@@ -192,7 +192,7 @@ export default function RevenueReportPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading revenue report...</div>
+        <div className="text-[var(--text-secondary)]">Loading revenue report...</div>
       </div>
     );
   }
@@ -209,7 +209,7 @@ export default function RevenueReportPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold">Revenue Report</h1>
-            <p className="text-gray-500">Financial insights and payment analytics</p>
+            <p className="text-[var(--text-secondary)]">Financial insights and payment analytics</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -257,7 +257,7 @@ export default function RevenueReportPage() {
         </CardHeader>
         <CardContent>
           {stats.monthlyRevenue.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">No revenue data available</p>
+            <p className="text-[var(--text-secondary)] text-center py-4">No revenue data available</p>
           ) : (
             <div className="space-y-4">
               <div className="flex items-end gap-2 h-48">
@@ -265,13 +265,13 @@ export default function RevenueReportPage() {
                   const height = maxMonthly > 0 ? (item.amount / maxMonthly) * 100 : 0;
                   return (
                     <div key={item.month} className="flex-1 flex flex-col items-center gap-1">
-                      <span className="text-xs text-gray-500">{formatCurrency(item.amount)}</span>
+                      <span className="text-xs text-[var(--text-secondary)]">{formatCurrency(item.amount)}</span>
                       <div
                         className="w-full bg-green-500 rounded-t transition-all hover:bg-green-600 min-h-[4px]"
                         style={{ height: `${height}%` }}
                         title={`${item.month}: ${formatCurrency(item.amount)}`}
                       />
-                      <span className="text-xs text-gray-500 truncate w-full text-center">
+                      <span className="text-xs text-[var(--text-secondary)] truncate w-full text-center">
                         {item.month}
                       </span>
                     </div>
@@ -291,7 +291,7 @@ export default function RevenueReportPage() {
           </CardHeader>
           <CardContent>
             {stats.revenueByClient.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No data available</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">No data available</p>
             ) : (
               <div className="space-y-3">
                 {stats.revenueByClient.map((item) => {
@@ -300,9 +300,9 @@ export default function RevenueReportPage() {
                     <div key={item.clientName} className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
                         <span className="truncate">{item.clientName}</span>
-                        <span className="text-gray-500 ml-2">{formatCurrency(item.amount)}</span>
+                        <span className="text-[var(--text-secondary)] ml-2">{formatCurrency(item.amount)}</span>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-2">
+                      <div className="w-full bg-[var(--border)] rounded-full h-2">
                         <div
                           className="bg-blue-500 h-2 rounded-full transition-all"
                           style={{ width: `${percentage}%` }}
@@ -323,7 +323,7 @@ export default function RevenueReportPage() {
           </CardHeader>
           <CardContent>
             {stats.revenueByType.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No data available</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">No data available</p>
             ) : (
               <div className="space-y-3">
                 {stats.revenueByType.map((item) => {
@@ -332,9 +332,9 @@ export default function RevenueReportPage() {
                     <div key={item.type} className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
                         <span>{item.type}</span>
-                        <span className="text-gray-500">{formatCurrency(item.amount)}</span>
+                        <span className="text-[var(--text-secondary)]">{formatCurrency(item.amount)}</span>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-2">
+                      <div className="w-full bg-[var(--border)] rounded-full h-2">
                         <div
                           className="bg-purple-500 h-2 rounded-full transition-all"
                           style={{ width: `${percentage}%` }}
@@ -358,7 +358,7 @@ export default function RevenueReportPage() {
               <p className="text-3xl font-bold text-red-600">
                 {formatCurrency(stats.outstandingAmount)}
               </p>
-              <p className="text-gray-500 mt-2">
+              <p className="text-[var(--text-secondary)] mt-2">
                 {stats.pendingInvoices} pending invoice{stats.pendingInvoices !== 1 ? "s" : ""}
               </p>
               <Link href="/billing">
@@ -378,19 +378,19 @@ export default function RevenueReportPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm text-gray-600">Total GST Collected</span>
+              <div className="flex justify-between items-center p-3 bg-[var(--background)] rounded-lg">
+                <span className="text-sm text-[var(--text-secondary)]">Total GST Collected</span>
                 <span className="font-semibold">{formatCurrency(stats.gstCollected)}</span>
               </div>
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm text-gray-600">CGST (9%)</span>
+              <div className="flex justify-between items-center p-3 bg-[var(--background)] rounded-lg">
+                <span className="text-sm text-[var(--text-secondary)]">CGST (9%)</span>
                 <span className="font-semibold">{formatCurrency(stats.gstCollected / 2)}</span>
               </div>
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm text-gray-600">SGST (9%)</span>
+              <div className="flex justify-between items-center p-3 bg-[var(--background)] rounded-lg">
+                <span className="text-sm text-[var(--text-secondary)]">SGST (9%)</span>
                 <span className="font-semibold">{formatCurrency(stats.gstCollected / 2)}</span>
               </div>
-              <div className="text-xs text-gray-500 mt-2">
+              <div className="text-xs text-[var(--text-secondary)] mt-2">
                 * For intra-state transactions. IGST applicable for inter-state.
               </div>
             </div>

@@ -199,7 +199,7 @@ export default function CaseStatisticsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading case statistics...</div>
+        <div className="text-[var(--text-secondary)]">Loading case statistics...</div>
       </div>
     );
   }
@@ -216,7 +216,7 @@ export default function CaseStatisticsPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold">Case Statistics Report</h1>
-            <p className="text-gray-500">Detailed breakdown of your cases</p>
+            <p className="text-[var(--text-secondary)]">Detailed breakdown of your cases</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -265,7 +265,7 @@ export default function CaseStatisticsPage() {
           </CardHeader>
           <CardContent>
             {stats.casesByStatus.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No data available</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">No data available</p>
             ) : (
               <div className="space-y-4">
                 {/* CSS Pie Chart */}
@@ -315,7 +315,7 @@ export default function CaseStatisticsPage() {
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="text-center">
                         <p className="text-2xl font-bold">{stats.totalCases}</p>
-                        <p className="text-xs text-gray-500">Total</p>
+                        <p className="text-xs text-[var(--text-secondary)]">Total</p>
                       </div>
                     </div>
                   </div>
@@ -328,7 +328,7 @@ export default function CaseStatisticsPage() {
                         className={`w-3 h-3 rounded-full ${statusColors[item.status] || "bg-gray-400"}`}
                       />
                       <span className="capitalize">{item.status.replace("-", " ")}</span>
-                      <span className="text-gray-500 ml-auto">{item.count}</span>
+                      <span className="text-[var(--text-secondary)] ml-auto">{item.count}</span>
                     </div>
                   ))}
                 </div>
@@ -344,7 +344,7 @@ export default function CaseStatisticsPage() {
           </CardHeader>
           <CardContent>
             {stats.winLoss.total === 0 ? (
-              <p className="text-gray-500 text-center py-4">No resolved cases yet</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">No resolved cases yet</p>
             ) : (
               <div className="space-y-4">
                 <div className="flex justify-center">
@@ -383,7 +383,7 @@ export default function CaseStatisticsPage() {
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="text-center">
                         <p className="text-2xl font-bold text-green-600">{winRate}%</p>
-                        <p className="text-xs text-gray-500">Win Rate</p>
+                        <p className="text-xs text-[var(--text-secondary)]">Win Rate</p>
                       </div>
                     </div>
                   </div>
@@ -397,11 +397,11 @@ export default function CaseStatisticsPage() {
                     <div className="w-3 h-3 rounded-full bg-red-400" />
                     <span className="text-sm">Lost: {stats.winLoss.lost}</span>
                   </div>
-                  <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-50">
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-[var(--surface-subtle)]">
                     <div className="w-3 h-3 rounded-full bg-blue-400" />
                     <span className="text-sm">Settled: {stats.winLoss.settled}</span>
                   </div>
-                  <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50">
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-[var(--background)]">
                     <div className="w-3 h-3 rounded-full bg-gray-400" />
                     <span className="text-sm">Dismissed: {stats.winLoss.dismissed}</span>
                   </div>
@@ -418,7 +418,7 @@ export default function CaseStatisticsPage() {
           </CardHeader>
           <CardContent>
             {stats.casesByType.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No data available</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">No data available</p>
             ) : (
               <div className="space-y-3">
                 {stats.casesByType.map((item) => {
@@ -427,9 +427,9 @@ export default function CaseStatisticsPage() {
                     <div key={item.type} className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
                         <span>{item.type}</span>
-                        <span className="text-gray-500">{item.count}</span>
+                        <span className="text-[var(--text-secondary)]">{item.count}</span>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-3">
+                      <div className="w-full bg-[var(--border)] rounded-full h-3">
                         <div
                           className="bg-indigo-500 h-3 rounded-full transition-all"
                           style={{ width: `${percentage}%` }}
@@ -450,7 +450,7 @@ export default function CaseStatisticsPage() {
           </CardHeader>
           <CardContent>
             {stats.casesByCourt.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No data available</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">No data available</p>
             ) : (
               <div className="space-y-3">
                 {stats.casesByCourt.map((item) => {
@@ -459,9 +459,9 @@ export default function CaseStatisticsPage() {
                     <div key={item.court} className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
                         <span>{item.court}</span>
-                        <span className="text-gray-500">{item.count}</span>
+                        <span className="text-[var(--text-secondary)]">{item.count}</span>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-3">
+                      <div className="w-full bg-[var(--border)] rounded-full h-3">
                         <div
                           className="bg-orange-500 h-3 rounded-full transition-all"
                           style={{ width: `${percentage}%` }}

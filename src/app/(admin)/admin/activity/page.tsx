@@ -54,7 +54,7 @@ const actionColors: Record<string, string> = {
   create: "bg-emerald-100 text-emerald-700",
   update: "bg-yellow-100 text-yellow-700",
   delete: "bg-red-100 text-red-700",
-  view: "bg-gray-100 text-gray-700",
+  view: "bg-[var(--surface-subtle)] text-[var(--text-primary)]",
   upload: "bg-purple-100 text-purple-700",
   payment: "bg-indigo-100 text-indigo-700",
 };
@@ -110,26 +110,26 @@ export default function AdminActivityPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Activity Logs</h1>
-        <p className="text-gray-500">Track all user actions across the platform</p>
+        <p className="text-[var(--text-secondary)]">Track all user actions across the platform</p>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-gray-500">Total Events</p>
+            <p className="text-sm text-[var(--text-secondary)]">Total Events</p>
             <p className="text-2xl font-bold">{logs.length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-gray-500">Events Today</p>
+            <p className="text-sm text-[var(--text-secondary)]">Events Today</p>
             <p className="text-2xl font-bold">{todayLogs.length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-gray-500">Active Users Today</p>
+            <p className="text-sm text-[var(--text-secondary)]">Active Users Today</p>
             <p className="text-2xl font-bold">{uniqueUsersToday}</p>
           </CardContent>
         </Card>
@@ -138,7 +138,7 @@ export default function AdminActivityPage() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
           <Input
             placeholder="Search by user, action, or entity..."
             value={search}
@@ -149,7 +149,7 @@ export default function AdminActivityPage() {
         <select
           value={actionFilter}
           onChange={(e) => setActionFilter(e.target.value)}
-          className="h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+          className="h-10 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm"
         >
           <option value="all">All Actions</option>
           {uniqueActions.map((a) => (
@@ -161,7 +161,7 @@ export default function AdminActivityPage() {
         <select
           value={entityFilter}
           onChange={(e) => setEntityFilter(e.target.value)}
-          className="h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+          className="h-10 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm"
         >
           <option value="all">All Entities</option>
           {uniqueEntities.map((e) => (
@@ -174,7 +174,7 @@ export default function AdminActivityPage() {
 
       {/* Activity Feed */}
       {loading ? (
-        <div className="text-center py-12 text-gray-500">Loading activity logs...</div>
+        <div className="text-center py-12 text-[var(--text-secondary)]">Loading activity logs...</div>
       ) : filteredLogs.length === 0 ? (
         <EmptyState
           icon={<Activity className="h-12 w-12" />}
@@ -184,13 +184,13 @@ export default function AdminActivityPage() {
       ) : (
         <Card>
           <CardContent className="p-0">
-            <div className="divide-y max-h-[600px] overflow-y-auto">
+            <div className="divide-y divide-[var(--border)] max-h-[600px] overflow-y-auto">
               {filteredLogs.map((log) => {
                 const icon = actionIcons[log.action] || <Activity className="h-4 w-4" />;
-                const colorClass = actionColors[log.action] || "bg-gray-100 text-gray-700";
+                const colorClass = actionColors[log.action] || "bg-[var(--surface-subtle)] text-[var(--text-primary)]";
 
                 return (
-                  <div key={log.id} className="p-4 hover:bg-gray-50">
+                  <div key={log.id} className="p-4 hover:bg-[var(--surface-subtle)]">
                     <div className="flex items-start gap-3">
                       <div
                         className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${colorClass}`}
@@ -206,7 +206,7 @@ export default function AdminActivityPage() {
                           <span className="font-medium text-sm">
                             {log.user?.full_name || log.user?.email || "Unknown User"}
                           </span>
-                          <span className="text-gray-500 text-sm">{log.action}</span>
+                          <span className="text-[var(--text-secondary)] text-sm">{log.action}</span>
                           {log.entity_type && (
                             <Badge variant="outline" className="text-xs">
                               {log.entity_type}
@@ -214,16 +214,16 @@ export default function AdminActivityPage() {
                           )}
                         </div>
                         {log.entity_name && (
-                          <p className="text-sm text-gray-600 mt-1">{log.entity_name}</p>
+                          <p className="text-sm text-[var(--text-secondary)] mt-1">{log.entity_name}</p>
                         )}
                         {log.ip_address && (
-                          <p className="text-xs text-gray-400 mt-1">
+                          <p className="text-xs text-[var(--text-tertiary)] mt-1">
                             IP: {log.ip_address}
                           </p>
                         )}
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-[var(--text-secondary)]">
                           {formatDateTime(log.created_at)}
                         </p>
                       </div>

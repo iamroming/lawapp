@@ -148,7 +148,7 @@ export default function AddEmployeePage() {
   };
 
   if (loading) {
-    return <div className="text-center py-12 text-gray-500">Loading...</div>;
+    return <div className="text-center py-12 text-[var(--text-secondary)]">Loading...</div>;
   }
 
   if (!isOwner) {
@@ -156,7 +156,7 @@ export default function AddEmployeePage() {
       <div className="text-center py-12">
         <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
         <h2 className="text-xl font-bold mb-2">Access Denied</h2>
-        <p className="text-gray-500">Only firm owners and partners can add employees.</p>
+        <p className="text-[var(--text-secondary)]">Only firm owners and partners can add employees.</p>
       </div>
     );
   }
@@ -165,7 +165,7 @@ export default function AddEmployeePage() {
     <div className="space-y-6 max-w-lg">
       <div>
         <h1 className="text-2xl font-bold">Add Employee</h1>
-        <p className="text-gray-500">Enter employee details to generate an invite code</p>
+        <p className="text-[var(--text-secondary)]">Enter employee details to generate an invite code</p>
       </div>
 
       <Card>
@@ -236,7 +236,7 @@ export default function AddEmployeePage() {
                   value={monthlySalary || ""}
                   onChange={(e) => setMonthlySalary(parseFloat(e.target.value) || 0)}
                 />
-                <p className="text-xs text-gray-500 mt-1">Fixed monthly salary for this employee</p>
+                <p className="text-xs text-[var(--text-secondary)] mt-1">Fixed monthly salary for this employee</p>
               </>
             ) : (
               <>
@@ -249,7 +249,7 @@ export default function AddEmployeePage() {
                   min="0"
                   max="100"
                 />
-                <p className="text-xs text-gray-500 mt-1">Percentage of case fees earned on assigned cases</p>
+                <p className="text-xs text-[var(--text-secondary)] mt-1">Percentage of case fees earned on assigned cases</p>
               </>
             )}
           </div>
@@ -261,7 +261,7 @@ export default function AddEmployeePage() {
               value={allotmentStatus}
               onChange={(e) => setAllotmentStatus(e.target.value)}
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-[var(--text-secondary)] mt-1">
               {allotmentStatus === "allotted" && "Employee has agreed to the salary/profit share terms"}
               {allotmentStatus === "pending" && "Discussion in progress — terms not yet finalized"}
               {allotmentStatus === "not_allotted" && "No salary/profit share allotment yet"}
@@ -276,7 +276,7 @@ export default function AddEmployeePage() {
               value={upiId}
               onChange={(e) => setUpiId(e.target.value)}
             />
-            <p className="text-xs text-gray-500 mt-1">Optional — Used for salary payments via UPI</p>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">Optional — Used for salary payments via UPI</p>
           </div>
 
           <Button onClick={handleGenerate} disabled={saving} className="w-full">
@@ -285,19 +285,19 @@ export default function AddEmployeePage() {
           </Button>
 
           {generatedCode && (
-            <div className="p-4 bg-gray-50 rounded-lg">
+            <div className="p-4 bg-[var(--background)] rounded-lg">
               <p className="text-sm font-medium mb-2">
                 Invite code for <span className="font-bold">{email}</span> ({ROLES.find(r => r.value === role)?.label}):
               </p>
               <div className="flex items-center gap-2">
-                <code className="flex-1 text-lg font-mono font-bold tracking-wider text-center p-3 bg-white rounded border">
+                <code className="flex-1 text-lg font-mono font-bold tracking-wider text-center p-3 bg-[var(--surface)] rounded border">
                   {generatedCode}
                 </code>
                 <Button size="sm" variant="outline" onClick={copyCode}>
                   {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 </Button>
               </div>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-[var(--text-secondary)] mt-2">
                 Share this code with the employee. They can use it during signup to join your firm.
               </p>
             </div>

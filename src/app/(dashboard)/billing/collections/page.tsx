@@ -108,7 +108,7 @@ export default function CollectionsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--text-accent)]" />
       </div>
     );
   }
@@ -128,7 +128,7 @@ export default function CollectionsPage() {
         </Link>
         <div className="flex-1">
           <h1 className="text-2xl font-bold">Collections Workflow</h1>
-          <p className="text-gray-500">
+          <p className="text-[var(--text-secondary)]">
             Total outstanding: {formatCurrency(totalOutstanding)}
           </p>
         </div>
@@ -144,7 +144,7 @@ export default function CollectionsPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center justify-between">
                   <Badge className={stage.color}>{stage.label}</Badge>
-                  <span className="text-gray-500">{stageInvoices.length}</span>
+                  <span className="text-[var(--text-secondary)]">{stageInvoices.length}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -168,7 +168,7 @@ export default function CollectionsPage() {
         </CardHeader>
         <CardContent>
           {invoices.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No outstanding invoices.</p>
+            <p className="text-[var(--text-secondary)] text-center py-8">No outstanding invoices.</p>
           ) : (
             <div className="space-y-3">
               {invoices.map((inv) => {
@@ -190,7 +190,7 @@ export default function CollectionsPage() {
                             {STAGES.find((s) => s.key === stage)?.label}
                           </Badge>
                         </div>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-[var(--text-secondary)]">
                           {inv.client?.full_name || "N/A"} &middot; Due:{" "}
                           {formatDate(inv.due_date)} &middot;{" "}
                           {formatCurrency(inv.amount + (inv.tax_amount || 0))}
@@ -221,21 +221,21 @@ export default function CollectionsPage() {
                       </div>
                     </div>
                     {isExpanded && inv.collections && inv.collections.length > 0 && (
-                      <div className="border-t bg-gray-50 p-4 space-y-2">
+                      <div className="border-t bg-[var(--background)] p-4 space-y-2">
                         {inv.collections.map((log) => (
                           <div
                             key={log.id}
-                            className="flex items-center gap-3 text-xs text-gray-600"
+                            className="flex items-center gap-3 text-xs text-[var(--text-secondary)]"
                           >
                             {getChannelIcon(log.channel)}
                             <span className="font-medium capitalize">
                               {log.action.replace("_", " ")}
                             </span>
-                            <span className="text-gray-400">
+                            <span className="text-[var(--text-tertiary)]">
                               {new Date(log.sent_at).toLocaleString("en-IN")}
                             </span>
                             {log.notes && (
-                              <span className="text-gray-400">- {log.notes}</span>
+                              <span className="text-[var(--text-tertiary)]">- {log.notes}</span>
                             )}
                           </div>
                         ))}

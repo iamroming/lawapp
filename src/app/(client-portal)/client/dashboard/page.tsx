@@ -105,8 +105,8 @@ export default function ClientDashboardPage() {
     switch (status) {
       case "active": return "bg-green-100 text-green-800"
       case "pending": return "bg-yellow-100 text-yellow-800"
-      case "closed": return "bg-gray-100 text-gray-800"
-      default: return "bg-blue-100 text-blue-800"
+      case "closed": return "bg-[var(--surface-subtle)] text-[var(--text-primary)]"
+      default: return "bg-[var(--surface-accent)] text-[var(--text-primary)]"
     }
   }
 
@@ -121,22 +121,22 @@ export default function ClientDashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">
           Welcome back, {clientName}
         </h1>
-        <p className="text-gray-500">Here&apos;s an overview of your cases and activity.</p>
+        <p className="text-[var(--text-secondary)]">Here&apos;s an overview of your cases and activity.</p>
       </div>
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-3">
         <Card className="p-5">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-blue-100 p-2.5">
-              <Briefcase className="h-5 w-5 text-blue-600" />
+            <div className="rounded-lg bg-[var(--surface-accent)] p-2.5">
+              <Briefcase className="h-5 w-5 text-[var(--text-accent)]" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Active Cases</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.activeCases}</p>
+              <p className="text-sm text-[var(--text-secondary)]">Active Cases</p>
+              <p className="text-2xl font-bold text-[var(--text-primary)]">{stats.activeCases}</p>
             </div>
           </div>
         </Card>
@@ -146,8 +146,8 @@ export default function ClientDashboardPage() {
               <CreditCard className="h-5 w-5 text-amber-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Pending Payments</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.pendingPayments}</p>
+              <p className="text-sm text-[var(--text-secondary)]">Pending Payments</p>
+              <p className="text-2xl font-bold text-[var(--text-primary)]">{stats.pendingPayments}</p>
             </div>
           </div>
         </Card>
@@ -157,8 +157,8 @@ export default function ClientDashboardPage() {
               <FileText className="h-5 w-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Documents</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalDocuments}</p>
+              <p className="text-sm text-[var(--text-secondary)]">Documents</p>
+              <p className="text-2xl font-bold text-[var(--text-primary)]">{stats.totalDocuments}</p>
             </div>
           </div>
         </Card>
@@ -168,7 +168,7 @@ export default function ClientDashboardPage() {
         {/* Recent Case Updates */}
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Recent Case Updates</h2>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Recent Case Updates</h2>
             <Link href="/client/cases">
               <Button variant="ghost" size="sm">
                 View All <ArrowRight className="ml-1 h-4 w-4" />
@@ -176,18 +176,18 @@ export default function ClientDashboardPage() {
             </Link>
           </div>
           {recentCases.length === 0 ? (
-            <p className="py-8 text-center text-sm text-gray-500">No cases yet.</p>
+            <p className="py-8 text-center text-sm text-[var(--text-secondary)]">No cases yet.</p>
           ) : (
             <div className="space-y-3">
               {recentCases.map((c) => (
                 <Link
                   key={c.id}
                   href={`/client/cases/${c.id}`}
-                  className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-gray-50"
+                  className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-[var(--surface-subtle)]"
                 >
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{c.title}</p>
-                    <p className="text-xs text-gray-500">{c.case_number}</p>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{c.title}</p>
+                    <p className="text-xs text-[var(--text-secondary)]">{c.case_number}</p>
                   </div>
                   <Badge className={statusColor(c.status)}>{c.status}</Badge>
                 </Link>
@@ -199,17 +199,17 @@ export default function ClientDashboardPage() {
         {/* Upcoming Hearings */}
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Upcoming Hearings</h2>
-            <Calendar className="h-5 w-5 text-gray-400" />
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Upcoming Hearings</h2>
+            <Calendar className="h-5 w-5 text-[var(--text-tertiary)]" />
           </div>
           {upcomingHearings.length === 0 ? (
-            <p className="py-8 text-center text-sm text-gray-500">No upcoming hearings.</p>
+            <p className="py-8 text-center text-sm text-[var(--text-secondary)]">No upcoming hearings.</p>
           ) : (
             <div className="space-y-3">
               {upcomingHearings.map((h) => (
                 <div key={h.id} className="rounded-lg border p-3">
-                  <p className="text-sm font-medium text-gray-900">{h.case?.title || "Case"}</p>
-                  <p className="text-xs text-gray-500">{h.court}</p>
+                  <p className="text-sm font-medium text-[var(--text-primary)]">{h.case?.title || "Case"}</p>
+                  <p className="text-xs text-[var(--text-secondary)]">{h.court}</p>
                   <p className="mt-1 text-xs font-medium text-primary">
                     {formatDate(h.hearing_date)}
                   </p>

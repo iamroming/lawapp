@@ -123,8 +123,8 @@ export default function ClientMessagesPage() {
   return (
     <div className="flex h-[calc(100vh-12rem)] flex-col">
       <div className="mb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Messages</h1>
-        <p className="text-gray-500">Communicate with your lawyer.</p>
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">Messages</h1>
+        <p className="text-[var(--text-secondary)]">Communicate with your lawyer.</p>
       </div>
 
       <Card className="flex flex-1 flex-col overflow-hidden">
@@ -132,8 +132,8 @@ export default function ClientMessagesPage() {
         <div className="flex-1 overflow-y-auto p-4">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16">
-              <MessageSquare className="mb-3 h-12 w-12 text-gray-300" />
-              <p className="text-gray-500">No messages yet. Start a conversation!</p>
+              <MessageSquare className="mb-3 h-12 w-12 text-[var(--text-tertiary)]" />
+              <p className="text-[var(--text-secondary)]">No messages yet. Start a conversation!</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -148,7 +148,7 @@ export default function ClientMessagesPage() {
                       className={`max-w-[75%] rounded-lg px-4 py-2.5 ${
                         isOwn
                           ? "bg-primary text-white"
-                          : "bg-gray-100 text-gray-900"
+                          : "bg-[var(--surface-subtle)] text-[var(--text-primary)]"
                       }`}
                     >
                       <p className="text-xs font-medium opacity-75">
@@ -157,7 +157,7 @@ export default function ClientMessagesPage() {
                       <p className="whitespace-pre-wrap text-sm">{msg.content}</p>
                       <p
                         className={`mt-1 text-xs ${
-                          isOwn ? "text-white/60" : "text-gray-400"
+                          isOwn ? "text-white/60" : "text-[var(--text-tertiary)]"
                         }`}
                       >
                         {formatDate(msg.created_at)}

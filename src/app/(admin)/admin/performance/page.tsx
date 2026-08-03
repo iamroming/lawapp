@@ -145,14 +145,14 @@ export default function PerformancePage() {
   };
 
   if (loading) {
-    return <div className="text-center py-12 text-gray-500">Loading performance data...</div>;
+    return <div className="text-center py-12 text-[var(--text-secondary)]">Loading performance data...</div>;
   }
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Employee Performance</h1>
-        <p className="text-gray-500">Track your team&apos;s performance metrics</p>
+        <p className="text-[var(--text-secondary)]">Track your team&apos;s performance metrics</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -186,7 +186,7 @@ export default function PerformancePage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b bg-gray-50">
+                <tr className="border-b bg-[var(--background)]">
                   <th className="text-left py-3 px-4 font-medium text-sm">#</th>
                   <th className="text-left py-3 px-4 font-medium text-sm">Employee</th>
                   <th className="text-left py-3 px-4 font-medium text-sm">Role</th>
@@ -199,13 +199,13 @@ export default function PerformancePage() {
               <tbody>
                 {performance.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-8 text-gray-500">
+                    <td colSpan={7} className="text-center py-8 text-[var(--text-secondary)]">
                       No employee data available.
                     </td>
                   </tr>
                 ) : (
                   performance.map((emp, idx) => (
-                    <tr key={emp.id} className="border-b hover:bg-gray-50">
+                    <tr key={emp.id} className="border-b hover:bg-[var(--surface-subtle)]">
                       <td className="py-3 px-4 text-sm font-medium">{idx + 1}</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
@@ -216,7 +216,7 @@ export default function PerformancePage() {
                           </div>
                           <div>
                             <p className="font-medium text-sm">{emp.full_name}</p>
-                            <p className="text-xs text-gray-500">{emp.email}</p>
+                            <p className="text-xs text-[var(--text-secondary)]">{emp.email}</p>
                           </div>
                         </div>
                       </td>

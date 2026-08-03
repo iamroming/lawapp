@@ -145,7 +145,7 @@ export default function ClientPortalPage() {
             <Users className="h-6 w-6 text-blue-600" />
             Client Portal
           </h1>
-          <p className="text-gray-500">Give clients self-service access to their cases and documents</p>
+          <p className="text-[var(--text-secondary)]">Give clients self-service access to their cases and documents</p>
         </div>
         <Button onClick={() => setShowInviteModal(true)}>
           <UserPlus className="h-4 w-4 mr-2" />
@@ -159,7 +159,7 @@ export default function ClientPortalPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Portal Users</p>
+                <p className="text-sm text-[var(--text-secondary)]">Portal Users</p>
                 <p className="text-2xl font-bold">{portalUsers.length}</p>
               </div>
               <Users className="h-8 w-8 text-blue-600" />
@@ -170,7 +170,7 @@ export default function ClientPortalPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Active Users</p>
+                <p className="text-sm text-[var(--text-secondary)]">Active Users</p>
                 <p className="text-2xl font-bold">{activeUsers}</p>
               </div>
               <Shield className="h-8 w-8 text-green-600" />
@@ -181,7 +181,7 @@ export default function ClientPortalPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Clients with Access</p>
+                <p className="text-sm text-[var(--text-secondary)]">Clients with Access</p>
                 <p className="text-2xl font-bold">{totalLogins}</p>
               </div>
               <ExternalLink className="h-8 w-8 text-purple-600" />
@@ -194,7 +194,7 @@ export default function ClientPortalPage() {
       <Card>
         <CardContent className="p-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
             <Input
               placeholder="Search clients..."
               value={searchQuery}
@@ -210,8 +210,8 @@ export default function ClientPortalPage() {
         <Card>
           <CardContent className="p-8 text-center">
             <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No portal users yet</h3>
-            <p className="text-gray-500 mb-4">Invite your first client to give them case access</p>
+            <h3 className="text-lg font-medium text-[var(--text-primary)] mb-2">No portal users yet</h3>
+            <p className="text-[var(--text-secondary)] mb-4">Invite your first client to give them case access</p>
             <Button onClick={() => setShowInviteModal(true)}>
               <UserPlus className="h-4 w-4 mr-2" />
               Invite Client
@@ -225,14 +225,14 @@ export default function ClientPortalPage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-[var(--surface-accent)] flex items-center justify-center">
                       <span className="text-sm font-medium text-blue-700">
                         {pu.client?.full_name?.charAt(0) || "?"}
                       </span>
                     </div>
                     <div>
                       <h3 className="font-medium text-sm">{pu.client?.full_name}</h3>
-                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <div className="flex items-center gap-4 text-xs text-[var(--text-secondary)]">
                         <span className="flex items-center gap-1">
                           <Mail className="h-3 w-3" />
                           {pu.email}
@@ -251,7 +251,7 @@ export default function ClientPortalPage() {
                       {pu.is_active ? "Active" : "Inactive"}
                     </Badge>
                     {pu.last_login && (
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-[var(--text-secondary)]">
                         Last login: {new Date(pu.last_login).toLocaleDateString("en-IN")}
                       </span>
                     )}
@@ -271,7 +271,7 @@ export default function ClientPortalPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Select Client *</label>
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Select Client *</label>
             <select
               value={inviteData.client_id}
               onChange={(e) => {
@@ -294,7 +294,7 @@ export default function ClientPortalPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Email Address *</label>
             <Input
               type="email"
               placeholder="client@example.com"
@@ -302,7 +302,7 @@ export default function ClientPortalPage() {
               onChange={(e) => setInviteData({ ...inviteData, email: e.target.value })}
             />
           </div>
-          <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-800">
+          <div className="bg-[var(--surface-subtle)] p-3 rounded-lg text-sm text-blue-800">
             <p>The client will receive an email with instructions to access the portal where they can:</p>
             <ul className="list-disc list-inside mt-2 space-y-1">
               <li>View their cases and hearing dates</li>

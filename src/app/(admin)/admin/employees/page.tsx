@@ -154,7 +154,7 @@ export default function EmployeesPage() {
   };
 
   if (loading) {
-    return <div className="text-center py-12 text-gray-500">Loading employees...</div>;
+    return <div className="text-center py-12 text-[var(--text-secondary)]">Loading employees...</div>;
   }
 
   return (
@@ -162,7 +162,7 @@ export default function EmployeesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Employees</h1>
-          <p className="text-gray-500">Manage your firm&apos;s team members</p>
+          <p className="text-[var(--text-secondary)]">Manage your firm&apos;s team members</p>
         </div>
       </div>
 
@@ -171,7 +171,7 @@ export default function EmployeesPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b bg-gray-50">
+                <tr className="border-b bg-[var(--background)]">
                   <th className="text-left py-3 px-4 font-medium text-sm">Name</th>
                   <th className="text-left py-3 px-4 font-medium text-sm">Email</th>
                   <th className="text-left py-3 px-4 font-medium text-sm">Role</th>
@@ -183,13 +183,13 @@ export default function EmployeesPage() {
               <tbody>
                 {employees.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-8 text-gray-500">
+                    <td colSpan={5} className="text-center py-8 text-[var(--text-secondary)]">
                       No employees found.
                     </td>
                   </tr>
                 ) : (
                   employees.map((emp) => (
-                    <tr key={emp.id} className="border-b hover:bg-gray-50">
+                    <tr key={emp.id} className="border-b hover:bg-[var(--surface-subtle)]">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
                           <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
@@ -200,7 +200,7 @@ export default function EmployeesPage() {
                           <span className="font-medium text-sm">{emp.full_name || "Unnamed"}</span>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-500">{emp.email}</td>
+                      <td className="py-3 px-4 text-sm text-[var(--text-secondary)]">{emp.email}</td>
                       <td className="py-3 px-4">
                         <Badge variant="secondary">{emp.role || "none"}</Badge>
                       </td>
@@ -213,7 +213,7 @@ export default function EmployeesPage() {
                            emp.allotment_status === "pending" ? "Pending" : "Not Allotted"}
                         </Badge>
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-500">{formatDate(emp.created_at)}</td>
+                      <td className="py-3 px-4 text-sm text-[var(--text-secondary)]">{formatDate(emp.created_at)}</td>
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Button
@@ -347,7 +347,7 @@ export default function EmployeesPage() {
                 value={form.upi_id}
                 onChange={(e) => setForm({ ...form, upi_id: e.target.value })}
               />
-              <p className="text-xs text-gray-500 mt-1">For salary payments via UPI</p>
+              <p className="text-xs text-[var(--text-secondary)] mt-1">For salary payments via UPI</p>
             </div>
           </div>
           <div className="flex justify-end gap-2">

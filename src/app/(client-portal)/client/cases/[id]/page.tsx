@@ -115,8 +115,8 @@ export default function ClientCaseDetailPage() {
     switch (status) {
       case "active": return "bg-green-100 text-green-800"
       case "pending": return "bg-yellow-100 text-yellow-800"
-      case "closed": return "bg-gray-100 text-gray-800"
-      default: return "bg-blue-100 text-blue-800"
+      case "closed": return "bg-[var(--surface-subtle)] text-[var(--text-primary)]"
+      default: return "bg-[var(--surface-accent)] text-[var(--text-primary)]"
     }
   }
 
@@ -143,8 +143,8 @@ export default function ClientCaseDetailPage() {
         </Button>
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{caseData.title}</h1>
-            <p className="text-gray-500">{caseData.case_number}</p>
+            <h1 className="text-2xl font-bold text-[var(--text-primary)]">{caseData.title}</h1>
+            <p className="text-[var(--text-secondary)]">{caseData.case_number}</p>
           </div>
           <Badge className={statusColor(caseData.status)}>{caseData.status}</Badge>
         </div>
@@ -152,31 +152,31 @@ export default function ClientCaseDetailPage() {
 
       {/* Case Info */}
       <Card className="p-5">
-        <h2 className="mb-3 text-lg font-semibold text-gray-900">Case Details</h2>
+        <h2 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">Case Details</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <p className="text-sm text-gray-500">Court</p>
-            <p className="font-medium text-gray-900">{caseData.court_name || "—"}</p>
+            <p className="text-sm text-[var(--text-secondary)]">Court</p>
+            <p className="font-medium text-[var(--text-primary)]">{caseData.court_name || "—"}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500">Judge</p>
-            <p className="font-medium text-gray-900">{caseData.judge_name || "—"}</p>
+            <p className="text-sm text-[var(--text-secondary)]">Judge</p>
+            <p className="font-medium text-[var(--text-primary)]">{caseData.judge_name || "—"}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-500">Next Hearing</p>
-            <p className="font-medium text-gray-900">
+            <p className="text-sm text-[var(--text-secondary)]">Next Hearing</p>
+            <p className="font-medium text-[var(--text-primary)]">
               {caseData.next_hearing ? formatDate(caseData.next_hearing) : "—"}
             </p>
           </div>
           <div>
-            <p className="text-sm text-gray-500">Filed On</p>
-            <p className="font-medium text-gray-900">{formatDate(caseData.created_at)}</p>
+            <p className="text-sm text-[var(--text-secondary)]">Filed On</p>
+            <p className="font-medium text-[var(--text-primary)]">{formatDate(caseData.created_at)}</p>
           </div>
         </div>
         {caseData.description && (
           <div className="mt-4">
-            <p className="text-sm text-gray-500">Description</p>
-            <p className="mt-1 text-gray-700">{caseData.description}</p>
+            <p className="text-sm text-[var(--text-secondary)]">Description</p>
+            <p className="mt-1 text-[var(--text-primary)]">{caseData.description}</p>
           </div>
         )}
       </Card>
@@ -184,28 +184,28 @@ export default function ClientCaseDetailPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Hearing Timeline */}
         <Card className="p-5">
-          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[var(--text-primary)]">
             <Calendar className="h-5 w-5" /> Hearing Timeline
           </h2>
           {hearings.length === 0 ? (
-            <p className="py-4 text-center text-sm text-gray-500">No hearings recorded.</p>
+            <p className="py-4 text-center text-sm text-[var(--text-secondary)]">No hearings recorded.</p>
           ) : (
             <div className="space-y-4">
               {hearings.map((h, i) => (
                 <div key={h.id} className="relative pl-6">
                   {i < hearings.length - 1 && (
-                    <div className="absolute left-2 top-2 h-full w-0.5 bg-gray-200" />
+                    <div className="absolute left-2 top-2 h-full w-0.5 bg-[var(--border)]" />
                   )}
-                  <div className="absolute left-0 top-1.5 h-4 w-4 rounded-full border-2 border-primary bg-white" />
+                  <div className="absolute left-0 top-1.5 h-4 w-4 rounded-full border-2 border-primary bg-[var(--surface)]" />
                   <div className="rounded-lg border p-3">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-gray-900">{formatDate(h.hearing_date)}</p>
+                      <p className="text-sm font-medium text-[var(--text-primary)]">{formatDate(h.hearing_date)}</p>
                       {h.result && (
                         <Badge className="bg-green-100 text-green-800">Completed</Badge>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500">{h.court_name}</p>
-                    {h.purpose && <p className="mt-1 text-xs text-gray-600">{h.purpose}</p>}
+                    <p className="text-xs text-[var(--text-secondary)]">{h.court_name}</p>
+                    {h.purpose && <p className="mt-1 text-xs text-[var(--text-secondary)]">{h.purpose}</p>}
                     {h.result && (
                       <p className="mt-2 rounded bg-green-50 p-2 text-xs text-green-700">
                         {h.result}
@@ -220,23 +220,23 @@ export default function ClientCaseDetailPage() {
 
         {/* Financial Summary */}
         <Card className="p-5">
-          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[var(--text-primary)]">
             <DollarSign className="h-5 w-5" /> Financial Summary
           </h2>
           {payments.length === 0 ? (
-            <p className="py-4 text-center text-sm text-gray-500">No payments recorded.</p>
+            <p className="py-4 text-center text-sm text-[var(--text-secondary)]">No payments recorded.</p>
           ) : (
             <div className="space-y-3">
               {payments.map((p) => (
                 <div key={p.id} className="flex items-center justify-between rounded-lg border p-3">
                   <div>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-[var(--text-primary)]">
                       {p.description || "Payment"}
                     </p>
-                    <p className="text-xs text-gray-500">{formatDate(p.created_at)}</p>
+                    <p className="text-xs text-[var(--text-secondary)]">{formatDate(p.created_at)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-gray-900">
+                    <p className="text-sm font-semibold text-[var(--text-primary)]">
                       {formatCurrency(p.amount)}
                     </p>
                     <Badge
@@ -258,11 +258,11 @@ export default function ClientCaseDetailPage() {
 
       {/* Documents */}
       <Card className="p-5">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[var(--text-primary)]">
           <FileText className="h-5 w-5" /> Documents
         </h2>
         {documents.length === 0 ? (
-          <p className="py-4 text-center text-sm text-gray-500">No documents available.</p>
+          <p className="py-4 text-center text-sm text-[var(--text-secondary)]">No documents available.</p>
         ) : (
           <div className="space-y-2">
             {documents.map((d) => (
@@ -271,13 +271,13 @@ export default function ClientCaseDetailPage() {
                 href={d.file_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-gray-50"
+                className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-[var(--surface-subtle)]"
               >
                 <div className="flex items-center gap-3">
-                  <FileText className="h-5 w-5 text-gray-400" />
+                  <FileText className="h-5 w-5 text-[var(--text-tertiary)]" />
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{d.title}</p>
-                    <p className="text-xs text-gray-500">{formatDate(d.created_at)}</p>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{d.title}</p>
+                    <p className="text-xs text-[var(--text-secondary)]">{formatDate(d.created_at)}</p>
                   </div>
                 </div>
                 <Button variant="ghost" size="sm">

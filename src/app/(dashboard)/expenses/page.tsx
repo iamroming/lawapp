@@ -76,20 +76,20 @@ export default function ExpensesPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-500">Total Expenses</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold">{fmt(summary.total)}</p><p className="text-xs text-gray-400">{summary.count} entries</p></CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-[var(--text-secondary)]">Total Expenses</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold">{fmt(summary.total)}</p><p className="text-xs text-[var(--text-tertiary)]">{summary.count} entries</p></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-500">Billable</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-[var(--text-secondary)]">Billable</CardTitle></CardHeader>
           <CardContent><p className="text-2xl font-bold text-green-600">{fmt(summary.billable)}</p></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-500">Unbilled</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-[var(--text-secondary)]">Unbilled</CardTitle></CardHeader>
           <CardContent><p className="text-2xl font-bold text-orange-600">{fmt(summary.unbilled)}</p></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-500">Non-Billable</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold text-gray-600">{fmt(summary.total - summary.billable)}</p></CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-[var(--text-secondary)]">Non-Billable</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold text-[var(--text-secondary)]">{fmt(summary.total - summary.billable)}</p></CardContent>
         </Card>
       </div>
 
@@ -117,9 +117,9 @@ export default function ExpensesPage() {
       <Card>
         <CardContent className="p-0">
           {loading ? (
-            <div className="p-8 text-center text-gray-500">Loading...</div>
+            <div className="p-8 text-center text-[var(--text-secondary)]">Loading...</div>
           ) : filteredExpenses.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
+            <div className="p-8 text-center text-[var(--text-secondary)]">
               <Wallet className="h-12 w-12 mx-auto mb-2 text-gray-300" />
               <p>No expenses yet</p>
               <Link href="/expenses/new"><Button className="mt-2" size="sm"><Plus className="h-4 w-4 mr-2" /> Add First Expense</Button></Link>
@@ -127,20 +127,20 @@ export default function ExpensesPage() {
           ) : (
             <div className="divide-y">
               {filteredExpenses.map((expense) => (
-                <div key={expense.id} className="flex items-center justify-between p-4 hover:bg-gray-50">
+                <div key={expense.id} className="flex items-center justify-between p-4 hover:bg-[var(--surface-subtle)]">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-medium">{expense.title}</p>
                       <Badge variant="outline" className="text-xs">{CATEGORY_MAP[expense.category] || expense.category}</Badge>
                       {expense.is_billable && <Badge className="text-xs bg-green-100 text-green-700">Billable</Badge>}
-                      {expense.is_billed && <Badge className="text-xs bg-blue-100 text-blue-700">Billed</Badge>}
+                      {expense.is_billed && <Badge className="text-xs bg-[var(--surface-accent)] text-[var(--text-accent)]">Billed</Badge>}
                     </div>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-[var(--text-secondary)] mt-1">
                       {expense.cases?.case_number && <span className="mr-3">Case: {expense.cases.case_number}</span>}
                       {expense.clients?.full_name && <span className="mr-3">Client: {expense.clients.full_name}</span>}
                       <span>{expense.expense_date}</span>
                     </p>
-                    {expense.description && <p className="text-xs text-gray-400 mt-1">{expense.description}</p>}
+                    {expense.description && <p className="text-xs text-[var(--text-tertiary)] mt-1">{expense.description}</p>}
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="font-semibold text-lg">{fmt(expense.amount)}</span>

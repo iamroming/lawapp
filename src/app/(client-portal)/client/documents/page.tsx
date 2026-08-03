@@ -81,17 +81,17 @@ export default function ClientDocumentsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
-        <p className="text-gray-500">View and download documents shared with you.</p>
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">Documents</h1>
+        <p className="text-[var(--text-secondary)]">View and download documents shared with you.</p>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
-          <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-tertiary)]" />
           <select
             value={selectedCase}
             onChange={(e) => setSelectedCase(e.target.value)}
-            className="h-10 w-full rounded-md border border-gray-300 bg-white pl-9 pr-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            className="h-10 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] pl-9 pr-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="">All Cases</option>
             {cases.map((c) => (
@@ -109,8 +109,8 @@ export default function ClientDocumentsPage() {
 
       {filtered.length === 0 ? (
         <Card className="flex flex-col items-center justify-center py-16">
-          <FileText className="mb-3 h-12 w-12 text-gray-300" />
-          <p className="text-gray-500">No documents found.</p>
+          <FileText className="mb-3 h-12 w-12 text-[var(--text-tertiary)]" />
+          <p className="text-[var(--text-secondary)]">No documents found.</p>
         </Card>
       ) : (
         <div className="space-y-2">
@@ -121,8 +121,8 @@ export default function ClientDocumentsPage() {
                   <FileText className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">{d.title}</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="font-medium text-[var(--text-primary)]">{d.title}</p>
+                  <p className="text-sm text-[var(--text-secondary)]">
                     {d.case_title || "General"} · {d.file_type || "File"} · {formatDate(d.created_at)}
                   </p>
                 </div>

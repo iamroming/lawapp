@@ -26,7 +26,7 @@ export default function TeamAnalyticsPage() {
     fetchAll();
   }, []);
 
-  if (loading) return <div className="text-center py-12 text-gray-500">Loading analytics...</div>;
+  if (loading) return <div className="text-center py-12 text-[var(--text-secondary)]">Loading analytics...</div>;
 
   const totalBillable = utilization.reduce((s, l) => s + l.billable, 0);
   const totalHours = utilization.reduce((s, l) => s + l.total, 0);
@@ -69,10 +69,10 @@ export default function TeamAnalyticsPage() {
                       {l.billable > 0 && <span className="text-xs text-white font-medium">{l.billable.toFixed(1)}h</span>}
                     </div>
                     <div
-                      className="bg-gray-300 rounded-r-md flex items-center justify-center"
+                      className="bg-[var(--border)] rounded-r-md flex items-center justify-center"
                       style={{ width: `${l.total > 0 ? (l.nonBillable / l.total) * 100 : 0}%` }}
                     >
-                      {l.nonBillable > 0 && <span className="text-xs text-gray-600 font-medium">{l.nonBillable.toFixed(1)}h</span>}
+                      {l.nonBillable > 0 && <span className="text-xs text-[var(--text-secondary)] font-medium">{l.nonBillable.toFixed(1)}h</span>}
                     </div>
                   </div>
                   <span className="text-sm font-medium w-12 text-right">{l.utilizationRate}%</span>
@@ -80,11 +80,11 @@ export default function TeamAnalyticsPage() {
               ))}
             </div>
           ) : (
-            <p className="text-gray-400 text-center py-8">No time entries yet</p>
+            <p className="text-[var(--text-tertiary)] text-center py-8">No time entries yet</p>
           )}
-          <div className="flex gap-4 mt-4 text-xs text-gray-500">
+          <div className="flex gap-4 mt-4 text-xs text-[var(--text-secondary)]">
             <span className="flex items-center gap-1"><div className="w-3 h-3 bg-blue-500 rounded" /> Billable</span>
-            <span className="flex items-center gap-1"><div className="w-3 h-3 bg-gray-300 rounded" /> Non-Billable</span>
+            <span className="flex items-center gap-1"><div className="w-3 h-3 bg-[var(--border)] rounded" /> Non-Billable</span>
           </div>
         </CardContent>
       </Card>
@@ -101,7 +101,7 @@ export default function TeamAnalyticsPage() {
               showValues
             />
           ) : (
-            <p className="text-gray-400 text-center py-8">No tasks yet</p>
+            <p className="text-[var(--text-tertiary)] text-center py-8">No tasks yet</p>
           )}
         </CardContent>
       </Card>
@@ -118,13 +118,13 @@ export default function TeamAnalyticsPage() {
                 data={caseLoad.lawyers.map((l: any) => ({ label: l.name, value: l.count }))}
                 showValues
               />
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg text-sm">
+              <div className="mt-4 p-3 bg-[var(--background)] rounded-lg text-sm">
                 <p>Average: <strong>{caseLoad.avg}</strong> cases per lawyer</p>
                 <p>Std Deviation: <strong>{caseLoad.stdDev}</strong> — {caseLoad.balanced ? "Balanced" : "Unbalanced"} distribution</p>
               </div>
             </>
           ) : (
-            <p className="text-gray-400 text-center py-8">No active cases</p>
+            <p className="text-[var(--text-tertiary)] text-center py-8">No active cases</p>
           )}
         </CardContent>
       </Card>

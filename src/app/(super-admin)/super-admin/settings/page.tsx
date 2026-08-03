@@ -56,14 +56,14 @@ export default function SuperAdminSettingsPage() {
     return String(s.value);
   };
 
-  if (loading) return <div className="text-center py-12 text-gray-500">Loading settings...</div>;
+  if (loading) return <div className="text-center py-12 text-[var(--text-secondary)]">Loading settings...</div>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><Settings className="h-6 w-6 text-orange-500" />Platform Settings</h1>
-          <p className="text-gray-500">Configure the entire platform</p>
+          <p className="text-[var(--text-secondary)]">Configure the entire platform</p>
         </div>
         <Button onClick={saveAll} disabled={saving}>
           <Save className="h-4 w-4 mr-2" />
@@ -100,7 +100,7 @@ export default function SuperAdminSettingsPage() {
             <div className="flex items-center justify-between p-3 rounded-lg border">
               <div>
                 <p className="font-medium text-sm">Maintenance Mode</p>
-                <p className="text-xs text-gray-500">Block all access except super admin</p>
+                <p className="text-xs text-[var(--text-secondary)]">Block all access except super admin</p>
               </div>
               <button
                 onClick={() => updateSetting("maintenance_mode", !getBoolValue("maintenance_mode"))}
@@ -112,7 +112,7 @@ export default function SuperAdminSettingsPage() {
             <div className="flex items-center justify-between p-3 rounded-lg border">
               <div>
                 <p className="font-medium text-sm">Allow Signups</p>
-                <p className="text-xs text-gray-500">Allow new user registrations</p>
+                <p className="text-xs text-[var(--text-secondary)]">Allow new user registrations</p>
               </div>
               <button
                 onClick={() => updateSetting("allow_signups", !getBoolValue("allow_signups"))}
@@ -129,10 +129,10 @@ export default function SuperAdminSettingsPage() {
         <CardHeader><CardTitle className="flex items-center gap-2"><Database className="h-5 w-5" />System Info</CardTitle></CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div><p className="text-gray-500">Platform</p><p className="font-medium">LawXP v0.1.0</p></div>
-            <div><p className="text-gray-500">Database</p><p className="font-medium">Supabase PostgreSQL</p></div>
-            <div><p className="text-gray-500">Framework</p><p className="font-medium">Next.js 16</p></div>
-            <div><p className="text-gray-500">Region</p><p className="font-medium">India (IN)</p></div>
+            <div><p className="text-[var(--text-secondary)]">Platform</p><p className="font-medium">LawXP v0.1.0</p></div>
+            <div><p className="text-[var(--text-secondary)]">Database</p><p className="font-medium">Supabase PostgreSQL</p></div>
+            <div><p className="text-[var(--text-secondary)]">Framework</p><p className="font-medium">Next.js 16</p></div>
+            <div><p className="text-[var(--text-secondary)]">Region</p><p className="font-medium">India (IN)</p></div>
           </div>
         </CardContent>
       </Card>

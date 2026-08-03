@@ -172,7 +172,7 @@ export default function ECourtsPage() {
 
   const getCourtTypeColor = (type: string) => {
     const colors: Record<string, string> = {
-      district: "bg-blue-100 text-blue-800",
+      district: "bg-[var(--surface-accent)] text-blue-800",
       high_court: "bg-purple-100 text-purple-800",
       supreme: "bg-red-100 text-red-800",
       tribunal: "bg-green-100 text-green-800",
@@ -181,7 +181,7 @@ export default function ECourtsPage() {
   };
 
   const getSyncStatus = (lastSyncedAt: string | null) => {
-    if (!lastSyncedAt) return { label: "Never synced", color: "text-gray-500", icon: AlertCircle };
+    if (!lastSyncedAt) return { label: "Never synced", color: "text-[var(--text-secondary)]", icon: AlertCircle };
     const lastSync = new Date(lastSyncedAt);
     const now = new Date();
     const hoursSince = Math.floor((now.getTime() - lastSync.getTime()) / (1000 * 60 * 60));
@@ -194,7 +194,7 @@ export default function ECourtsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--text-accent)]" />
       </div>
     );
   }
@@ -204,10 +204,10 @@ export default function ECourtsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-            <Globe className="h-6 w-6 text-blue-600" />
+            <Globe className="h-6 w-6 text-[var(--text-accent)]" />
             eCourts Tracking
           </h1>
-          <p className="text-gray-500 text-sm">Track your cases across Indian courts in real-time</p>
+          <p className="text-[var(--text-secondary)] text-sm">Track your cases across Indian courts in real-time</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button onClick={handleSyncAll} disabled={syncing} variant="outline" className="text-sm">
@@ -231,10 +231,10 @@ export default function ECourtsPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Total Tracked</p>
+                <p className="text-sm text-[var(--text-secondary)]">Total Tracked</p>
                 <p className="text-2xl font-bold">{cases.length}</p>
               </div>
-              <Globe className="h-8 w-8 text-blue-600" />
+              <Globe className="h-8 w-8 text-[var(--text-accent)]" />
             </div>
           </CardContent>
         </Card>
@@ -242,10 +242,10 @@ export default function ECourtsPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">District Courts</p>
+                <p className="text-sm text-[var(--text-secondary)]">District Courts</p>
                 <p className="text-2xl font-bold">{cases.filter((c) => c.court_type === "district").length}</p>
               </div>
-              <MapPin className="h-8 w-8 text-blue-600" />
+              <MapPin className="h-8 w-8 text-[var(--text-accent)]" />
             </div>
           </CardContent>
         </Card>
@@ -253,7 +253,7 @@ export default function ECourtsPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">High Courts</p>
+                <p className="text-sm text-[var(--text-secondary)]">High Courts</p>
                 <p className="text-2xl font-bold">{cases.filter((c) => c.court_type === "high_court").length}</p>
               </div>
               <MapPin className="h-8 w-8 text-purple-600" />
@@ -264,7 +264,7 @@ export default function ECourtsPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Need Sync</p>
+                <p className="text-sm text-[var(--text-secondary)]">Need Sync</p>
                 <p className="text-2xl font-bold">
                   {cases.filter((c) => {
                     if (!c.last_synced_at) return true;
@@ -286,7 +286,7 @@ export default function ECourtsPage() {
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
               <Input
                 placeholder="Search by CNR, court, case number, or title..."
                 value={searchQuery}
@@ -314,8 +314,8 @@ export default function ECourtsPage() {
         <Card>
           <CardContent className="p-8 text-center">
             <Globe className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No cases tracked yet</h3>
-            <p className="text-gray-500 mb-4">Add your first case to start tracking it across Indian courts</p>
+            <h3 className="text-lg font-medium text-[var(--text-primary)] mb-2">No cases tracked yet</h3>
+            <p className="text-[var(--text-secondary)] mb-4">Add your first case to start tracking it across Indian courts</p>
             <Button onClick={() => setShowAddModal(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Case
@@ -334,7 +334,7 @@ export default function ECourtsPage() {
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <h3 className="font-semibold text-sm truncate">{ec.case?.title || "Untitled"}</h3>
-                      <p className="text-xs text-gray-500 mt-1">{ec.case?.case_number}</p>
+                      <p className="text-xs text-[var(--text-secondary)] mt-1">{ec.case?.case_number}</p>
                     </div>
                     <Badge className={getCourtTypeColor(ec.court_type)}>
                       {getCourtTypeLabel(ec.court_type)}
@@ -342,22 +342,22 @@ export default function ECourtsPage() {
                   </div>
 
                   <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2 text-gray-600">
+                    <div className="flex items-center gap-2 text-[var(--text-secondary)]">
                       <Globe className="h-4 w-4" />
                       <span className="font-mono text-xs">{ec.cnr_number}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-600">
+                    <div className="flex items-center gap-2 text-[var(--text-secondary)]">
                       <MapPin className="h-4 w-4" />
                       <span className="truncate">{ec.court_name}</span>
                     </div>
                     {ec.judge_name && (
-                      <div className="flex items-center gap-2 text-gray-600">
+                      <div className="flex items-center gap-2 text-[var(--text-secondary)]">
                         <User className="h-4 w-4" />
                         <span className="truncate">{ec.judge_name}</span>
                       </div>
                     )}
                     {ec.next_hearing_date && (
-                      <div className="flex items-center gap-2 text-gray-600">
+                      <div className="flex items-center gap-2 text-[var(--text-secondary)]">
                         <Calendar className="h-4 w-4" />
                         <span>Next: {new Date(ec.next_hearing_date).toLocaleDateString("en-IN")}</span>
                       </div>
@@ -376,7 +376,7 @@ export default function ECourtsPage() {
                         rel="noopener noreferrer"
                         className="p-1 rounded hover:bg-gray-100"
                       >
-                        <ExternalLink className="h-4 w-4 text-gray-500" />
+                        <ExternalLink className="h-4 w-4 text-[var(--text-secondary)]" />
                       </a>
                     </div>
                   </div>
@@ -395,7 +395,7 @@ export default function ECourtsPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">CNR Number *</label>
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">CNR Number *</label>
             <Input
               placeholder="16-digit CNR number"
               value={newCase.cnr_number}
@@ -404,7 +404,7 @@ export default function ECourtsPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Court Name *</label>
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Court Name *</label>
             <Input
               placeholder="e.g., Delhi High Court"
               value={newCase.court_name}
@@ -413,7 +413,7 @@ export default function ECourtsPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Court Type</label>
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Court Type</label>
               <select
                 value={newCase.court_type}
                 onChange={(e) => setNewCase({ ...newCase, court_type: e.target.value })}
@@ -426,7 +426,7 @@ export default function ECourtsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">State</label>
               <Input
                 placeholder="e.g., Delhi"
                 value={newCase.state}
@@ -435,7 +435,7 @@ export default function ECourtsPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Link to Existing Case (optional)</label>
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Link to Existing Case (optional)</label>
             <select
               value={newCase.case_id}
               onChange={(e) => setNewCase({ ...newCase, case_id: e.target.value })}

@@ -46,7 +46,7 @@ const dateRangeOptions = [
 ];
 
 const priorityColors: Record<string, string> = {
-  low: "bg-gray-100 text-gray-800",
+  low: "bg-[var(--border)] text-[var(--text-primary)]",
   medium: "bg-yellow-100 text-yellow-800",
   high: "bg-orange-100 text-orange-800",
   urgent: "bg-red-100 text-red-800",
@@ -247,7 +247,7 @@ export default function PerformanceReportPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading performance metrics...</div>
+        <div className="text-[var(--text-secondary)]">Loading performance metrics...</div>
       </div>
     );
   }
@@ -264,7 +264,7 @@ export default function PerformanceReportPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold">Performance Metrics</h1>
-            <p className="text-gray-500">Win rate, case duration, and productivity</p>
+            <p className="text-[var(--text-secondary)]">Win rate, case duration, and productivity</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -313,29 +313,29 @@ export default function PerformanceReportPage() {
           </CardHeader>
           <CardContent>
             {stats.casesByLawyer.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No lawyer data available</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">No lawyer data available</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-2 font-medium text-gray-600">Lawyer</th>
-                      <th className="text-center py-2 font-medium text-gray-600">Total</th>
-                      <th className="text-center py-2 font-medium text-gray-600">Won</th>
-                      <th className="text-center py-2 font-medium text-gray-600">Lost</th>
-                      <th className="text-center py-2 font-medium text-gray-600">Settled</th>
-                      <th className="text-center py-2 font-medium text-gray-600">Win Rate</th>
-                      <th className="text-right py-2 font-medium text-gray-600">Revenue</th>
+                      <th className="text-left py-2 font-medium text-[var(--text-secondary)]">Lawyer</th>
+                      <th className="text-center py-2 font-medium text-[var(--text-secondary)]">Total</th>
+                      <th className="text-center py-2 font-medium text-[var(--text-secondary)]">Won</th>
+                      <th className="text-center py-2 font-medium text-[var(--text-secondary)]">Lost</th>
+                      <th className="text-center py-2 font-medium text-[var(--text-secondary)]">Settled</th>
+                      <th className="text-center py-2 font-medium text-[var(--text-secondary)]">Win Rate</th>
+                      <th className="text-right py-2 font-medium text-[var(--text-secondary)]">Revenue</th>
                     </tr>
                   </thead>
                   <tbody>
                     {stats.casesByLawyer.map((lawyer) => (
-                      <tr key={lawyer.name} className="border-b hover:bg-gray-50">
+                      <tr key={lawyer.name} className="border-b hover:bg-[var(--surface-subtle)]">
                         <td className="py-3 font-medium">{lawyer.name}</td>
                         <td className="py-3 text-center">{lawyer.totalCases}</td>
                         <td className="py-3 text-center text-green-600">{lawyer.casesWon}</td>
                         <td className="py-3 text-center text-red-600">{lawyer.casesLost}</td>
-                        <td className="py-3 text-center text-blue-600">{lawyer.casesSettled}</td>
+                        <td className="py-3 text-center text-[var(--text-accent)]">{lawyer.casesSettled}</td>
                         <td className="py-3 text-center">
                           <Badge className={lawyer.winRate >= 50 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
                             {lawyer.winRate}%
@@ -358,20 +358,20 @@ export default function PerformanceReportPage() {
           </CardHeader>
           <CardContent>
             {stats.monthlyResolution.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No data available</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">No data available</p>
             ) : (
               <div className="flex items-end gap-2 h-48">
                 {stats.monthlyResolution.map((item) => {
                   const height = maxResolution > 0 ? (item.count / maxResolution) * 100 : 0;
                   return (
                     <div key={item.month} className="flex-1 flex flex-col items-center gap-1">
-                      <span className="text-xs text-gray-500">{item.count}</span>
+                      <span className="text-xs text-[var(--text-secondary)]">{item.count}</span>
                       <div
                         className="w-full bg-green-500 rounded-t transition-all hover:bg-green-600 min-h-[4px]"
                         style={{ height: `${height}%` }}
                         title={`${item.month}: ${item.count} resolved`}
                       />
-                      <span className="text-xs text-gray-500 truncate w-full text-center">
+                      <span className="text-xs text-[var(--text-secondary)] truncate w-full text-center">
                         {item.month}
                       </span>
                     </div>
@@ -389,7 +389,7 @@ export default function PerformanceReportPage() {
           </CardHeader>
           <CardContent>
             {stats.casesByPriority.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No data available</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">No data available</p>
             ) : (
               <div className="space-y-3">
                 {stats.casesByPriority.map((item) => {
@@ -398,12 +398,12 @@ export default function PerformanceReportPage() {
                   return (
                     <div key={item.priority} className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
-                        <Badge className={priorityColors[item.priority] || "bg-gray-100 text-gray-800"}>
+                        <Badge className={priorityColors[item.priority] || "bg-[var(--border)] text-[var(--text-primary)]"}>
                           {item.priority}
                         </Badge>
-                        <span className="text-gray-500">{item.count} ({Math.round(percentage)}%)</span>
+                        <span className="text-[var(--text-secondary)]">{item.count} ({Math.round(percentage)}%)</span>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-3">
+                      <div className="w-full bg-[var(--border)] rounded-full h-3">
                         <div
                           className="bg-indigo-500 h-3 rounded-full transition-all"
                           style={{ width: `${percentage}%` }}

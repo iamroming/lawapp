@@ -118,7 +118,7 @@ export default function NewInvoicePage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold">New Invoice</h1>
-          <p className="text-gray-500">Create a new invoice for your client</p>
+          <p className="text-[var(--text-secondary)]">Create a new invoice for your client</p>
         </div>
       </div>
 
@@ -126,14 +126,14 @@ export default function NewInvoicePage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Receipt className="h-5 w-5 text-blue-600" />
+              <Receipt className="h-5 w-5 text-[var(--text-accent)]" />
               Invoice Details
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Client */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Client *</label>
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Client *</label>
               <select
                 value={form.client_id}
                 onChange={(e) => setForm({ ...form, client_id: e.target.value, case_id: "" })}
@@ -149,7 +149,7 @@ export default function NewInvoicePage() {
 
             {/* Case */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Case (optional)</label>
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Case (optional)</label>
               <select
                 value={form.case_id}
                 onChange={(e) => setForm({ ...form, case_id: e.target.value })}
@@ -164,7 +164,7 @@ export default function NewInvoicePage() {
 
             {/* Billing Type */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Billing Type</label>
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Billing Type</label>
               <select
                 value={form.billing_type}
                 onChange={(e) => setForm({ ...form, billing_type: e.target.value })}
@@ -179,7 +179,7 @@ export default function NewInvoicePage() {
 
             {/* Amount */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Amount (₹) *</label>
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Amount (₹) *</label>
               <Input
                 type="number"
                 min="0"
@@ -193,7 +193,7 @@ export default function NewInvoicePage() {
 
             {/* GST Rate */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">GST Rate (%)</label>
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">GST Rate (%)</label>
               <select
                 value={form.gst_rate}
                 onChange={(e) => setForm({ ...form, gst_rate: e.target.value })}
@@ -209,7 +209,7 @@ export default function NewInvoicePage() {
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Description</label>
               <textarea
                 placeholder="Invoice description..."
                 value={form.description}
@@ -221,7 +221,7 @@ export default function NewInvoicePage() {
 
             {/* Due Date */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Due Date</label>
               <Input
                 type="date"
                 value={form.due_date}
@@ -231,7 +231,7 @@ export default function NewInvoicePage() {
 
             {/* Summary */}
             {amount > 0 && (
-              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+              <div className="bg-[var(--background)] rounded-lg p-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Subtotal</span>
                   <span>₹{amount.toLocaleString("en-IN")}</span>

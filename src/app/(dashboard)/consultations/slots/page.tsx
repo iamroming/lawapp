@@ -149,7 +149,7 @@ export default function ConsultationSlotsPage() {
           <Clock className="h-8 w-8 text-blue-600" />
           <div>
             <h1 className="text-2xl font-bold">Consultation Availability</h1>
-            <p className="text-gray-500">
+            <p className="text-[var(--text-secondary)]">
               Manage your weekly availability slots
             </p>
           </div>
@@ -169,7 +169,7 @@ export default function ConsultationSlotsPage() {
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                     Day of Week *
                   </label>
                   <Select
@@ -179,7 +179,7 @@ export default function ConsultationSlotsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                     Start Time *
                   </label>
                   <Input
@@ -190,7 +190,7 @@ export default function ConsultationSlotsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                     End Time *
                   </label>
                   <Input
@@ -201,7 +201,7 @@ export default function ConsultationSlotsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                     Consultation Type
                   </label>
                   <Select
@@ -216,7 +216,7 @@ export default function ConsultationSlotsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                     Duration (minutes)
                   </label>
                   <Select
@@ -231,7 +231,7 @@ export default function ConsultationSlotsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                     Fee (₹)
                   </label>
                   <Input
@@ -265,19 +265,19 @@ export default function ConsultationSlotsPage() {
             </CardHeader>
             <CardContent>
               {daySlots.length === 0 ? (
-                <p className="text-sm text-gray-500">No availability set</p>
+                <p className="text-sm text-[var(--text-secondary)]">No availability set</p>
               ) : (
                 <div className="space-y-2">
                   {daySlots.map((slot) => (
                     <div
                       key={slot.id}
-                      className="flex items-center justify-between p-2 rounded bg-white border"
+                      className="flex items-center justify-between p-2 rounded bg-[var(--surface)] border"
                     >
                       <div>
                         <p className="text-sm font-medium">
                           {slot.start_time} - {slot.end_time}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-[var(--text-secondary)]">
                           {slot.duration_minutes} min • {slot.consultation_type}
                           {slot.fee > 0 && ` • ₹${slot.fee}`}
                         </p>

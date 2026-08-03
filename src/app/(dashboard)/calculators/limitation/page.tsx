@@ -44,7 +44,7 @@ export default function LimitationCalculatorPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold">Limitation Period Calculator</h1>
-          <p className="text-gray-500">Calculate limitation periods under the Indian Limitation Act, 1963</p>
+          <p className="text-[var(--text-secondary)]">Calculate limitation periods under the Indian Limitation Act, 1963</p>
         </div>
       </div>
 
@@ -91,19 +91,19 @@ export default function LimitationCalculatorPage() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-500">Article</p>
+                <p className="text-sm text-[var(--text-secondary)]">Article</p>
                 <p className="font-medium">{result.article.id} - {result.article.description}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Limitation Period</p>
+                <p className="text-sm text-[var(--text-secondary)]">Limitation Period</p>
                 <p className="font-medium">{result.article.period} {result.article.periodUnit}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Date of Filing</p>
+                <p className="text-sm text-[var(--text-secondary)]">Date of Filing</p>
                 <p className="font-medium">{formatDate(filingDate)}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Expiry Date</p>
+                <p className="text-sm text-[var(--text-secondary)]">Expiry Date</p>
                 <p className="font-medium">{formatDate(result.expiryDate)}</p>
               </div>
             </div>
@@ -147,7 +147,7 @@ export default function LimitationCalculatorPage() {
               <div key={article.id} className="flex items-center justify-between py-2 border-b last:border-0">
                 <div>
                   <p className="font-medium text-sm">Article {article.id}</p>
-                  <p className="text-xs text-gray-500">{article.description}</p>
+                  <p className="text-xs text-[var(--text-secondary)]">{article.description}</p>
                 </div>
                 <Badge variant="outline">{article.period} {article.periodUnit}</Badge>
               </div>

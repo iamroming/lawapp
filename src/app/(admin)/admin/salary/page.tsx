@@ -210,7 +210,7 @@ export default function SalaryDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--text-accent)]" />
       </div>
     );
   }
@@ -223,7 +223,7 @@ export default function SalaryDashboard() {
             <IndianRupee className="h-6 w-6" />
             Salary Management
           </h1>
-          <p className="text-gray-500">Manage employee salaries and payments</p>
+          <p className="text-[var(--text-secondary)]">Manage employee salaries and payments</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setShowSettingsModal(true)}>
@@ -258,11 +258,11 @@ export default function SalaryDashboard() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Users className="h-5 w-5 text-blue-600" />
+              <div className="p-2 bg-[var(--surface-accent)] rounded-lg">
+                <Users className="h-5 w-5 text-[var(--text-accent)]" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">Employees</p>
+                <p className="text-sm text-[var(--text-secondary)]">Employees</p>
                 <p className="text-xl font-bold">{employees.length}</p>
               </div>
             </div>
@@ -275,7 +275,7 @@ export default function SalaryDashboard() {
                 <Clock className="h-5 w-5 text-yellow-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">Pending</p>
+                <p className="text-sm text-[var(--text-secondary)]">Pending</p>
                 <p className="text-xl font-bold">{formatCurrency(totalPending)}</p>
               </div>
             </div>
@@ -288,7 +288,7 @@ export default function SalaryDashboard() {
                 <CheckCircle className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">Paid</p>
+                <p className="text-sm text-[var(--text-secondary)]">Paid</p>
                 <p className="text-xl font-bold">{formatCurrency(totalPaid)}</p>
               </div>
             </div>
@@ -301,7 +301,7 @@ export default function SalaryDashboard() {
                 <Calculator className="h-5 w-5 text-orange-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">Unpaid</p>
+                <p className="text-sm text-[var(--text-secondary)]">Unpaid</p>
                 <p className="text-xl font-bold">{unpaidEmployees.length}</p>
               </div>
             </div>
@@ -316,7 +316,7 @@ export default function SalaryDashboard() {
         </CardHeader>
         <CardContent>
           {payments.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-[var(--text-secondary)]">
               <p>No salary payments generated for this month.</p>
               <Button className="mt-4" onClick={() => setShowGenerateModal(true)}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -327,7 +327,7 @@ export default function SalaryDashboard() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b bg-gray-50">
+                  <tr className="border-b bg-[var(--background)]">
                     <th className="text-left py-3 px-4 font-medium text-sm">Employee</th>
                     <th className="text-left py-3 px-4 font-medium text-sm">Type</th>
                     <th className="text-right py-3 px-4 font-medium text-sm">Base</th>
@@ -341,7 +341,7 @@ export default function SalaryDashboard() {
                 </thead>
                 <tbody>
                   {payments.map((pay) => (
-                    <tr key={pay.id} className="border-b hover:bg-gray-50">
+                    <tr key={pay.id} className="border-b hover:bg-[var(--surface-subtle)]">
                       <td className="py-3 px-4">
                         <span className="font-medium">{pay.employee?.full_name}</span>
                       </td>
@@ -388,7 +388,7 @@ export default function SalaryDashboard() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b bg-gray-50">
+                <tr className="border-b bg-[var(--background)]">
                   <th className="text-left py-3 px-4 font-medium text-sm">Employee</th>
                   <th className="text-left py-3 px-4 font-medium text-sm">Role</th>
                   <th className="text-left py-3 px-4 font-medium text-sm">Payment Type</th>
@@ -397,17 +397,17 @@ export default function SalaryDashboard() {
               </thead>
               <tbody>
                 {employees.map((emp) => (
-                  <tr key={emp.id} className="border-b hover:bg-gray-50">
+                  <tr key={emp.id} className="border-b hover:bg-[var(--surface-subtle)]">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                          <span className="text-sm font-medium text-blue-600">
+<div className="h-8 w-8 rounded-full bg-[var(--surface-accent)] flex items-center justify-center">
+                           <span className="text-sm font-medium text-[var(--text-accent)]">
                             {(emp.full_name || emp.email || "?")[0].toUpperCase()}
                           </span>
                         </div>
                         <div>
                           <p className="font-medium text-sm">{emp.full_name || "Unnamed"}</p>
-                          <p className="text-xs text-gray-500">{emp.email}</p>
+                          <p className="text-xs text-[var(--text-secondary)]">{emp.email}</p>
                         </div>
                       </div>
                     </td>

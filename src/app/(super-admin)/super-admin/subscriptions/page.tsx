@@ -141,7 +141,7 @@ export default function SuperAdminSubscriptionsPage() {
   const activeSubs = subscriptions.filter((s) => s.status === "active" || s.status === "trialing");
   const totalRevenue = subscriptions.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
 
-  if (loading) return <div className="text-center py-12 text-gray-500">Loading...</div>;
+  if (loading) return <div className="text-center py-12 text-[var(--text-secondary)]">Loading...</div>;
 
   return (
     <div className="space-y-6">
@@ -167,8 +167,8 @@ export default function SuperAdminSubscriptionsPage() {
             {plans.map((p) => (
               <div key={p.id} className={`p-4 rounded-lg border ${!p.is_active ? "opacity-50" : ""}`}>
                 <h3 className="font-semibold">{p.name}</h3>
-                <p className="text-2xl font-bold mt-1">{formatCurrency(p.price)}<span className="text-sm font-normal text-gray-500">/{p.billing_period}</span></p>
-                <p className="text-xs text-gray-500 mt-2">{p.description}</p>
+                <p className="text-2xl font-bold mt-1">{formatCurrency(p.price)}<span className="text-sm font-normal text-[var(--text-secondary)]">/{p.billing_period}</span></p>
+                <p className="text-xs text-[var(--text-secondary)] mt-2">{p.description}</p>
                 <Badge variant={p.is_active ? "success" : "secondary"} className="mt-2">{p.is_active ? "Active" : "Inactive"}</Badge>
               </div>
             ))}
@@ -198,7 +198,7 @@ export default function SuperAdminSubscriptionsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {subscriptions.length === 0 ? <p className="text-gray-500 text-center py-8">No subscriptions.</p> : (
+          {subscriptions.length === 0 ? <p className="text-[var(--text-secondary)] text-center py-8">No subscriptions.</p> : (
             <div className="divide-y">
               {subscriptions.map((s) => (
                 <div key={s.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -211,9 +211,9 @@ export default function SuperAdminSubscriptionsPage() {
                     />
                     <div className="min-w-0">
                       <p className="font-medium truncate">{s.user?.full_name || s.user?.email || "Unknown"}</p>
-                      <p className="text-sm text-gray-500">{s.plan?.name || "N/A"} | Started {formatDate(s.starts_at)}</p>
+                      <p className="text-sm text-[var(--text-secondary)]">{s.plan?.name || "N/A"} | Started {formatDate(s.starts_at)}</p>
                       {(s.custom_price !== null && s.custom_price !== undefined) && (
-                        <p className="text-xs text-blue-600">Custom: {formatCurrency(s.custom_price)}</p>
+                        <p className="text-xs text-[var(--text-accent)]">Custom: {formatCurrency(s.custom_price)}</p>
                       )}
                       {(s.discount_percent !== null && s.discount_percent !== undefined && s.discount_percent > 0) && (
                         <p className="text-xs text-purple-600">{s.discount_percent}% discount</p>

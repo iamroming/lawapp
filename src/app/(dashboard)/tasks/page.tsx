@@ -9,15 +9,15 @@ import { Plus, CheckSquare, ArrowRight, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const COLUMNS = [
-  { key: "todo", label: "To Do", color: "bg-gray-100 text-gray-700" },
-  { key: "in_progress", label: "In Progress", color: "bg-blue-100 text-blue-700" },
+  { key: "todo", label: "To Do", color: "bg-[var(--surface-subtle)] text-[var(--text-primary)]" },
+  { key: "in_progress", label: "In Progress", color: "bg-[var(--surface-accent)] text-[var(--text-accent)]" },
   { key: "review", label: "Review", color: "bg-yellow-100 text-yellow-700" },
   { key: "done", label: "Done", color: "bg-green-100 text-green-700" },
 ];
 
 const PRIORITY_COLORS: Record<string, string> = {
-  low: "bg-gray-100 text-gray-600",
-  medium: "bg-blue-100 text-blue-700",
+  low: "bg-[var(--surface-subtle)] text-[var(--text-secondary)]",
+  medium: "bg-[var(--surface-accent)] text-[var(--text-accent)]",
   high: "bg-orange-100 text-orange-700",
   urgent: "bg-red-100 text-red-700",
 };
@@ -68,7 +68,7 @@ export default function TasksPage() {
     if (diff < 0) return <Badge className="bg-red-100 text-red-700">Overdue</Badge>;
     if (diff === 0) return <Badge className="bg-orange-100 text-orange-700">Due today</Badge>;
     if (diff <= 3) return <Badge className="bg-yellow-100 text-yellow-700">Due in {diff}d</Badge>;
-    return <span className="text-xs text-gray-400">{d}</span>;
+    return <span className="text-xs text-[var(--text-tertiary)]">{d}</span>;
   };
 
   return (
@@ -93,7 +93,7 @@ export default function TasksPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-gray-500">Loading...</div>
+        <div className="text-center py-12 text-[var(--text-secondary)]">Loading...</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {COLUMNS.map((col) => {
@@ -110,19 +110,19 @@ export default function TasksPage() {
                       <CardContent className="p-3">
                         <div className="flex items-start justify-between mb-2">
                           <p className="font-medium text-sm leading-tight">{task.title}</p>
-                          <button onClick={() => deleteTask(task.id)} className="text-gray-400 hover:text-red-500 ml-1">
+                          <button onClick={() => deleteTask(task.id)} className="text-[var(--text-tertiary)] hover:text-red-500 ml-1">
                             <Trash2 className="h-3 w-3" />
                           </button>
                         </div>
                         {task.cases?.case_number && (
-                          <p className="text-xs text-blue-600 mb-1">Case: {task.cases.case_number}</p>
+                          <p className="text-xs text-[var(--text-accent)] mb-1">Case: {task.cases.case_number}</p>
                         )}
                         <div className="flex items-center justify-between mt-2">
                           <Badge className={PRIORITY_COLORS[task.priority]}>{task.priority}</Badge>
                           {formatDue(task.due_date)}
                         </div>
                         {task.assigned_user?.full_name && (
-                          <p className="text-xs text-gray-500 mt-2">Assigned: {task.assigned_user.full_name}</p>
+                          <p className="text-xs text-[var(--text-secondary)] mt-2">Assigned: {task.assigned_user.full_name}</p>
                         )}
                         {nextStatus(task.status) && (
                           <Button
@@ -139,7 +139,7 @@ export default function TasksPage() {
                     </Card>
                   ))}
                   {colTasks.length === 0 && (
-                    <p className="text-xs text-gray-400 text-center py-4">No tasks</p>
+                    <p className="text-xs text-[var(--text-tertiary)] text-center py-4">No tasks</p>
                   )}
                 </div>
               </div>

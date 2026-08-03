@@ -80,10 +80,10 @@ export default function AISummarizePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <FileSearch className="h-8 w-8 text-blue-600" />
+        <FileSearch className="h-8 w-8 text-[var(--text-accent)]" />
         <div>
           <h1 className="text-2xl font-bold">Document Summarizer</h1>
-          <p className="text-gray-500">
+          <p className="text-[var(--text-secondary)]">
             Analyze and summarize legal documents with AI
           </p>
         </div>
@@ -126,7 +126,7 @@ export default function AISummarizePage() {
               </Button>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-gray-700 leading-relaxed">
+              <p className="text-sm text-[var(--text-primary)] leading-relaxed">
                 {result.summary}
               </p>
             </CardContent>
@@ -142,7 +142,7 @@ export default function AISummarizePage() {
               </CardHeader>
               <CardContent>
                 {result.keyPoints.length === 0 ? (
-                  <p className="text-sm text-gray-500">No issues identified.</p>
+                  <p className="text-sm text-[var(--text-secondary)]">No issues identified.</p>
                 ) : (
                   <ul className="space-y-2">
                     {result.keyPoints.map((issue, i) => (
@@ -167,7 +167,7 @@ export default function AISummarizePage() {
               </CardHeader>
               <CardContent>
                 {result.nextSteps.length === 0 ? (
-                  <p className="text-sm text-gray-500">No next steps identified.</p>
+                  <p className="text-sm text-[var(--text-secondary)]">No next steps identified.</p>
                 ) : (
                   <ul className="space-y-2">
                     {result.nextSteps.map((step, i) => (
@@ -210,11 +210,11 @@ export default function AISummarizePage() {
         <Card>
           <CardContent className="py-12">
             <div className="text-center">
-              <FileSearch className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900">
+              <FileSearch className="h-12 w-12 text-[var(--text-tertiary)] mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-[var(--text-primary)]">
                 Paste a Document to Analyze
               </h3>
-              <p className="text-gray-500 mt-1">
+              <p className="text-[var(--text-secondary)] mt-1">
                 Paste any legal document text and click Analyze to get a summary,
                 key issues, and recommended next steps.
               </p>

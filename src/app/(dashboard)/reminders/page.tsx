@@ -176,7 +176,7 @@ export default function RemindersPage() {
             <Clock className="h-6 w-6 text-blue-600" />
             Reminders & Notifications
           </h1>
-          <p className="text-gray-500 text-sm">Manage your hearing reminders and notifications</p>
+          <p className="text-[var(--text-secondary)] text-sm">Manage your hearing reminders and notifications</p>
         </div>
         <Button onClick={() => setShowAddModal(true)} className="text-sm">
           <Plus className="h-4 w-4 mr-2" />
@@ -190,7 +190,7 @@ export default function RemindersPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Pending</p>
+                <p className="text-sm text-[var(--text-secondary)]">Pending</p>
                 <p className="text-2xl font-bold">{reminders.filter((r) => r.status === "pending").length}</p>
               </div>
               <Clock className="h-8 w-8 text-yellow-600" />
@@ -201,7 +201,7 @@ export default function RemindersPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Sent</p>
+                <p className="text-sm text-[var(--text-secondary)]">Sent</p>
                 <p className="text-2xl font-bold">{reminders.filter((r) => r.status === "sent").length}</p>
               </div>
               <CheckCircle className="h-8 w-8 text-green-600" />
@@ -212,7 +212,7 @@ export default function RemindersPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Failed</p>
+                <p className="text-sm text-[var(--text-secondary)]">Failed</p>
                 <p className="text-2xl font-bold">{reminders.filter((r) => r.status === "failed").length}</p>
               </div>
               <XCircle className="h-8 w-8 text-red-600" />
@@ -223,7 +223,7 @@ export default function RemindersPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Overdue</p>
+                <p className="text-sm text-[var(--text-secondary)]">Overdue</p>
                 <p className="text-2xl font-bold">
                   {reminders.filter((r) => r.status === "pending" && isOverdue(r.reminder_date)).length}
                 </p>
@@ -254,8 +254,8 @@ export default function RemindersPage() {
         <Card>
           <CardContent className="p-8 text-center">
             <Clock className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No reminders yet</h3>
-            <p className="text-gray-500 mb-4">Create your first reminder to never miss a hearing</p>
+            <h3 className="text-lg font-medium text-[var(--text-primary)] mb-2">No reminders yet</h3>
+            <p className="text-[var(--text-secondary)] mb-4">Create your first reminder to never miss a hearing</p>
             <Button onClick={() => setShowAddModal(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Reminder
@@ -279,8 +279,8 @@ export default function RemindersPage() {
                         <Badge className="bg-red-100 text-red-800">Overdue</Badge>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 mb-2">{reminder.message}</p>
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <p className="text-xs text-[var(--text-secondary)] mb-2">{reminder.message}</p>
+                    <div className="flex items-center gap-4 text-xs text-[var(--text-secondary)]">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
                         {new Date(reminder.reminder_date).toLocaleString("en-IN", {
@@ -304,7 +304,7 @@ export default function RemindersPage() {
                               ? "bg-green-100 text-green-700"
                               : reminder.failed_channels?.includes(channel)
                               ? "bg-red-100 text-red-700"
-                              : "bg-gray-100 text-gray-600"
+                              : "bg-[var(--surface-subtle)] text-[var(--text-secondary)]"
                           }`}
                         >
                           {getChannelIcon(channel)}
@@ -336,7 +336,7 @@ export default function RemindersPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Title *</label>
             <Input
               placeholder="e.g., Hearing preparation for Sharma case"
               value={newReminder.title}
@@ -344,7 +344,7 @@ export default function RemindersPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Message</label>
             <textarea
               placeholder="Detailed reminder message..."
               value={newReminder.message}
@@ -354,7 +354,7 @@ export default function RemindersPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time *</label>
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Date & Time *</label>
             <input
               type="datetime-local"
               value={newReminder.reminder_date}
@@ -364,7 +364,7 @@ export default function RemindersPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Link to Case</label>
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Link to Case</label>
               <select
                 value={newReminder.case_id}
                 onChange={(e) => setNewReminder({ ...newReminder, case_id: e.target.value })}
@@ -377,7 +377,7 @@ export default function RemindersPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Notify Client</label>
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">Notify Client</label>
               <select
                 value={newReminder.client_id}
                 onChange={(e) => setNewReminder({ ...newReminder, client_id: e.target.value })}
@@ -391,7 +391,7 @@ export default function RemindersPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Notification Channels</label>
+            <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Notification Channels</label>
             <div className="flex gap-2">
               {[
                 { id: "in_app", label: "In-App", icon: Bell },

@@ -387,7 +387,7 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading settings...</div>
+        <div className="text-[var(--text-secondary)]">Loading settings...</div>
       </div>
     );
   }
@@ -396,7 +396,7 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-gray-500">Manage your account and application preferences</p>
+        <p className="text-[var(--text-secondary)]">Manage your account and application preferences</p>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
@@ -411,8 +411,8 @@ export default function SettingsPage() {
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                       activeTab === tab.id
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        ? "bg-[var(--surface-subtle)] text-blue-700"
+                        : "text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)]"
                     }`}
                   >
                     <tab.icon className="h-5 w-5" />
@@ -439,7 +439,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <p className="font-medium">Email Notifications</p>
-                    <p className="text-sm text-gray-500">Receive updates via email</p>
+                    <p className="text-sm text-[var(--text-secondary)]">Receive updates via email</p>
                   </div>
                   <input
                     type="checkbox"
@@ -456,7 +456,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <p className="font-medium">Hearing Reminders</p>
-                    <p className="text-sm text-gray-500">Get reminders before hearings</p>
+                    <p className="text-sm text-[var(--text-secondary)]">Get reminders before hearings</p>
                   </div>
                   <input
                     type="checkbox"
@@ -473,7 +473,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <p className="font-medium">Payment Alerts</p>
-                    <p className="text-sm text-gray-500">Notifications for payments</p>
+                    <p className="text-sm text-[var(--text-secondary)]">Notifications for payments</p>
                   </div>
                   <input
                     type="checkbox"
@@ -490,7 +490,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <p className="font-medium">Case Updates</p>
-                    <p className="text-sm text-gray-500">Status changes and assignments</p>
+                    <p className="text-sm text-[var(--text-secondary)]">Status changes and assignments</p>
                   </div>
                   <input
                     type="checkbox"
@@ -582,7 +582,7 @@ export default function SettingsPage() {
                 {hasPermission(PERMISSIONS.TEAM.INVITE) && (
                   <>
                     {/* Generate Invite Code */}
-                    <div className="p-4 border rounded-lg bg-gray-50">
+                    <div className="p-4 border rounded-lg bg-[var(--background)]">
                       <h4 className="font-medium mb-3 flex items-center gap-2">
                         <KeyRound className="h-4 w-4" />
                         Generate Invite Code
@@ -599,8 +599,8 @@ export default function SettingsPage() {
                         </Button>
                       </div>
                       {generatedCode && (
-                        <div className="mt-3 p-3 bg-white border rounded-lg flex items-center justify-between">
-                          <code className="font-mono text-lg tracking-wider font-bold text-blue-600">
+                        <div className="mt-3 p-3 bg-[var(--surface)] border rounded-lg flex items-center justify-between">
+                          <code className="font-mono text-lg tracking-wider font-bold text-[var(--text-accent)]">
                             {generatedCode}
                           </code>
                           <Button
@@ -615,7 +615,7 @@ export default function SettingsPage() {
                           </Button>
                         </div>
                       )}
-                      <p className="text-xs text-gray-500 mt-2">
+                      <p className="text-xs text-[var(--text-secondary)] mt-2">
                         Share this code with the person you want to invite. They&apos;ll enter it during signup.
                       </p>
                     </div>
@@ -647,11 +647,11 @@ export default function SettingsPage() {
                 )}
 
                 {!hasPermission(PERMISSIONS.TEAM.INVITE) && (
-                  <p className="text-sm text-gray-500">You don&apos;t have permission to invite team members.</p>
+                  <p className="text-sm text-[var(--text-secondary)]">You don&apos;t have permission to invite team members.</p>
                 )}
 
                 {teamMembers.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">No team members yet.</p>
+                  <p className="text-[var(--text-secondary)] text-center py-4">No team members yet.</p>
                 ) : (
                   <div className="space-y-3">
                     {teamMembers.map((member) => (
@@ -661,7 +661,7 @@ export default function SettingsPage() {
                       >
                         <div>
                           <p className="font-medium">{member.full_name}</p>
-                          <p className="text-sm text-gray-500">{member.email}</p>
+                          <p className="text-sm text-[var(--text-secondary)]">{member.email}</p>
                         </div>
                         <div className="flex items-center gap-3">
                           <Badge variant={
@@ -698,44 +698,44 @@ export default function SettingsPage() {
               <CardContent className="space-y-6">
                 {/* Current Plan */}
                 {currentSubscription?.plan ? (
-                  <div className="p-4 border-2 border-blue-500 rounded-lg bg-blue-50">
+                  <div className="p-4 border-2 border-blue-500 rounded-lg bg-[var(--surface-subtle)]">
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-semibold text-lg">{currentSubscription.plan.name} Plan</h3>
-                        <p className="text-gray-600">{currentSubscription.plan.description}</p>
+                        <p className="text-[var(--text-secondary)]">{currentSubscription.plan.description}</p>
                       </div>
                       <Badge>{currentSubscription.status === "trialing" ? "Trial" : "Current Plan"}</Badge>
                     </div>
                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                       <div>
-                        <p className="text-gray-500">Cases</p>
+                        <p className="text-[var(--text-secondary)]">Cases</p>
                         <p className="font-medium">{currentSubscription.plan.max_cases === -1 ? "Unlimited" : currentSubscription.plan.max_cases}</p>
                       </div>
                       <div>
-                        <p className="text-gray-500">Team Members</p>
+                        <p className="text-[var(--text-secondary)]">Team Members</p>
                         <p className="font-medium">{currentSubscription.plan.max_users === -1 ? "Unlimited" : currentSubscription.plan.max_users} included</p>
                       </div>
                       <div>
-                        <p className="text-gray-500">Storage</p>
+                        <p className="text-[var(--text-secondary)]">Storage</p>
                         <p className="font-medium">{currentSubscription.plan.max_storage_mb === -1 ? "Unlimited" : `${Math.round(currentSubscription.plan.max_storage_mb / 1024)} GB`}</p>
                       </div>
                     </div>
-                    <div className="mt-4 text-sm text-gray-600">
+                    <div className="mt-4 text-sm text-[var(--text-secondary)]">
                       {currentSubscription.expires_at && <p>Next billing date: <strong>{new Date(currentSubscription.expires_at).toLocaleDateString("en-IN", { month: "long", day: "numeric", year: "numeric" })}</strong></p>}
                       {currentSubscription.payment_method && <p>Payment method: <strong>{currentSubscription.payment_method}</strong></p>}
                       <p>Amount: <strong>₹{currentSubscription.plan.price.toLocaleString("en-IN")}/month</strong></p>
                     </div>
                   </div>
                 ) : (
-                  <div className="p-4 border-2 border-gray-200 rounded-lg bg-gray-50">
+                  <div className="p-4 border-2 border-[var(--border)] rounded-lg bg-[var(--background)]">
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-semibold text-lg">Free Plan</h3>
-                        <p className="text-gray-600">Basic access with limited features</p>
+                        <p className="text-[var(--text-secondary)]">Basic access with limited features</p>
                       </div>
                       <Badge variant="secondary">Free</Badge>
                     </div>
-                    <div className="mt-4 text-sm text-gray-600">
+                    <div className="mt-4 text-sm text-[var(--text-secondary)]">
                       <p>Upgrade to unlock more features and remove limits.</p>
                     </div>
                   </div>
@@ -749,15 +749,15 @@ export default function SettingsPage() {
                       const isCurrent = currentSubscription?.plan_id === plan.id;
                       const isFree = plan.price === 0;
                       return (
-                        <div key={plan.id} className={`p-4 border rounded-lg ${isCurrent ? "border-blue-500 bg-blue-50" : ""}`}>
+                        <div key={plan.id} className={`p-4 border rounded-lg ${isCurrent ? "border-blue-500 bg-[var(--surface-subtle)]" : ""}`}>
                           <div className="flex items-center justify-between">
                             <h4 className="font-medium">{plan.name}</h4>
                             {isCurrent && <Badge>Current</Badge>}
                           </div>
                           <p className="text-2xl font-bold mt-2">
-                            ₹{plan.price.toLocaleString("en-IN")}<span className="text-sm text-gray-500">/{plan.billing_period === "yearly" ? "year" : "month"}</span>
+                            ₹{plan.price.toLocaleString("en-IN")}<span className="text-sm text-[var(--text-secondary)]">/{plan.billing_period === "yearly" ? "year" : "month"}</span>
                           </p>
-                          <ul className="mt-3 space-y-1 text-sm text-gray-600">
+                          <ul className="mt-3 space-y-1 text-sm text-[var(--text-secondary)]">
                             <li>• {plan.max_cases === -1 ? "Unlimited" : plan.max_cases} active cases</li>
                             <li>• {plan.max_users === -1 ? "Unlimited" : plan.max_users} user{(plan.max_users === -1 || plan.max_users > 1) ? "s" : ""}</li>
                             <li>• {plan.max_storage_mb === -1 ? "Unlimited" : `${Math.round(plan.max_storage_mb / 1024)} GB`} storage</li>
@@ -821,7 +821,7 @@ export default function SettingsPage() {
                           <>
                             <div className="flex justify-between text-sm mb-1">
                               <span>Cases</span>
-                              <span className="text-gray-500">{usage.cases} / {displayLimit}</span>
+                              <span className="text-[var(--text-secondary)]">{usage.cases} / {displayLimit}</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
                               <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${pct}%` }} />
@@ -839,7 +839,7 @@ export default function SettingsPage() {
                           <>
                             <div className="flex justify-between text-sm mb-1">
                               <span>Storage</span>
-                              <span className="text-gray-500">{usage.storage} MB / {displayLimit}</span>
+                              <span className="text-[var(--text-secondary)]">{usage.storage} MB / {displayLimit}</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
                               <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${pct}%` }} />
@@ -857,7 +857,7 @@ export default function SettingsPage() {
                           <>
                             <div className="flex justify-between text-sm mb-1">
                               <span>Team Members</span>
-                              <span className="text-gray-500">{usage.teamMembers} / {displayLimit}</span>
+                              <span className="text-[var(--text-secondary)]">{usage.teamMembers} / {displayLimit}</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
                               <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${pct}%` }} />

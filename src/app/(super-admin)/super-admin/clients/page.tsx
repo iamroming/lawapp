@@ -37,15 +37,15 @@ export default function SuperAdminClientsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2"><Users className="h-6 w-6 text-blue-500" />All Clients</h1>
-        <p className="text-gray-500">Every client across the platform ({clients.length} total)</p>
+        <p className="text-[var(--text-secondary)]">Every client across the platform ({clients.length} total)</p>
       </div>
 
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
         <Input placeholder="Search clients..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
       </div>
 
-      {loading ? <div className="text-center py-12 text-gray-500">Loading...</div> : (
+      {loading ? <div className="text-center py-12 text-[var(--text-secondary)]">Loading...</div> : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c) => (
             <Link key={c.id} href={`/clients/${c.id}`}>
@@ -55,12 +55,12 @@ export default function SuperAdminClientsPage() {
                     <Avatar name={c.full_name} size="lg" />
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold truncate">{c.full_name}</h3>
-                      {c.company_name && <p className="text-sm text-gray-500 truncate">{c.company_name}</p>}
+                      {c.company_name && <p className="text-sm text-[var(--text-secondary)] truncate">{c.company_name}</p>}
                       <div className="mt-2 space-y-1">
-                        {c.phone && <div className="flex items-center gap-1 text-xs text-gray-500"><Phone className="h-3 w-3" />{c.phone}</div>}
-                        {c.email && <div className="flex items-center gap-1 text-xs text-gray-500"><Mail className="h-3 w-3" />{c.email}</div>}
+                        {c.phone && <div className="flex items-center gap-1 text-xs text-[var(--text-secondary)]"><Phone className="h-3 w-3" />{c.phone}</div>}
+                        {c.email && <div className="flex items-center gap-1 text-xs text-[var(--text-secondary)]"><Mail className="h-3 w-3" />{c.email}</div>}
                       </div>
-                      {c.creator && <p className="text-xs text-gray-400 mt-2">Added by: {c.creator.full_name}</p>}
+                      {c.creator && <p className="text-xs text-[var(--text-tertiary)] mt-2">Added by: {c.creator.full_name}</p>}
                     </div>
                   </div>
                 </CardContent>

@@ -84,11 +84,11 @@ export default function LoginPage() {
 
   if (showForgot) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-              <Scale className="h-6 w-6 text-blue-600" />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface-accent)]">
+              <Scale className="h-6 w-6 text-[var(--text-accent)]" />
             </div>
             <CardTitle className="text-2xl">Reset Password</CardTitle>
             <CardDescription>Enter your email to receive a reset link</CardDescription>
@@ -98,7 +98,7 @@ export default function LoginPage() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Email</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
                   <Input
                     type="email"
                     placeholder="you@example.com"
@@ -113,9 +113,9 @@ export default function LoginPage() {
                 {resetLoading ? "Sending..." : "Send Reset Link"}
               </Button>
             </form>
-            <p className="text-center text-sm text-gray-500">
+            <p className="text-center text-sm text-[var(--text-secondary)]">
               Remember your password?{" "}
-              <button onClick={() => setShowForgot(false)} className="text-blue-600 hover:underline font-medium">
+              <button onClick={() => setShowForgot(false)} className="text-[var(--text-accent)] hover:underline font-medium">
                 Sign in
               </button>
             </p>
@@ -126,11 +126,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-            <Scale className="h-6 w-6 text-blue-600" />
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface-accent)]">
+            <Scale className="h-6 w-6 text-[var(--text-accent)]" />
           </div>
           <CardTitle className="text-2xl">Welcome to LawXP</CardTitle>
           <CardDescription>Sign in to manage your practice</CardDescription>
@@ -140,7 +140,7 @@ export default function LoginPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Email</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
                 <Input
                   type="email"
                   placeholder="you@example.com"
@@ -157,13 +157,13 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => { setShowForgot(true); setResetEmail(email); }}
-                  className="text-xs text-blue-600 hover:underline"
+                  className="text-xs text-[var(--text-accent)] hover:underline"
                 >
                   Forgot password?
                 </button>
               </div>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
                 <Input
                   type="password"
                   placeholder="Enter your password"
@@ -184,7 +184,7 @@ export default function LoginPage() {
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-gray-500">or</span>
+              <span className="bg-[var(--surface)] px-2 text-[var(--text-secondary)]">or</span>
             </div>
           </div>
 
@@ -203,9 +203,9 @@ export default function LoginPage() {
             {googleLoading ? "Signing in..." : "Continue with Google"}
           </Button>
 
-          <p className="text-center text-sm text-gray-500">
+          <p className="text-center text-sm text-[var(--text-secondary)]">
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="text-blue-600 hover:underline font-medium">
+            <Link href="/signup" className="text-[var(--text-accent)] hover:underline font-medium">
               Sign up
             </Link>
           </p>

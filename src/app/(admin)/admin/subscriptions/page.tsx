@@ -139,7 +139,7 @@ export default function AdminSubscriptionsPage() {
   const totalRevenue = subscriptions.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
 
   if (loading) {
-    return <div className="text-center py-12 text-gray-500">Loading subscriptions...</div>;
+    return <div className="text-center py-12 text-[var(--text-secondary)]">Loading subscriptions...</div>;
   }
 
   return (
@@ -147,7 +147,7 @@ export default function AdminSubscriptionsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Subscriptions</h1>
-          <p className="text-gray-500">Manage plans and user subscriptions</p>
+          <p className="text-[var(--text-secondary)]">Manage plans and user subscriptions</p>
         </div>
         <Button onClick={() => setShowPlanModal(true)}>
           <Plus className="h-4 w-4 mr-2" />
@@ -168,8 +168,8 @@ export default function AdminSubscriptionsPage() {
           onClick={() => setActiveTab("plans")}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === "plans"
-              ? "border-blue-600 text-blue-600"
-              : "border-transparent text-gray-500 hover:text-gray-700"
+              ? "border-[var(--text-accent)] text-[var(--text-accent)]"
+              : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
           }`}
         >
           Plans ({plans.length})
@@ -178,8 +178,8 @@ export default function AdminSubscriptionsPage() {
           onClick={() => setActiveTab("subscriptions")}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === "subscriptions"
-              ? "border-blue-600 text-blue-600"
-              : "border-transparent text-gray-500 hover:text-gray-700"
+              ? "border-[var(--text-accent)] text-[var(--text-accent)]"
+              : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
           }`}
         >
           User Subscriptions ({subscriptions.length})
@@ -200,11 +200,11 @@ export default function AdminSubscriptionsPage() {
                 </div>
                 <div className="mt-2">
                   <span className="text-3xl font-bold">{formatCurrency(plan.price)}</span>
-                  <span className="text-gray-500">/{plan.billing_period}</span>
+                  <span className="text-[var(--text-secondary)]">/{plan.billing_period}</span>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                <p className="text-sm text-gray-500">{plan.description}</p>
+                <p className="text-sm text-[var(--text-secondary)]">{plan.description}</p>
                 <div className="text-sm space-y-1">
                   <p>
                     <span className="font-medium">Cases:</span>{" "}
@@ -224,7 +224,7 @@ export default function AdminSubscriptionsPage() {
                     <p className="font-medium mb-1">Features:</p>
                     <ul className="space-y-1">
                       {(Array.isArray(plan.features) ? plan.features : []).map((f, i) => (
-                        <li key={i} className="flex items-center gap-1 text-gray-600">
+                        <li key={i} className="flex items-center gap-1 text-[var(--text-secondary)]">
                           <CheckCircle className="h-3 w-3 text-green-500" />
                           {typeof f === "string" ? f : JSON.stringify(f)}
                         </li>
@@ -251,7 +251,7 @@ export default function AdminSubscriptionsPage() {
         <Card>
           <CardContent className="p-0">
             {subscriptions.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No subscriptions yet.</p>
+              <p className="text-[var(--text-secondary)] text-center py-8">No subscriptions yet.</p>
             ) : (
               <div className="divide-y">
                 {subscriptions.map((sub) => (
@@ -260,7 +260,7 @@ export default function AdminSubscriptionsPage() {
                       <p className="font-medium truncate">
                         {sub.user?.full_name || sub.user?.email || "Unknown User"}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-[var(--text-secondary)]">
                         {sub.plan?.name || "No plan"} - Started {formatDate(sub.starts_at)}
                       </p>
                     </div>
@@ -279,7 +279,7 @@ export default function AdminSubscriptionsPage() {
                       <select
                         value={sub.status}
                         onChange={(e) => updateSubStatus(sub.id, e.target.value)}
-                        className="h-8 rounded border border-gray-300 text-xs px-2"
+                        className="h-8 rounded border border-[var(--border)] text-xs px-2"
                       >
                         <option value="active">Active</option>
                         <option value="trialing">Trialing</option>
@@ -339,7 +339,7 @@ export default function AdminSubscriptionsPage() {
               <select
                 value={newPlan.billing_period}
                 onChange={(e) => setNewPlan((p) => ({ ...p, billing_period: e.target.value }))}
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                className="flex h-10 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm"
               >
                 <option value="monthly">Monthly</option>
                 <option value="yearly">Yearly</option>

@@ -100,7 +100,7 @@ export default function RoleSalarySettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--text-accent)]" />
       </div>
     );
   }
@@ -118,7 +118,7 @@ export default function RoleSalarySettingsPage() {
             <Settings className="h-6 w-6" />
             Role Salary Settings
           </h1>
-          <p className="text-gray-500">Set default salary & payment type for each role. When adding an employee, their salary is auto-allotted based on role.</p>
+          <p className="text-[var(--text-secondary)]">Set default salary & payment type for each role. When adding an employee, their salary is auto-allotted based on role.</p>
         </div>
         <Button onClick={handleSave} disabled={saving}>
           {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
@@ -139,7 +139,7 @@ export default function RoleSalarySettingsPage() {
 
                   <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <div>
-                      <label className="block text-xs font-medium mb-1 text-gray-500">Payment Type</label>
+                      <label className="block text-xs font-medium mb-1 text-[var(--text-secondary)]">Payment Type</label>
                       <select
                         value={setting.payment_type}
                         onChange={(e) => updateSetting(setting.role, "payment_type", e.target.value)}
@@ -153,7 +153,7 @@ export default function RoleSalarySettingsPage() {
 
                     {setting.payment_type === "fixed_salary" ? (
                       <div>
-                        <label className="block text-xs font-medium mb-1 text-gray-500">Monthly Salary (Rs.)</label>
+                        <label className="block text-xs font-medium mb-1 text-[var(--text-secondary)]">Monthly Salary (Rs.)</label>
                         <Input
                           type="number"
                           value={setting.monthly_salary || ""}
@@ -164,7 +164,7 @@ export default function RoleSalarySettingsPage() {
                       </div>
                     ) : (
                       <div>
-                        <label className="block text-xs font-medium mb-1 text-gray-500">Percentage Rate (%)</label>
+                        <label className="block text-xs font-medium mb-1 text-[var(--text-secondary)]">Percentage Rate (%)</label>
                         <Input
                           type="number"
                           value={setting.percentage_rate || ""}
@@ -176,7 +176,7 @@ export default function RoleSalarySettingsPage() {
                     )}
 
                     <div>
-                      <label className="block text-xs font-medium mb-1 text-gray-500">TDS Rate (%)</label>
+                      <label className="block text-xs font-medium mb-1 text-[var(--text-secondary)]">TDS Rate (%)</label>
                       <Input
                         type="number"
                         value={setting.tds_rate || ""}

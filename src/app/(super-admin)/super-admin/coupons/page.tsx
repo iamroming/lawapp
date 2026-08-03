@@ -139,7 +139,7 @@ export default function CouponsPage() {
             <Ticket className="h-6 w-6 text-purple-500" />
             Coupon Management
           </h1>
-          <p className="text-gray-500">{coupons.length} total coupons, {activeCoupons} active, {totalUses} total uses</p>
+          <p className="text-[var(--text-secondary)]">{coupons.length} total coupons, {activeCoupons} active, {totalUses} total uses</p>
         </div>
         <Button onClick={() => setShowCreate(true)} className="flex items-center gap-2">
           <Plus className="h-4 w-4" /> Generate Coupon
@@ -150,29 +150,29 @@ export default function CouponsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card><CardContent className="p-4 text-center">
           <p className="text-2xl font-bold text-purple-600">{coupons.length}</p>
-          <p className="text-sm text-gray-500">Total Coupons</p>
+          <p className="text-sm text-[var(--text-secondary)]">Total Coupons</p>
         </CardContent></Card>
         <Card><CardContent className="p-4 text-center">
           <p className="text-2xl font-bold text-green-600">{activeCoupons}</p>
-          <p className="text-sm text-gray-500">Active</p>
+          <p className="text-sm text-[var(--text-secondary)]">Active</p>
         </CardContent></Card>
         <Card><CardContent className="p-4 text-center">
           <p className="text-2xl font-bold text-blue-600">{totalUses}</p>
-          <p className="text-sm text-gray-500">Total Uses</p>
+          <p className="text-sm text-[var(--text-secondary)]">Total Uses</p>
         </CardContent></Card>
         <Card><CardContent className="p-4 text-center">
           <p className="text-2xl font-bold text-orange-600">{coupons.filter((c) => c.discount_type === "free").length}</p>
-          <p className="text-sm text-gray-500">Friend Bypass</p>
+          <p className="text-sm text-[var(--text-secondary)]">Friend Bypass</p>
         </CardContent></Card>
       </div>
 
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
         <Input placeholder="Search coupons..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-gray-500">Loading coupons...</div>
+        <div className="text-center py-12 text-[var(--text-secondary)]">Loading coupons...</div>
       ) : filteredCoupons.length === 0 ? (
         <EmptyState icon={<Ticket className="h-12 w-12" />} title="No coupons found" description="Create your first coupon to get started" />
       ) : (
@@ -188,12 +188,12 @@ export default function CouponsPage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="font-mono font-bold text-lg">{coupon.code}</h3>
-                        <button onClick={() => copyCode(coupon.code)} className="text-gray-400 hover:text-gray-600"><Copy className="h-3 w-3" /></button>
+                        <button onClick={() => copyCode(coupon.code)} className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"><Copy className="h-3 w-3" /></button>
                         {!coupon.is_active && <Badge variant="outline" className="text-red-500 border-red-300">Inactive</Badge>}
                         {coupon.discount_type === "free" && <Badge className="bg-green-100 text-green-700"><Gift className="h-3 w-3 mr-1" />Friend Bypass</Badge>}
                       </div>
-                      <p className="text-sm text-gray-500">{coupon.description || "No description"}</p>
-                      <div className="flex items-center gap-3 text-xs text-gray-400 mt-1">
+                      <p className="text-sm text-[var(--text-secondary)]">{coupon.description || "No description"}</p>
+                      <div className="flex items-center gap-3 text-xs text-[var(--text-tertiary)] mt-1">
                         <span>{coupon.plan?.name || "All plans"}</span>
                         <span>{coupon.current_uses}{coupon.max_uses === -1 ? "" : `/${coupon.max_uses}`} uses</span>
                         <span>{formatDate(coupon.created_at)}</span>
@@ -232,7 +232,7 @@ export default function CouponsPage() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Discount Type</label>
-              <select value={newCoupon.discount_type} onChange={(e) => setNewCoupon((p) => ({ ...p, discount_type: e.target.value }))} className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm">
+              <select value={newCoupon.discount_type} onChange={(e) => setNewCoupon((p) => ({ ...p, discount_type: e.target.value }))} className="w-full h-10 rounded-md border border-[var(--border)] px-3 text-sm">
                 <option value="percent">Percentage Off</option>
                 <option value="fixed">Fixed Amount Off</option>
                 <option value="free">Free Access (Friend Bypass)</option>
@@ -245,7 +245,7 @@ export default function CouponsPage() {
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Applies to Plan</label>
-            <select value={newCoupon.plan_id} onChange={(e) => setNewCoupon((p) => ({ ...p, plan_id: e.target.value }))} className="w-full h-10 rounded-md border border-gray-300 px-3 text-sm">
+            <select value={newCoupon.plan_id} onChange={(e) => setNewCoupon((p) => ({ ...p, plan_id: e.target.value }))} className="w-full h-10 rounded-md border border-[var(--border)] px-3 text-sm">
               <option value="">All Plans</option>
               <option value="free">Free Plan</option>
               <option value="starter">Starter Plan</option>
@@ -277,18 +277,18 @@ export default function CouponsPage() {
       {/* Coupon Usage Modal */}
       <Modal open={showUses} onClose={() => setShowUses(false)} title={`Usage: ${selectedCoupon?.code || ""}`}>
         {couponUses.length === 0 ? (
-          <p className="text-center text-gray-500 py-8">No uses yet</p>
+          <p className="text-center text-[var(--text-secondary)] py-8">No uses yet</p>
         ) : (
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {couponUses.map((use) => (
               <div key={use.id} className="flex items-center justify-between p-3 border rounded-lg">
                 <div>
                   <p className="font-medium">{use.user?.full_name || "Unknown"}</p>
-                  <p className="text-sm text-gray-500">{use.user?.email}</p>
+                  <p className="text-sm text-[var(--text-secondary)]">{use.user?.email}</p>
                 </div>
                 <div className="text-right text-sm">
                   <p>{use.plan?.name || "N/A"}</p>
-                  <p className="text-gray-500">{formatDate(use.used_at)}</p>
+                  <p className="text-[var(--text-secondary)]">{formatDate(use.used_at)}</p>
                   <p className="text-green-600">₹{use.amount_after.toLocaleString("en-IN")}</p>
                 </div>
               </div>

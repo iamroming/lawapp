@@ -205,7 +205,7 @@ export default function ReportsPage() {
       description: "Overview of cases by status, type, and court",
       icon: <Briefcase className="h-6 w-6" />,
       href: "/reports/cases",
-      color: "bg-blue-50 text-blue-600",
+      color: "bg-[var(--surface-subtle)] text-[var(--text-accent)]",
     },
     {
       title: "Revenue Report",
@@ -240,7 +240,7 @@ export default function ReportsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading reports...</div>
+        <div className="text-[var(--text-secondary)]">Loading reports...</div>
       </div>
     );
   }
@@ -250,7 +250,7 @@ export default function ReportsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Reports & Analytics</h1>
-          <p className="text-gray-500">Comprehensive insights into your practice</p>
+          <p className="text-[var(--text-secondary)]">Comprehensive insights into your practice</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Select
@@ -304,7 +304,7 @@ export default function ReportsPage() {
                   <div className={`p-3 rounded-lg ${card.color}`}>{card.icon}</div>
                   <div>
                     <h3 className="font-semibold text-lg">{card.title}</h3>
-                    <p className="text-sm text-gray-500 mt-1">{card.description}</p>
+                    <p className="text-sm text-[var(--text-secondary)] mt-1">{card.description}</p>
                   </div>
                 </div>
               </CardContent>
@@ -322,7 +322,7 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             {Object.keys(stats.casesByStatus).length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No data available</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">No data available</p>
             ) : (
               <div className="space-y-3">
                 {Object.entries(stats.casesByStatus)
@@ -333,11 +333,11 @@ export default function ReportsPage() {
                       <div key={status} className="space-y-1">
                         <div className="flex items-center justify-between text-sm">
                           <span className="capitalize">{status.replace("-", " ")}</span>
-                          <span className="text-gray-500">{count}</span>
+                          <span className="text-[var(--text-secondary)]">{count}</span>
                         </div>
-                        <div className="w-full bg-gray-100 rounded-full h-2">
+                        <div className="w-full bg-[var(--border)] rounded-full h-2">
                           <div
-                            className="bg-blue-600 h-2 rounded-full transition-all"
+                            className="bg-[var(--text-accent)] h-2 rounded-full transition-all"
                             style={{ width: `${percentage}%` }}
                           />
                         </div>
@@ -356,7 +356,7 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             {stats.monthlyRevenue.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No data available</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">No data available</p>
             ) : (
               <div className="space-y-3">
                 {stats.monthlyRevenue.map((item) => {
@@ -365,9 +365,9 @@ export default function ReportsPage() {
                     <div key={item.month} className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
                         <span>{item.month}</span>
-                        <span className="text-gray-500">{formatCurrency(item.amount)}</span>
+                        <span className="text-[var(--text-secondary)]">{formatCurrency(item.amount)}</span>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-2">
+                      <div className="w-full bg-[var(--border)] rounded-full h-2">
                         <div
                           className="bg-green-600 h-2 rounded-full transition-all"
                           style={{ width: `${percentage}%` }}

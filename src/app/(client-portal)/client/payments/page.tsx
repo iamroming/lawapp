@@ -60,7 +60,7 @@ export default function ClientPaymentsPage() {
       case "pending":
         return <Clock className="h-4 w-4 text-yellow-600" />
       default:
-        return <Receipt className="h-4 w-4 text-gray-600" />
+        return <Receipt className="h-4 w-4 text-[var(--text-secondary)]" />
     }
   }
 
@@ -75,8 +75,8 @@ export default function ClientPaymentsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
-        <p className="text-gray-500">View invoices and payment history.</p>
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">Payments</h1>
+        <p className="text-[var(--text-secondary)]">View invoices and payment history.</p>
       </div>
 
       {/* Summary */}
@@ -87,8 +87,8 @@ export default function ClientPaymentsPage() {
               <CheckCircle className="h-5 w-5 text-green-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total Paid</p>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalPaid)}</p>
+              <p className="text-sm text-[var(--text-secondary)]">Total Paid</p>
+              <p className="text-2xl font-bold text-[var(--text-primary)]">{formatCurrency(totalPaid)}</p>
             </div>
           </div>
         </Card>
@@ -98,8 +98,8 @@ export default function ClientPaymentsPage() {
               <Clock className="h-5 w-5 text-amber-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Pending Amount</p>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalPending)}</p>
+              <p className="text-sm text-[var(--text-secondary)]">Pending Amount</p>
+              <p className="text-2xl font-bold text-[var(--text-primary)]">{formatCurrency(totalPending)}</p>
             </div>
           </div>
         </Card>
@@ -107,11 +107,11 @@ export default function ClientPaymentsPage() {
 
       {/* Invoices */}
       <Card className="p-5">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">Invoices</h2>
+        <h2 className="mb-4 text-lg font-semibold text-[var(--text-primary)]">Invoices</h2>
         {invoices.length === 0 ? (
           <div className="flex flex-col items-center py-12">
-            <Receipt className="mb-3 h-12 w-12 text-gray-300" />
-            <p className="text-gray-500">No invoices yet.</p>
+            <Receipt className="mb-3 h-12 w-12 text-[var(--text-tertiary)]" />
+            <p className="text-[var(--text-secondary)]">No invoices yet.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -120,10 +120,10 @@ export default function ClientPaymentsPage() {
                 <div className="flex items-center gap-3">
                   {statusIcon(inv.status)}
                   <div>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-[var(--text-primary)]">
                       {inv.description || "Invoice"}
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-[var(--text-secondary)]">
                       {inv.case_title || "General"}
                       {inv.due_date ? ` · Due ${formatDate(inv.due_date)}` : ""}
                     </p>
@@ -131,7 +131,7 @@ export default function ClientPaymentsPage() {
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="font-semibold text-gray-900">{formatCurrency(inv.amount)}</p>
+                    <p className="font-semibold text-[var(--text-primary)]">{formatCurrency(inv.amount)}</p>
                     <Badge
                       className={
                         inv.status === "paid"

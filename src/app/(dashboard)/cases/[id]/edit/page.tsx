@@ -155,7 +155,7 @@ export default function EditCasePage() {
   };
 
   if (fetching) {
-    return <div className="text-center py-12 text-gray-500">Loading case...</div>;
+    return <div className="text-center py-12 text-[var(--text-secondary)]">Loading case...</div>;
   }
 
   return (
@@ -168,7 +168,7 @@ export default function EditCasePage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold">Edit Case</h1>
-          <p className="text-gray-500">Update case details</p>
+          <p className="text-[var(--text-secondary)]">Update case details</p>
         </div>
       </div>
 
@@ -296,7 +296,7 @@ export default function EditCasePage() {
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-4">
               <p className="text-sm font-medium text-amber-800">Acts, Sections & Clauses (for Case Law Research)</p>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-600">Applicable Acts</label>
+                <label className="text-xs font-medium text-[var(--text-secondary)]">Applicable Acts</label>
                 <div className="flex flex-wrap gap-2">
                   {availableActs.map((act) => (
                     <button
@@ -311,7 +311,7 @@ export default function EditCasePage() {
                       className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
                         selectedActs.includes(act)
                           ? "bg-amber-600 text-white border-amber-600"
-                          : "bg-white text-gray-600 border-gray-300 hover:border-amber-400"
+                          : "bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border)] hover:border-amber-400"
                       }`}
                     >
                       {act}
@@ -322,7 +322,7 @@ export default function EditCasePage() {
 
               {selectedActs.length > 0 && (
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-gray-600">Sections</label>
+                  <label className="text-xs font-medium text-[var(--text-secondary)]">Sections</label>
                   <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
                     {selectedActs.flatMap((act) =>
                       getSectionsForAct(act).map((s) => (
@@ -339,7 +339,7 @@ export default function EditCasePage() {
                           className={`px-2 py-0.5 rounded text-xs border transition-colors ${
                             selectedSections.includes(s.section)
                               ? "bg-blue-600 text-white border-blue-600"
-                              : "bg-white text-gray-600 border-gray-300 hover:border-blue-400"
+                              : "bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border)] hover:border-blue-400"
                           }`}
                           title={s.title}
                         >
@@ -352,7 +352,7 @@ export default function EditCasePage() {
               )}
 
               <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-600">Custom Clauses / Provisions</label>
+                <label className="text-xs font-medium text-[var(--text-secondary)]">Custom Clauses / Provisions</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -389,13 +389,13 @@ export default function EditCasePage() {
                     {clauses.map((clause, i) => (
                       <span
                         key={i}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-white border border-gray-300 rounded text-xs"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-[var(--surface)] border border-[var(--border)] rounded text-xs"
                       >
                         {clause}
                         <button
                           type="button"
                           onClick={() => setClauses((prev) => prev.filter((_, idx) => idx !== i))}
-                          className="text-gray-400 hover:text-red-500"
+                          className="text-[var(--text-tertiary)] hover:text-red-500"
                         >
                           <X className="h-3 w-3" />
                         </button>

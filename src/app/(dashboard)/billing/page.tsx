@@ -71,7 +71,7 @@ export default function BillingPage() {
   const totalOverdue = invoices.filter((i) => i.status === "overdue").reduce((sum, i) => sum + i.amount, 0);
 
   if (loading) {
-    return <div className="text-center py-12 text-gray-500">Loading billing...</div>;
+    return <div className="text-center py-12 text-[var(--text-secondary)]">Loading billing...</div>;
   }
 
   return (
@@ -82,26 +82,26 @@ export default function BillingPage() {
         </Link>
         <div className="flex-1">
           <h1 className="text-2xl font-bold">Billing & Invoices</h1>
-          <p className="text-gray-500">Manage your invoices and payments</p>
+          <p className="text-[var(--text-secondary)]">Manage your invoices and payments</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-6">
-            <p className="text-sm text-gray-500">Total Revenue</p>
+            <p className="text-sm text-[var(--text-secondary)]">Total Revenue</p>
             <p className="text-2xl font-bold text-green-600">{formatCurrency(totalRevenue)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-sm text-gray-500">Pending</p>
+            <p className="text-sm text-[var(--text-secondary)]">Pending</p>
             <p className="text-2xl font-bold text-yellow-600">{formatCurrency(totalPending)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-sm text-gray-500">Overdue</p>
+            <p className="text-sm text-[var(--text-secondary)]">Overdue</p>
             <p className="text-2xl font-bold text-red-600">{formatCurrency(totalOverdue)}</p>
           </CardContent>
         </Card>
@@ -116,11 +116,11 @@ export default function BillingPage() {
         </CardHeader>
         <CardContent>
           {invoices.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No invoices yet.</p>
+            <p className="text-[var(--text-secondary)] text-center py-8">No invoices yet.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className="bg-[var(--background)]">
                   <tr>
                     <th className="px-4 py-2 text-left">Invoice #</th>
                     <th className="px-4 py-2 text-left">Client</th>
@@ -133,7 +133,7 @@ export default function BillingPage() {
                 </thead>
                 <tbody>
                   {invoices.map((inv) => (
-                    <tr key={inv.id} className="border-t hover:bg-gray-50">
+                    <tr key={inv.id} className="border-t hover:bg-[var(--surface-subtle)]">
                       <td className="px-4 py-3 font-medium">{inv.invoice_number}</td>
                       <td className="px-4 py-3">{inv.client?.full_name || "—"}</td>
                       <td className="px-4 py-3">{inv.case?.case_number || "—"}</td>

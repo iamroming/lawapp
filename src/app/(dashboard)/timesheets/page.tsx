@@ -135,16 +135,16 @@ export default function TimesheetsPage() {
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-500">Total Hours</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{totalHours.toFixed(1)}h</p></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-500">Billable Hours</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold text-green-600">{billableHours.toFixed(1)}h</p></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-500">Entries</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{timesheets.length}</p></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-[var(--text-secondary)]">Total Hours</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{totalHours.toFixed(1)}h</p></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-[var(--text-secondary)]">Billable Hours</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold text-green-600">{billableHours.toFixed(1)}h</p></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-[var(--text-secondary)]">Entries</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{timesheets.length}</p></CardContent></Card>
       </div>
 
       {/* Timesheet List */}
       <Card>
         <CardContent className="p-0">
-          {loading ? <div className="p-8 text-center text-gray-500">Loading...</div> : timesheets.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
+          {loading ? <div className="p-8 text-center text-[var(--text-secondary)]">Loading...</div> : timesheets.length === 0 ? (
+            <div className="p-8 text-center text-[var(--text-secondary)]">
               <Timer className="h-12 w-12 mx-auto mb-2 text-gray-300" />
               <p>No time entries yet</p>
               <Link href="/timesheets/new"><Button className="mt-2" size="sm"><Plus className="h-4 w-4 mr-2" /> Log First Entry</Button></Link>
@@ -152,10 +152,10 @@ export default function TimesheetsPage() {
           ) : (
             <div className="divide-y">
               {timesheets.map((t) => (
-                <div key={t.id} className="flex items-center justify-between p-4 hover:bg-gray-50">
+                <div key={t.id} className="flex items-center justify-between p-4 hover:bg-[var(--surface-subtle)]">
                   <div className="flex-1">
                     <p className="font-medium">{t.description || "Time entry"}</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-[var(--text-secondary)]">
                       {t.cases?.case_number && <span className="mr-3">Case: {t.cases.case_number}</span>}
                       <span>{t.worked_date}</span>
                     </p>

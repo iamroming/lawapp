@@ -10,7 +10,7 @@ interface DonutChartProps {
 
 export function DonutChart({ data, size = 200, centerLabel, centerValue }: DonutChartProps) {
   const total = data.reduce((sum, d) => sum + d.value, 0);
-  if (total === 0) return <div className="text-gray-400 text-sm text-center py-8">No data</div>;
+  if (total === 0) return <div className="text-[var(--text-tertiary)] text-sm text-center py-8">No data</div>;
 
   const colors = ["#2563eb", "#dc2626", "#059669", "#d97706", "#7c3aed", "#ec4899", "#06b6d4", "#8b5cf6"];
   const radius = size / 2 - 10;
@@ -47,7 +47,7 @@ export function DonutChart({ data, size = 200, centerLabel, centerValue }: Donut
         {(centerLabel || centerValue) && (
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             {centerValue && <span className="text-2xl font-bold">{centerValue}</span>}
-            {centerLabel && <span className="text-xs text-gray-500">{centerLabel}</span>}
+            {centerLabel && <span className="text-xs text-[var(--text-secondary)]">{centerLabel}</span>}
           </div>
         )}
       </div>
@@ -55,9 +55,9 @@ export function DonutChart({ data, size = 200, centerLabel, centerValue }: Donut
         {segments.map((s, i) => (
           <div key={i} className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: s.color }} />
-            <span className="text-sm text-gray-600">{s.label}</span>
+            <span className="text-sm text-[var(--text-secondary)]">{s.label}</span>
             <span className="text-sm font-medium">{s.value.toLocaleString()}</span>
-            <span className="text-xs text-gray-400">({Math.round(s.percent * 100)}%)</span>
+            <span className="text-xs text-[var(--text-tertiary)]">({Math.round(s.percent * 100)}%)</span>
           </div>
         ))}
       </div>

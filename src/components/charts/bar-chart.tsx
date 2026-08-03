@@ -20,12 +20,12 @@ export function BarChart({ data, orientation = "horizontal", maxValue, showValue
           const h = max > 0 ? (d.value / max) * (height - 30) : 0;
           return (
             <div key={i} className="flex-1 flex flex-col items-center gap-1">
-              {showValues && <span className="text-xs text-gray-600 font-medium">{d.value.toLocaleString()}</span>}
+              {showValues && <span className="text-xs text-[var(--text-secondary)] font-medium">{d.value.toLocaleString()}</span>}
               <div
                 className="w-full rounded-t-md transition-all"
                 style={{ height: `${h}px`, backgroundColor: d.color || colors[i % colors.length] }}
               />
-              <span className="text-xs text-gray-500 text-center leading-tight truncate w-full" title={d.label}>{d.label}</span>
+              <span className="text-xs text-[var(--text-secondary)] text-center leading-tight truncate w-full" title={d.label}>{d.label}</span>
             </div>
           );
         })}
@@ -37,7 +37,7 @@ export function BarChart({ data, orientation = "horizontal", maxValue, showValue
     <div className="space-y-2">
       {data.map((d, i) => (
         <div key={i} className="flex items-center gap-3">
-          <span className="text-sm text-gray-600 w-32 truncate text-right" title={d.label}>{d.label}</span>
+          <span className="text-sm text-[var(--text-secondary)] w-32 truncate text-right" title={d.label}>{d.label}</span>
           <div className="flex-1 bg-gray-100 rounded-full h-5 overflow-hidden">
             <div
               className="h-full rounded-full transition-all flex items-center justify-end pr-2"

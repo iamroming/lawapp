@@ -103,9 +103,9 @@ export default function AdminUsersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Users</h1>
-          <p className="text-gray-500">Manage all registered users on the platform</p>
+          <p className="text-[var(--text-secondary)]">Manage all registered users on the platform</p>
         </div>
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-[var(--text-secondary)]">
           {users.length} total users
         </div>
       </div>
@@ -113,7 +113,7 @@ export default function AdminUsersPage() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
           <Input
             placeholder="Search by name, email, phone, or firm..."
             value={search}
@@ -124,7 +124,7 @@ export default function AdminUsersPage() {
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
-          className="h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+          className="h-10 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm"
         >
           <option value="all">All Roles</option>
           <option value="owner">Owner</option>
@@ -140,7 +140,7 @@ export default function AdminUsersPage() {
 
       {/* Users List */}
       {loading ? (
-        <div className="text-center py-12 text-gray-500">Loading users...</div>
+        <div className="text-center py-12 text-[var(--text-secondary)]">Loading users...</div>
       ) : filteredUsers.length === 0 ? (
         <EmptyState
           icon={<Users className="h-12 w-12" />}
@@ -175,8 +175,8 @@ export default function AdminUsersPage() {
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500">{user.email}</p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
+                        <p className="text-sm text-[var(--text-secondary)]">{user.email}</p>
+                        <div className="flex items-center gap-4 text-xs text-[var(--text-secondary)] mt-1">
                           {user.phone && (
                             <span className="flex items-center gap-1">
                               <Phone className="h-3 w-3" /> {user.phone}

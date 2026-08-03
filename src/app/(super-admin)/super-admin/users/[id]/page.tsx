@@ -67,8 +67,8 @@ export default function SuperAdminUserDetailPage() {
     router.push("/super-admin/users");
   };
 
-  if (loading) return <div className="text-center py-12 text-gray-500">Loading...</div>;
-  if (!user) return <div className="text-center py-12 text-gray-500">User not found</div>;
+  if (loading) return <div className="text-center py-12 text-[var(--text-secondary)]">Loading...</div>;
+  if (!user) return <div className="text-center py-12 text-[var(--text-secondary)]">User not found</div>;
 
   return (
     <div className="space-y-6">
@@ -80,7 +80,7 @@ export default function SuperAdminUserDetailPage() {
             <Badge variant={user.role === "owner" ? "destructive" : "secondary"}><Shield className="h-3 w-3 mr-1" />{user.role}</Badge>
             {!user.is_active && <Badge variant="outline" className="text-red-500 border-red-300">Inactive</Badge>}
           </div>
-          <p className="text-gray-500 text-sm truncate">{user.email}</p>
+          <p className="text-[var(--text-secondary)] text-sm truncate">{user.email}</p>
         </div>
         <div className="flex gap-2 flex-shrink-0">
           <Button variant="outline" size="sm" onClick={toggleActive}>{user.is_active ? "Deactivate" : "Activate"}</Button>
@@ -97,14 +97,14 @@ export default function SuperAdminUserDetailPage() {
                 <Avatar name={user.full_name || user.email} size="lg" />
                 <div>
                   <h3 className="font-semibold text-lg">{user.full_name}</h3>
-                  <p className="text-gray-500">{user.email}</p>
+                  <p className="text-[var(--text-secondary)]">{user.email}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-gray-400" />{user.phone || "N/A"}</div>
-                <div className="flex items-center gap-2"><Building className="h-4 w-4 text-gray-400" />{user.firm_name || "N/A"}</div>
-                <div><span className="text-gray-500">Bar Council:</span> {user.enrollment_number || "N/A"}</div>
-                <div><span className="text-gray-500">Joined:</span> {formatDate(user.created_at)}</div>
+                <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-[var(--text-tertiary)]" />{user.phone || "N/A"}</div>
+                <div className="flex items-center gap-2"><Building className="h-4 w-4 text-[var(--text-tertiary)]" />{user.firm_name || "N/A"}</div>
+                <div><span className="text-[var(--text-secondary)]">Bar Council:</span> {user.enrollment_number || "N/A"}</div>
+                <div><span className="text-[var(--text-secondary)]">Joined:</span> {formatDate(user.created_at)}</div>
               </div>
             </CardContent>
           </Card>
@@ -128,11 +128,11 @@ export default function SuperAdminUserDetailPage() {
               <CardTitle>Cases ({cases.length})</CardTitle>
             </CardHeader>
             <CardContent>
-              {cases.length === 0 ? <p className="text-gray-500 text-center py-4">No cases.</p> : (
+              {cases.length === 0 ? <p className="text-[var(--text-secondary)] text-center py-4">No cases.</p> : (
                 <div className="space-y-2">
                   {cases.map((c) => (
                     <div key={c.id} className="flex items-center justify-between p-3 rounded border">
-                      <div><p className="font-medium text-sm">{c.title}</p><p className="text-xs text-gray-500">{c.case_number}</p></div>
+                      <div><p className="font-medium text-sm">{c.title}</p><p className="text-xs text-[var(--text-secondary)]">{c.case_number}</p></div>
                       <Badge className={getStatusColor(c.status)}>{c.status}</Badge>
                     </div>
                   ))}
@@ -148,23 +148,23 @@ export default function SuperAdminUserDetailPage() {
             <CardContent>
               {subscription ? (
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-gray-500">Plan</span><span className="font-medium">{subscription.plan?.name || "N/A"}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">Status</span><Badge variant={subscription.status === "active" ? "success" : "secondary"}>{subscription.status}</Badge></div>
-                  <div className="flex justify-between"><span className="text-gray-500">Paid</span>{formatCurrency(subscription.amount_paid)}</div>
+                  <div className="flex justify-between"><span className="text-[var(--text-secondary)]">Plan</span><span className="font-medium">{subscription.plan?.name || "N/A"}</span></div>
+                  <div className="flex justify-between"><span className="text-[var(--text-secondary)]">Status</span><Badge variant={subscription.status === "active" ? "success" : "secondary"}>{subscription.status}</Badge></div>
+                  <div className="flex justify-between"><span className="text-[var(--text-secondary)]">Paid</span>{formatCurrency(subscription.amount_paid)}</div>
                 </div>
-              ) : <p className="text-gray-500 text-center py-4">No subscription</p>}
+              ) : <p className="text-[var(--text-secondary)] text-center py-4">No subscription</p>}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader><CardTitle>Activity ({activities.length})</CardTitle></CardHeader>
             <CardContent>
-              {activities.length === 0 ? <p className="text-gray-500 text-center py-4">No activity</p> : (
+              {activities.length === 0 ? <p className="text-[var(--text-secondary)] text-center py-4">No activity</p> : (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {activities.map((a) => (
                     <div key={a.id} className="text-sm p-2 rounded border">
                       <p>{a.action} {a.entity_name || ""}</p>
-                      <p className="text-xs text-gray-400">{formatDate(a.created_at)}</p>
+                      <p className="text-xs text-[var(--text-tertiary)]">{formatDate(a.created_at)}</p>
                     </div>
                   ))}
                 </div>

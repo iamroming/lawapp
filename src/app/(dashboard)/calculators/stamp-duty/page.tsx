@@ -40,7 +40,7 @@ export default function StampDutyCalculatorPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold">Stamp Duty Calculator</h1>
-          <p className="text-gray-500">Calculate stamp duty as per Indian Stamp Act, 1899</p>
+          <p className="text-[var(--text-secondary)]">Calculate stamp duty as per Indian Stamp Act, 1899</p>
         </div>
       </div>
 
@@ -95,40 +95,40 @@ export default function StampDutyCalculatorPage() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-500">Document Type</p>
+                <p className="text-sm text-[var(--text-secondary)]">Document Type</p>
                 <p className="font-medium">{documentTypes.find((d) => d.value === documentType)?.label}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">State</p>
+                <p className="text-sm text-[var(--text-secondary)]">State</p>
                 <p className="font-medium">{state}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Property Value</p>
+                <p className="text-sm text-[var(--text-secondary)]">Property Value</p>
                 <p className="font-medium">{formatCurrency(parseFloat(propertyValue))}</p>
               </div>
             </div>
 
             <div className="border-t pt-4 space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Stamp Duty</span>
+                <span className="text-[var(--text-secondary)]">Stamp Duty</span>
                 <span className="font-medium">{formatCurrency(result.stampDuty)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Registration Fee</span>
+                <span className="text-[var(--text-secondary)]">Registration Fee</span>
                 <span className="font-medium">{formatCurrency(result.registrationFee)}</span>
               </div>
               <div className="flex justify-between items-center border-t pt-3">
                 <span className="font-semibold">Total Cost</span>
-                <span className="font-semibold text-lg text-blue-600">{formatCurrency(result.total)}</span>
+                <span className="font-semibold text-lg text-[var(--text-accent)]">{formatCurrency(result.total)}</span>
               </div>
             </div>
 
             <div className="border-t pt-4">
-              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg">
-                <IndianRupee className="h-5 w-5 text-blue-600" />
+              <div className="flex items-center gap-3 p-4 bg-[var(--surface-subtle)] rounded-lg">
+                <IndianRupee className="h-5 w-5 text-[var(--text-accent)]" />
                 <div>
                   <p className="font-medium text-blue-800">Total: {formatCurrency(result.total)}</p>
-                  <p className="text-sm text-blue-600">
+                  <p className="text-sm text-[var(--text-accent)]">
                     Stamp Duty: {formatCurrency(result.stampDuty)} + Registration: {formatCurrency(result.registrationFee)}
                   </p>
                 </div>
@@ -144,7 +144,7 @@ export default function StampDutyCalculatorPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-4 text-sm font-medium text-gray-500 border-b pb-2">
+            <div className="grid grid-cols-2 gap-4 text-sm font-medium text-[var(--text-secondary)] border-b pb-2">
               <div>State</div>
               <div>Rate</div>
             </div>

@@ -83,7 +83,7 @@ export default function ClientFeedbackPage() {
         <Star
           key={s}
           className={`h-4 w-4 ${
-            s <= rating ? "text-yellow-500 fill-yellow-500" : "text-gray-300"
+            s <= rating ? "text-yellow-500 fill-yellow-500" : "text-[var(--text-tertiary)]"
           }`}
         />
       ))}
@@ -93,7 +93,7 @@ export default function ClientFeedbackPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--text-accent)]" />
       </div>
     );
   }
@@ -108,10 +108,10 @@ export default function ClientFeedbackPage() {
         </Link>
         <div className="flex-1">
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <MessageSquare className="h-6 w-6 text-blue-600" />
+            <MessageSquare className="h-6 w-6 text-[var(--text-accent)]" />
             Client Feedback
           </h1>
-          <p className="text-gray-500">Ratings and feedback history</p>
+          <p className="text-[var(--text-secondary)]">Ratings and feedback history</p>
         </div>
         <Button onClick={() => setShowRequestModal(true)}>
           <Send className="h-4 w-4 mr-2" />
@@ -122,20 +122,20 @@ export default function ClientFeedbackPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-6 text-center">
-            <p className="text-sm text-gray-500">Average Rating</p>
+            <p className="text-sm text-[var(--text-secondary)]">Average Rating</p>
             <p className="text-3xl font-bold">{avgRating}</p>
             <StarRating rating={Math.round(avgRating)} />
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-sm text-gray-500">Total Reviews</p>
+            <p className="text-sm text-[var(--text-secondary)]">Total Reviews</p>
             <p className="text-2xl font-bold">{feedback.length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-sm text-gray-500">5-Star Reviews</p>
+            <p className="text-sm text-[var(--text-secondary)]">5-Star Reviews</p>
             <p className="text-2xl font-bold">
               {feedback.filter((f) => f.rating === 5).length}
             </p>
@@ -149,7 +149,7 @@ export default function ClientFeedbackPage() {
         </CardHeader>
         <CardContent>
           {feedback.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">
+            <p className="text-[var(--text-secondary)] text-center py-8">
               No feedback yet for this client.
             </p>
           ) : (
@@ -163,20 +163,20 @@ export default function ClientFeedbackPage() {
                         {f.feedback_type.replace("_", " ")}
                       </Badge>
                     </div>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-[var(--text-tertiary)]">
                       {formatDate(f.created_at)}
                     </span>
                   </div>
                   {f.feedback_text && (
-                    <p className="text-sm text-gray-600 mt-2">{f.feedback_text}</p>
+                    <p className="text-sm text-[var(--text-secondary)] mt-2">{f.feedback_text}</p>
                   )}
                   {f.case && (
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-[var(--text-tertiary)] mt-1">
                       Case: {f.case.case_number} - {f.case.title}
                     </p>
                   )}
                   {f.is_anonymous && (
-                    <p className="text-xs text-gray-400 italic">Anonymous</p>
+                    <p className="text-xs text-[var(--text-tertiary)] italic">Anonymous</p>
                   )}
                 </div>
               ))}
@@ -187,7 +187,7 @@ export default function ClientFeedbackPage() {
 
       {showRequestModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4">
+          <div className="bg-[var(--surface)] rounded-lg p-6 w-full max-w-md space-y-4">
             <h2 className="text-lg font-bold">Submit Feedback</h2>
             <div>
               <label className="block text-sm font-medium mb-1">Rating</label>
@@ -201,7 +201,7 @@ export default function ClientFeedbackPage() {
                       className={`h-8 w-8 ${
                         s <= newFeedback.rating
                           ? "text-yellow-500 fill-yellow-500"
-                          : "text-gray-300"
+                          : "text-[var(--text-tertiary)]"
                       }`}
                     />
                   </button>

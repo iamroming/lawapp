@@ -43,22 +43,22 @@ function ConfirmEmailContent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-            <Mail className="h-6 w-6 text-blue-600" />
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface-accent)]">
+            <Mail className="h-6 w-6 text-[var(--text-accent)]" />
           </div>
           <CardTitle className="text-2xl">Check Your Email</CardTitle>
           <CardDescription>
             We&apos;ve sent a verification link to
-            {email && <span className="font-medium text-gray-900"> {email}</span>}
+            {email && <span className="font-medium text-[var(--text-primary)]"> {email}</span>}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
             <div className="flex items-start gap-3">
-              <CheckCircle className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+              <CheckCircle className="h-5 w-5 text-[var(--text-accent)] mt-0.5 shrink-0" />
               <div className="text-sm text-blue-800">
                 <p className="font-medium">Click the link in your email to verify your account.</p>
                 <p className="mt-1">You can then sign in to your dashboard.</p>
@@ -96,16 +96,16 @@ function ConfirmEmailContent() {
             )}
           </Button>
 
-          <div className="text-center text-sm text-gray-500 space-y-1">
+          <div className="text-center text-sm text-[var(--text-secondary)] space-y-1">
             <p>
               Already verified?{" "}
-              <Link href="/login" className="text-blue-600 hover:underline font-medium">
+              <Link href="/login" className="text-[var(--text-accent)] hover:underline font-medium">
                 Sign in
               </Link>
             </p>
             <p>
               Wrong email?{" "}
-              <Link href="/signup" className="text-blue-600 hover:underline font-medium">
+              <Link href="/signup" className="text-[var(--text-accent)] hover:underline font-medium">
                 Sign up again
               </Link>
             </p>

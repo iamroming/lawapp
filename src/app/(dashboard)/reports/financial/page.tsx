@@ -33,7 +33,7 @@ export default function FinancialAnalyticsPage() {
     fetchAll();
   }, []);
 
-  if (loading) return <div className="text-center py-12 text-gray-500">Loading analytics...</div>;
+  if (loading) return <div className="text-center py-12 text-[var(--text-secondary)]">Loading analytics...</div>;
 
   return (
     <div className="space-y-6">
@@ -77,8 +77,8 @@ export default function FinancialAnalyticsPage() {
           />
           <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
             {profitByType.slice(0, 4).map((p: any) => (
-              <div key={p.type} className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-gray-500 text-xs">{p.type}</p>
+              <div key={p.type} className="p-3 bg-[var(--background)] rounded-lg">
+                <p className="text-[var(--text-secondary)] text-xs">{p.type}</p>
                 <p className="font-bold">Rs. {p.profit.toLocaleString("en-IN")}</p>
                 <p className={`text-xs ${p.margin >= 50 ? "text-green-600" : p.margin >= 20 ? "text-yellow-600" : "text-red-600"}`}>
                   {p.margin}% margin
@@ -102,7 +102,7 @@ export default function FinancialAnalyticsPage() {
               height={200}
             />
           ) : (
-            <p className="text-gray-400 text-center py-8">No expense data yet</p>
+            <p className="text-[var(--text-tertiary)] text-center py-8">No expense data yet</p>
           )}
         </CardContent>
       </Card>

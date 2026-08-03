@@ -257,7 +257,7 @@ export default function NewCasePage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold">New Case</h1>
-          <p className="text-gray-500">Register a new case in the system</p>
+          <p className="text-[var(--text-secondary)]">Register a new case in the system</p>
         </div>
       </div>
 
@@ -372,7 +372,7 @@ export default function NewCasePage() {
             </div>
 
             {formData.total_fee && parseFloat(formData.total_fee) > 0 && (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-4">
+              <div className="p-4 bg-[var(--surface-subtle)] border border-blue-200 rounded-lg space-y-4">
                 <p className="text-sm font-medium text-blue-800">Fee Payment Details</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -383,7 +383,7 @@ export default function NewCasePage() {
                       value={formData.advance_amount}
                       onChange={(e) => updateField("advance_amount", e.target.value)}
                     />
-                    <p className="text-xs text-gray-500">Amount paid upfront by client</p>
+                    <p className="text-xs text-[var(--text-secondary)]">Amount paid upfront by client</p>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Next Payment Date</label>
@@ -393,7 +393,7 @@ export default function NewCasePage() {
                       onChange={(e) => updateField("next_payment_date", e.target.value)}
                       min={new Date().toISOString().split("T")[0]}
                     />
-                    <p className="text-xs text-gray-500">When remaining amount is due</p>
+                    <p className="text-xs text-[var(--text-secondary)]">When remaining amount is due</p>
                   </div>
                 </div>
                 {formData.advance_amount && parseFloat(formData.advance_amount) > 0 && (
@@ -419,7 +419,7 @@ export default function NewCasePage() {
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-4">
               <p className="text-sm font-medium text-amber-800">Acts, Sections & Clauses (for Case Law Research)</p>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-600">Applicable Acts</label>
+                <label className="text-xs font-medium text-[var(--text-secondary)]">Applicable Acts</label>
                 <div className="flex flex-wrap gap-2">
                   {availableActs.map((act) => (
                     <button
@@ -434,7 +434,7 @@ export default function NewCasePage() {
                       className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
                         selectedActs.includes(act)
                           ? "bg-amber-600 text-white border-amber-600"
-                          : "bg-white text-gray-600 border-gray-300 hover:border-amber-400"
+                          : "bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border)] hover:border-amber-400"
                       }`}
                     >
                       {act}
@@ -445,7 +445,7 @@ export default function NewCasePage() {
 
               {selectedActs.length > 0 && (
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-gray-600">Sections</label>
+                  <label className="text-xs font-medium text-[var(--text-secondary)]">Sections</label>
                   <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
                     {selectedActs.flatMap((act) =>
                       getSectionsForAct(act).map((s) => (
@@ -462,7 +462,7 @@ export default function NewCasePage() {
                           className={`px-2 py-0.5 rounded text-xs border transition-colors ${
                             selectedSections.includes(s.section)
                               ? "bg-blue-600 text-white border-blue-600"
-                              : "bg-white text-gray-600 border-gray-300 hover:border-blue-400"
+                              : "bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border)] hover:border-blue-400"
                           }`}
                           title={s.title}
                         >
@@ -475,7 +475,7 @@ export default function NewCasePage() {
               )}
 
               <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-600">Custom Clauses / Provisions</label>
+                <label className="text-xs font-medium text-[var(--text-secondary)]">Custom Clauses / Provisions</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -512,13 +512,13 @@ export default function NewCasePage() {
                     {clauses.map((clause, i) => (
                       <span
                         key={i}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-white border border-gray-300 rounded text-xs"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-[var(--surface)] border border-[var(--border)] rounded text-xs"
                       >
                         {clause}
                         <button
                           type="button"
                           onClick={() => setClauses((prev) => prev.filter((_, idx) => idx !== i))}
-                          className="text-gray-400 hover:text-red-500"
+                          className="text-[var(--text-tertiary)] hover:text-red-500"
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -538,17 +538,17 @@ export default function NewCasePage() {
                 <Upload className="h-5 w-5" />
                 Documents
               </span>
-              <span className="text-xs font-normal text-gray-500">Optional — Max {MAX_FILE_SIZE_MB} MB per file</span>
+              <span className="text-xs font-normal text-[var(--text-secondary)]">Optional — Max {MAX_FILE_SIZE_MB} MB per file</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div
-              className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-colors"
+              className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-[var(--surface-subtle)]/50 transition-colors"
               onClick={() => fileInputRef.current?.click()}
             >
-              <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-              <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
-              <p className="text-xs text-gray-400 mt-1">PDF, Images, Documents — up to {MAX_FILE_SIZE_MB} MB each</p>
+              <Upload className="h-8 w-8 mx-auto text-[var(--text-tertiary)] mb-2" />
+              <p className="text-sm text-[var(--text-secondary)]">Click to upload or drag and drop</p>
+              <p className="text-xs text-[var(--text-tertiary)] mt-1">PDF, Images, Documents — up to {MAX_FILE_SIZE_MB} MB each</p>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -562,7 +562,7 @@ export default function NewCasePage() {
             {pendingFiles.length > 0 && (
               <>
                 {storageUsed !== null && (
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
                     <HardDrive className="h-3 w-3" />
                     Current usage: {formatBytes(storageUsed)}
                     {storageLimit !== null && storageLimit > 0 && ` / ${formatBytes(storageLimit)}`}
@@ -571,7 +571,7 @@ export default function NewCasePage() {
 
                 <div className="space-y-3">
                   {pendingFiles.map((pf, i) => (
-                    <div key={i} className="flex items-start gap-3 p-3 rounded-lg border bg-gray-50">
+                    <div key={i} className="flex items-start gap-3 p-3 rounded-lg border bg-[var(--background)]">
                       <FileText className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0 space-y-2">
                         <div className="flex items-center gap-2">
@@ -592,7 +592,7 @@ export default function NewCasePage() {
                             ))}
                           </select>
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
                           <span>{pf.file.name}</span>
                           <span>({formatBytes(pf.file.size)})</span>
                           {pf.uploading && <Loader2 className="h-3 w-3 animate-spin text-blue-500" />}
@@ -602,7 +602,7 @@ export default function NewCasePage() {
                       <button
                         type="button"
                         onClick={() => removePendingFile(i)}
-                        className="text-gray-400 hover:text-red-500"
+                        className="text-[var(--text-tertiary)] hover:text-red-500"
                         disabled={pf.uploading}
                       >
                         <X className="h-4 w-4" />
@@ -611,7 +611,7 @@ export default function NewCasePage() {
                   ))}
                 </div>
 
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-[var(--text-secondary)]">
                   {pendingFiles.length} file(s) — {formatBytes(getTotalPendingSize())} total
                 </p>
               </>

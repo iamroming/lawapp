@@ -11,7 +11,7 @@ const calculators = [
     href: "/calculators/limitation",
     icon: Clock,
     color: "text-blue-600",
-    bgColor: "bg-blue-50",
+    bgColor: "bg-[var(--surface-subtle)]",
   },
   {
     title: "Court Fee Calculator",
@@ -44,7 +44,7 @@ export default function CalculatorsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Legal Calculators</h1>
-        <p className="text-gray-500">India-specific legal calculators for lawyers and law firms</p>
+        <p className="text-[var(--text-secondary)]">India-specific legal calculators for lawyers and law firms</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -58,7 +58,7 @@ export default function CalculatorsPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-lg">{calc.title}</h3>
-                    <p className="text-gray-500 text-sm mt-1">{calc.description}</p>
+                    <p className="text-[var(--text-secondary)] text-sm mt-1">{calc.description}</p>
                   </div>
                 </div>
               </CardContent>

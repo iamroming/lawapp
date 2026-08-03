@@ -334,7 +334,7 @@ export default function ResearchPage() {
           <Scale className="h-6 w-6" />
           Court Research
         </h1>
-        <p className="text-gray-500">Search judgments, cause lists, and case data across Indian courts</p>
+        <p className="text-[var(--text-secondary)]">Search judgments, cause lists, and case data across Indian courts</p>
       </div>
 
       {/* Tabs */}
@@ -374,17 +374,17 @@ export default function ResearchPage() {
           <CardContent>
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                <Loader2 className="h-8 w-8 animate-spin text-[var(--text-accent)]" />
               </div>
             ) : sciResults.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">No recent judgments available</p>
+              <p className="text-center text-[var(--text-secondary)] py-8">No recent judgments available</p>
             ) : (
               <div className="space-y-3">
                 {sciResults.map((j, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50">
+                  <div key={i} className="flex items-center justify-between p-3 rounded-lg border hover:bg-[var(--surface-subtle)]">
                     <div className="flex-1">
                       <p className="font-medium text-sm">{j.title}</p>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                      <div className="flex items-center gap-3 mt-1 text-xs text-[var(--text-secondary)]">
                         <span>{j.case_number}</span>
                         {j.judgment_date && <span>{j.judgment_date}</span>}
                       </div>
@@ -428,7 +428,7 @@ export default function ResearchPage() {
                   ))}
                 </select>
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <Calendar className="h-4 w-4 text-[var(--text-secondary)]" />
                   <input
                     type="date"
                     value={hcCauseDate}
@@ -443,19 +443,19 @@ export default function ResearchPage() {
 
               {loadingCauseList ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                  <Loader2 className="h-8 w-8 animate-spin text-[var(--text-accent)]" />
                 </div>
               ) : hcCauseList.length === 0 ? (
                 <div>
-                  <p className="text-center text-gray-500 py-4">No cause list available for {hcCauseDate}.</p>
+                  <p className="text-center text-[var(--text-secondary)] py-4">No cause list available for {hcCauseDate}.</p>
                   {hcLandmarkJudgments.length > 0 ? (
                     <div>
-                      <h4 className="text-sm font-semibold text-gray-600 mb-2">Recent Judgments — {HIGH_COURTS.find(c => c.code === hcCourt)?.name}</h4>
+                      <h4 className="text-sm font-semibold text-[var(--text-secondary)] mb-2">Recent Judgments — {HIGH_COURTS.find(c => c.code === hcCourt)?.name}</h4>
                       {hcLandmarkJudgments.map((j, i) => (
                         <div key={i} className="flex items-start justify-between p-3 border-b last:border-0">
                           <div className="flex-1">
                             <p className="font-medium text-gray-800 text-sm">{j.title}</p>
-                            <p className="text-xs text-gray-500 mt-1">{j.court} — {j.date}</p>
+                            <p className="text-xs text-[var(--text-secondary)] mt-1">{j.court} — {j.date}</p>
                           </div>
                           <div className="flex gap-2">
                             {j.pdf_url && (
@@ -470,7 +470,7 @@ export default function ResearchPage() {
                     </div>
                   ) : (
                     <div className="text-center py-4 space-y-2">
-                      <p className="text-sm text-gray-500">No cause list or recent orders available for {hcCauseDate}.</p>
+                      <p className="text-sm text-[var(--text-secondary)]">No cause list or recent orders available for {hcCauseDate}.</p>
                       <div className="flex flex-wrap gap-2 justify-center">
                         <Badge variant="outline" className="text-xs cursor-pointer" onClick={() => {
                           const d = new Date(hcCauseDate);
@@ -484,16 +484,16 @@ export default function ResearchPage() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-sm text-gray-500">{hcCauseList.length} cause list PDFs available</p>
+                  <p className="text-sm text-[var(--text-secondary)]">{hcCauseList.length} cause list PDFs available</p>
                   <div className="space-y-2">
                     {hcCauseList.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between p-4 rounded-lg border hover:bg-gray-50">
+                      <div key={i} className="flex items-center justify-between p-4 rounded-lg border hover:bg-[var(--surface-subtle)]">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <Badge variant="secondary">{item.cause_list_type}</Badge>
-                            <span className="text-xs text-gray-500">#{item.serial_number}</span>
+                            <span className="text-xs text-[var(--text-secondary)]">#{item.serial_number}</span>
                           </div>
-                          <p className="text-sm text-gray-700 mt-1">{item.bench}</p>
+                          <p className="text-sm text-[var(--text-primary)] mt-1">{item.bench}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           {item.pdf_url && (
@@ -559,14 +559,14 @@ export default function ResearchPage() {
 
               {hcResults.length > 0 && (
                 <div className="space-y-3 mt-4">
-                  <p className="text-sm text-gray-500">{hcResults.length} cases found</p>
+                  <p className="text-sm text-[var(--text-secondary)]">{hcResults.length} cases found</p>
                   {hcResults.map((c, i) => (
-                    <div key={i} className="p-4 rounded-lg border hover:bg-gray-50">
+                    <div key={i} className="p-4 rounded-lg border hover:bg-[var(--surface-subtle)]">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <p className="font-medium">{c.case_type} {c.case_number}</p>
-                          <p className="text-sm text-gray-600 mt-1">{c.petitioner} vs {c.respondent}</p>
-                          <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                          <p className="text-sm text-[var(--text-secondary)] mt-1">{c.petitioner} vs {c.respondent}</p>
+                          <div className="flex items-center gap-3 mt-2 text-xs text-[var(--text-secondary)]">
                             <span className="flex items-center gap-1">
                               <Building2 className="h-3 w-3" />
                               {c.court_name || HIGH_COURTS.find(hc => hc.code === hcCourt)?.name}
@@ -582,7 +582,7 @@ export default function ResearchPage() {
               )}
 
               {!loading && hcResults.length === 0 && hcParty && (
-                <p className="text-center text-gray-500 py-4">No cases found. Try a different search.</p>
+                <p className="text-center text-[var(--text-secondary)] py-4">No cases found. Try a different search.</p>
               )}
             </CardContent>
           </Card>
@@ -601,7 +601,7 @@ export default function ResearchPage() {
             {/* State → District → Court Complex */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-medium mb-1 text-gray-500">State *</label>
+                <label className="block text-xs font-medium mb-1 text-[var(--text-secondary)]">State *</label>
                 <select
                   value={dcState}
                   onChange={(e) => setDcState(e.target.value)}
@@ -614,7 +614,7 @@ export default function ResearchPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1 text-gray-500">District *</label>
+                <label className="block text-xs font-medium mb-1 text-[var(--text-secondary)]">District *</label>
                 <select
                   value={dcDistrict}
                   onChange={(e) => setDcDistrict(e.target.value)}
@@ -630,7 +630,7 @@ export default function ResearchPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1 text-gray-500">Court Complex *</label>
+                <label className="block text-xs font-medium mb-1 text-[var(--text-secondary)]">Court Complex *</label>
                 <select
                   value={dcCourtComplex}
                   onChange={(e) => setDcCourtComplex(e.target.value)}
@@ -669,11 +669,11 @@ export default function ResearchPage() {
 
             {dcResults.length > 0 && (
               <div className="space-y-3 mt-4">
-                <p className="text-sm text-gray-500">{dcResults.length} cases found</p>
+                <p className="text-sm text-[var(--text-secondary)]">{dcResults.length} cases found</p>
                 {dcResults.map((c, i) => (
-                  <div key={i} className="p-4 rounded-lg border hover:bg-gray-50">
+                  <div key={i} className="p-4 rounded-lg border hover:bg-[var(--surface-subtle)]">
                     <p className="font-medium">{c.case_type} {c.case_number}</p>
-                    <p className="text-sm text-gray-600 mt-1">{c.petitioner} vs {c.respondent}</p>
+                    <p className="text-sm text-[var(--text-secondary)] mt-1">{c.petitioner} vs {c.respondent}</p>
                     {c.cnr_number && <span className="text-xs bg-gray-100 px-2 py-0.5 rounded mt-2 inline-block">{c.cnr_number}</span>}
                   </div>
                 ))}
@@ -681,7 +681,7 @@ export default function ResearchPage() {
             )}
 
             {!loading && dcResults.length === 0 && dcParty && dcCourtComplex && (
-              <p className="text-center text-gray-500 py-4">No cases found. Try a different search.</p>
+              <p className="text-center text-[var(--text-secondary)] py-4">No cases found. Try a different search.</p>
             )}
           </CardContent>
         </Card>

@@ -24,7 +24,7 @@ const legalTopics = [
 ];
 
 const typeIcons: Record<string, React.ReactNode> = {
-  section: <FileText className="h-5 w-5 text-blue-500" />,
+  section: <FileText className="h-5 w-5 text-[var(--text-accent)]" />,
   case_law: <Scale className="h-5 w-5 text-purple-500" />,
   opinion: <BookOpen className="h-5 w-5 text-green-500" />,
   article: <FileText className="h-5 w-5 text-orange-500" />,
@@ -64,10 +64,10 @@ export default function AIResearchPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Search className="h-8 w-8 text-blue-600" />
+        <Search className="h-8 w-8 text-[var(--text-accent)]" />
         <div>
           <h1 className="text-2xl font-bold">Legal Research Assistant</h1>
-          <p className="text-gray-500">Search legal provisions, case law, and more</p>
+          <p className="text-[var(--text-secondary)]">Search legal provisions, case law, and more</p>
         </div>
       </div>
 
@@ -107,9 +107,9 @@ export default function AIResearchPage() {
             <Card>
               <CardContent className="py-12">
                 <div className="text-center">
-                  <Search className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900">Search Legal Database</h3>
-                  <p className="text-gray-500 mt-1">
+                  <Search className="h-12 w-12 text-[var(--text-tertiary)] mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-[var(--text-primary)]">Search Legal Database</h3>
+                  <p className="text-[var(--text-secondary)] mt-1">
                     Enter your query to search across Indian legal provisions, case law, and legal articles.
                   </p>
                 </div>
@@ -121,7 +121,7 @@ export default function AIResearchPage() {
                 <CardContent className="p-4">
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 mt-1">
-                      {typeIcons[result.type] || <FileText className="h-5 w-5 text-gray-500" />}
+                      {typeIcons[result.type] || <FileText className="h-5 w-5 text-[var(--text-secondary)]" />}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -130,8 +130,8 @@ export default function AIResearchPage() {
                           {result.type.replace("_", " ")}
                         </Badge>
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">{result.description}</p>
-                      <p className="text-xs text-gray-400">Source: {result.source}</p>
+                      <p className="text-sm text-[var(--text-secondary)] mb-2">{result.description}</p>
+                      <p className="text-xs text-[var(--text-tertiary)]">Source: {result.source}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary">{result.relevance}%</Badge>
@@ -168,7 +168,7 @@ export default function AIResearchPage() {
                 <button
                   key={act}
                   onClick={() => setQuery(act)}
-                  className="block w-full text-left text-sm text-blue-600 hover:underline py-1"
+                  className="block w-full text-left text-sm text-[var(--text-accent)] hover:underline py-1"
                 >
                   {act}
                 </button>
@@ -182,7 +182,7 @@ export default function AIResearchPage() {
                 <CardTitle>Saved Research ({savedNotes.length})</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-[var(--text-secondary)]">
                   {savedNotes.length} items saved to your research notes.
                 </p>
               </CardContent>

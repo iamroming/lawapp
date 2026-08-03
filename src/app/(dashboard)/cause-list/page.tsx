@@ -103,10 +103,10 @@ export default function CauseListPage() {
         </Link>
         <div className="flex-1">
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Calendar className="h-6 w-6 text-blue-600" />
+            <Calendar className="h-6 w-6 text-[var(--text-accent)]" />
             Cause List
           </h1>
-          <p className="text-gray-500">Your personalized court cause list</p>
+          <p className="text-[var(--text-secondary)]">Your personalized court cause list</p>
         </div>
         <Button onClick={handleSync} disabled={syncing}>
           {syncing ? (
@@ -121,13 +121,13 @@ export default function CauseListPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-6">
-            <p className="text-sm text-gray-500">Today&apos;s Hearings</p>
+            <p className="text-sm text-[var(--text-secondary)]">Today&apos;s Hearings</p>
             <p className="text-2xl font-bold">{todayCount}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-sm text-gray-500">This Week</p>
+            <p className="text-sm text-[var(--text-secondary)]">This Week</p>
             <p className="text-2xl font-bold">
               {entries.filter(
                 (e) => e.hearing_date >= todayStr && e.hearing_date <= weekEnd
@@ -137,7 +137,7 @@ export default function CauseListPage() {
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-sm text-gray-500">Overdue</p>
+            <p className="text-sm text-[var(--text-secondary)]">Overdue</p>
             <p className="text-2xl font-bold text-red-600">{overdueCount}</p>
           </CardContent>
         </Card>
@@ -156,10 +156,10 @@ export default function CauseListPage() {
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              <Loader2 className="h-8 w-8 animate-spin text-[var(--text-accent)]" />
             </div>
           ) : entries.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">
+            <p className="text-[var(--text-secondary)] text-center py-8">
               No hearings for this date.
             </p>
           ) : (
@@ -170,7 +170,7 @@ export default function CauseListPage() {
                 return (
                   <div
                     key={entry.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-[var(--surface-subtle)]"
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -180,10 +180,10 @@ export default function CauseListPage() {
                         </span>
                         <Badge variant={status.variant}>{status.label}</Badge>
                       </div>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-[var(--text-secondary)]">
                         {entry.case?.title || "N/A"}
                       </p>
-                      <div className="flex items-center gap-4 text-xs text-gray-400 mt-1">
+                      <div className="flex items-center gap-4 text-xs text-[var(--text-tertiary)] mt-1">
                         <span>{entry.court_name}</span>
                         {entry.judge_name && <span>Judge: {entry.judge_name}</span>}
                         {entry.case?.client && (

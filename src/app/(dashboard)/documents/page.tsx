@@ -184,7 +184,7 @@ export default function DocumentsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Documents</h1>
-          <p className="text-gray-500">Manage and organize your legal documents</p>
+          <p className="text-[var(--text-secondary)]">Manage and organize your legal documents</p>
         </div>
         <Button onClick={() => setShowModal(true)}>
           <Upload className="h-4 w-4 mr-2" />
@@ -193,7 +193,7 @@ export default function DocumentsPage() {
       </div>
 
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
         <Input
           placeholder="Search documents..."
           value={search}
@@ -225,13 +225,13 @@ export default function DocumentsPage() {
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 min-w-0">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                      <FileText className="h-5 w-5 text-blue-600" />
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-[var(--surface-subtle)] flex items-center justify-center">
+                      <FileText className="h-5 w-5 text-[var(--text-accent)]" />
                     </div>
                     <div className="min-w-0">
                       <h3 className="font-medium truncate">{doc.title}</h3>
-                      <p className="text-sm text-gray-500 truncate">{doc.file_name}</p>
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-gray-500">
+                      <p className="text-sm text-[var(--text-secondary)] truncate">{doc.file_name}</p>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-[var(--text-secondary)]">
                         <span>{formatFileSize(doc.file_size || 0)}</span>
                         <span>{formatDate(doc.created_at)}</span>
                         {doc.case && (
@@ -274,7 +274,7 @@ export default function DocumentsPage() {
               ref={fileInputRef}
               type="file"
               onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              className="w-full text-sm text-[var(--text-secondary)] file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-[var(--surface-subtle)] file:text-[var(--text-accent)] hover:file:bg-[var(--surface-accent)]"
               required
             />
           </div>

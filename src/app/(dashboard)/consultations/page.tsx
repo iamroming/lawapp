@@ -160,7 +160,7 @@ export default function ConsultationsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--text-accent)]" />
       </div>
     );
   }
@@ -169,10 +169,10 @@ export default function ConsultationsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Calendar className="h-8 w-8 text-blue-600" />
+          <Calendar className="h-8 w-8 text-[var(--text-accent)]" />
           <div>
             <h1 className="text-2xl font-bold">Consultations</h1>
-            <p className="text-gray-500">Manage client consultations</p>
+            <p className="text-[var(--text-secondary)]">Manage client consultations</p>
           </div>
         </div>
         <Button onClick={() => setShowForm(!showForm)}>
@@ -196,7 +196,7 @@ export default function ConsultationsPage() {
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                     Client Name *
                   </label>
                   <Input
@@ -206,7 +206,7 @@ export default function ConsultationsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                     Email
                   </label>
                   <Input
@@ -216,7 +216,7 @@ export default function ConsultationsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                     Phone
                   </label>
                   <Input
@@ -225,7 +225,7 @@ export default function ConsultationsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                     Date & Time *
                   </label>
                   <Input
@@ -236,7 +236,7 @@ export default function ConsultationsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                     Duration (minutes)
                   </label>
                   <Select
@@ -251,7 +251,7 @@ export default function ConsultationsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                     Type
                   </label>
                   <Select
@@ -266,7 +266,7 @@ export default function ConsultationsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                     Fee (₹)
                   </label>
                   <Input
@@ -278,7 +278,7 @@ export default function ConsultationsPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                   Notes
                 </label>
                 <textarea
@@ -308,7 +308,7 @@ export default function ConsultationsPage() {
         </CardHeader>
         <CardContent>
           {consultations.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">
+            <p className="text-[var(--text-secondary)] text-center py-8">
               No consultations scheduled yet.
             </p>
           ) : (
@@ -316,11 +316,11 @@ export default function ConsultationsPage() {
               {consultations.map((c) => (
                 <div
                   key={c.id}
-                  className="flex items-center justify-between p-4 rounded-lg border hover:bg-gray-50"
+                  className="flex items-center justify-between p-4 rounded-lg border hover:bg-[var(--surface-subtle)]"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-blue-50 flex flex-col items-center justify-center">
-                      <span className="text-xs font-medium text-blue-600">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-[var(--surface-subtle)] flex flex-col items-center justify-center">
+                      <span className="text-xs font-medium text-[var(--text-accent)]">
                         {new Date(c.scheduled_at).toLocaleDateString("en-IN", {
                           month: "short",
                         })}
@@ -331,7 +331,7 @@ export default function ConsultationsPage() {
                     </div>
                     <div>
                       <p className="font-medium">{c.client_name}</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-[var(--text-secondary)]">
                         {typeLabels[c.consultation_type] || c.consultation_type} •{" "}
                         {c.duration_minutes} min •{" "}
                         {new Date(c.scheduled_at).toLocaleTimeString("en-IN", {
@@ -340,7 +340,7 @@ export default function ConsultationsPage() {
                         })}
                       </p>
                       {c.fee > 0 && (
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-[var(--text-secondary)]">
                           ₹{c.fee.toLocaleString("en-IN")}
                         </p>
                       )}

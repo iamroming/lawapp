@@ -223,7 +223,7 @@ export default function ClientReportPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading client statistics...</div>
+        <div className="text-[var(--text-secondary)]">Loading client statistics...</div>
       </div>
     );
   }
@@ -240,7 +240,7 @@ export default function ClientReportPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold">Client Report</h1>
-            <p className="text-gray-500">Client acquisition and engagement metrics</p>
+            <p className="text-[var(--text-secondary)]">Client acquisition and engagement metrics</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -289,20 +289,20 @@ export default function ClientReportPage() {
           </CardHeader>
           <CardContent>
             {stats.clientsByMonth.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No data available</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">No data available</p>
             ) : (
               <div className="flex items-end gap-2 h-48">
                 {stats.clientsByMonth.map((item) => {
                   const height = maxMonthCount > 0 ? (item.count / maxMonthCount) * 100 : 0;
                   return (
                     <div key={item.month} className="flex-1 flex flex-col items-center gap-1">
-                      <span className="text-xs text-gray-500">{item.count}</span>
+                      <span className="text-xs text-[var(--text-secondary)]">{item.count}</span>
                       <div
                         className="w-full bg-purple-500 rounded-t transition-all hover:bg-purple-600 min-h-[4px]"
                         style={{ height: `${height}%` }}
                         title={`${item.month}: ${item.count} clients`}
                       />
-                      <span className="text-xs text-gray-500 truncate w-full text-center">
+                      <span className="text-xs text-[var(--text-secondary)] truncate w-full text-center">
                         {item.month}
                       </span>
                     </div>
@@ -320,7 +320,7 @@ export default function ClientReportPage() {
           </CardHeader>
           <CardContent>
             {stats.clientsByType.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No data available</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">No data available</p>
             ) : (
               <div className="space-y-3">
                 {stats.clientsByType.map((item) => {
@@ -329,9 +329,9 @@ export default function ClientReportPage() {
                     <div key={item.type} className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
                         <span>{item.type}</span>
-                        <span className="text-gray-500">{item.count}</span>
+                        <span className="text-[var(--text-secondary)]">{item.count}</span>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-3">
+                      <div className="w-full bg-[var(--border)] rounded-full h-3">
                         <div
                           className="bg-indigo-500 h-3 rounded-full transition-all"
                           style={{ width: `${percentage}%` }}
@@ -352,7 +352,7 @@ export default function ClientReportPage() {
           </CardHeader>
           <CardContent>
             {stats.topClients.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No client data available</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">No client data available</p>
             ) : (
               <div className="space-y-3">
                 {stats.topClients.map((item) => {
@@ -361,12 +361,12 @@ export default function ClientReportPage() {
                     <div key={item.name} className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-medium">{item.name}</span>
-                        <div className="flex items-center gap-4 text-gray-500">
+                        <div className="flex items-center gap-4 text-[var(--text-secondary)]">
                           <span>{item.caseCount} case{item.caseCount !== 1 ? "s" : ""}</span>
                           <span>₹{item.totalPaid.toLocaleString("en-IN")}</span>
                         </div>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-2">
+                      <div className="w-full bg-[var(--border)] rounded-full h-2">
                         <div
                           className="bg-green-500 h-2 rounded-full transition-all"
                           style={{ width: `${percentage}%` }}

@@ -152,11 +152,11 @@ export default function AdminUserDetailPage() {
   };
 
   if (loading) {
-    return <div className="text-center py-12 text-gray-500">Loading user details...</div>;
+    return <div className="text-center py-12 text-[var(--text-secondary)]">Loading user details...</div>;
   }
 
   if (!user) {
-    return <div className="text-center py-12 text-gray-500">User not found</div>;
+    return <div className="text-center py-12 text-[var(--text-secondary)]">User not found</div>;
   }
 
   return (
@@ -180,7 +180,7 @@ export default function AdminUserDetailPage() {
               </Badge>
             )}
           </div>
-          <p className="text-gray-500 text-sm truncate">{user.email}</p>
+          <p className="text-[var(--text-secondary)] text-sm truncate">{user.email}</p>
         </div>
         <div className="flex gap-2 flex-shrink-0">
           <Button variant="outline" size="sm" onClick={toggleActive}>
@@ -212,24 +212,24 @@ export default function AdminUserDetailPage() {
                 <Avatar name={user.full_name || user.email} size="lg" />
                 <div>
                   <h3 className="font-semibold text-lg">{user.full_name || "No name set"}</h3>
-                  <p className="text-gray-500">{user.email}</p>
+                  <p className="text-[var(--text-secondary)]">{user.email}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-gray-400" />
+                  <Phone className="h-4 w-4 text-[var(--text-tertiary)]" />
                   <span>{user.phone || "Not provided"}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Building className="h-4 w-4 text-gray-400" />
+                  <Building className="h-4 w-4 text-[var(--text-tertiary)]" />
                   <span>{user.firm_name || "No firm"}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500">Bar Council No:</span>{" "}
+                  <span className="text-[var(--text-secondary)]">Bar Council No:</span>{" "}
                   <span className="font-medium">{user.enrollment_number || "N/A"}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500">Joined:</span>{" "}
+                  <span className="text-[var(--text-secondary)]">Joined:</span>{" "}
                   <span className="font-medium">{formatDate(user.created_at)}</span>
                 </div>
               </div>
@@ -267,14 +267,14 @@ export default function AdminUserDetailPage() {
             </CardHeader>
             <CardContent>
               {cases.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">No cases created by this user.</p>
+                <p className="text-[var(--text-secondary)] text-center py-4">No cases created by this user.</p>
               ) : (
                 <div className="space-y-3">
                   {cases.map((c) => (
                     <div key={c.id} className="flex items-center justify-between p-3 rounded-lg border">
                       <div>
                         <p className="font-medium text-sm">{c.title}</p>
-                        <p className="text-xs text-gray-500">{c.case_number}</p>
+                        <p className="text-xs text-[var(--text-secondary)]">{c.case_number}</p>
                       </div>
                       <Badge className={getStatusColor(c.status)}>{c.status}</Badge>
                     </div>
@@ -299,11 +299,11 @@ export default function AdminUserDetailPage() {
               {subscription ? (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-500">Plan</span>
+                    <span className="text-[var(--text-secondary)]">Plan</span>
                     <span className="font-medium">{subscription.plan?.name || "Unknown"}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-500">Status</span>
+                    <span className="text-[var(--text-secondary)]">Status</span>
                     <Badge
                       variant={
                         subscription.status === "active"
@@ -317,25 +317,25 @@ export default function AdminUserDetailPage() {
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-500">Amount Paid</span>
+                    <span className="text-[var(--text-secondary)]">Amount Paid</span>
                     <span className="font-medium">
                       {formatCurrency(subscription.amount_paid)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-500">Start Date</span>
+                    <span className="text-[var(--text-secondary)]">Start Date</span>
                     <span className="text-sm">{formatDate(subscription.starts_at)}</span>
                   </div>
                   {subscription.expires_at && (
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-500">Expires</span>
+                      <span className="text-[var(--text-secondary)]">Expires</span>
                       <span className="text-sm">{formatDate(subscription.expires_at)}</span>
                     </div>
                   )}
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <p className="text-gray-500 mb-2">No active subscription</p>
+                  <p className="text-[var(--text-secondary)] mb-2">No active subscription</p>
                   <Link href="/admin/subscriptions">
                     <Button size="sm">Assign Plan</Button>
                   </Link>
@@ -351,19 +351,19 @@ export default function AdminUserDetailPage() {
             </CardHeader>
             <CardContent>
               {activities.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">No activity recorded.</p>
+                <p className="text-[var(--text-secondary)] text-center py-4">No activity recorded.</p>
               ) : (
                 <div className="space-y-3">
                   {activities.slice(0, 10).map((log) => (
                     <div key={log.id} className="text-sm">
                       <div className="flex items-start gap-2">
-                        <Activity className="h-3 w-3 text-gray-400 mt-1 shrink-0" />
+                        <Activity className="h-3 w-3 text-[var(--text-tertiary)] mt-1 shrink-0" />
                         <div>
                           <p>{log.action}</p>
                           {log.entity_name && (
-                            <p className="text-gray-500 text-xs">{log.entity_name}</p>
+                            <p className="text-[var(--text-secondary)] text-xs">{log.entity_name}</p>
                           )}
-                          <p className="text-gray-400 text-xs">{formatDate(log.created_at)}</p>
+                          <p className="text-[var(--text-tertiary)] text-xs">{formatDate(log.created_at)}</p>
                         </div>
                       </div>
                     </div>

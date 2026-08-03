@@ -46,7 +46,7 @@ export default function SuperAdminRevenuePage() {
   });
   const monthRevenue = thisMonth.reduce((sum, p) => sum + (p.amount || 0), 0);
 
-  if (loading) return <div className="text-center py-12 text-gray-500">Loading...</div>;
+  if (loading) return <div className="text-center py-12 text-[var(--text-secondary)]">Loading...</div>;
 
   return (
     <div className="space-y-6">
@@ -63,13 +63,13 @@ export default function SuperAdminRevenuePage() {
         <Card>
           <CardHeader><CardTitle>Recent Payments</CardTitle></CardHeader>
           <CardContent className="p-0">
-            {payments.length === 0 ? <p className="text-gray-500 text-center py-8">No payments.</p> : (
+              {payments.length === 0 ? <p className="text-[var(--text-secondary)] text-center py-8">No payments.</p> : (
               <div className="divide-y max-h-96 overflow-y-auto">
                 {payments.map((p) => (
                   <div key={p.id} className="p-4 flex items-center justify-between">
                     <div>
                       <p className="font-medium text-sm">{p.client?.full_name || "Unknown"}</p>
-                      <p className="text-xs text-gray-500">{p.payment_method} | {formatDate(p.payment_date)}</p>
+                      <p className="text-xs text-[var(--text-secondary)]">{p.payment_method} | {formatDate(p.payment_date)}</p>
                     </div>
                     <p className="font-medium text-green-600">{formatCurrency(p.amount)}</p>
                   </div>
@@ -82,13 +82,13 @@ export default function SuperAdminRevenuePage() {
         <Card>
           <CardHeader><CardTitle>Pending Invoices</CardTitle></CardHeader>
           <CardContent className="p-0">
-            {pendingInvoices.length === 0 ? <p className="text-gray-500 text-center py-8">No pending invoices.</p> : (
+              {pendingInvoices.length === 0 ? <p className="text-[var(--text-secondary)] text-center py-8">No pending invoices.</p> : (
               <div className="divide-y max-h-96 overflow-y-auto">
                 {pendingInvoices.map((inv) => (
                   <div key={inv.id} className="p-4 flex items-center justify-between">
                     <div>
                       <p className="font-medium text-sm">{inv.invoice_number}</p>
-                      <p className="text-xs text-gray-500">{inv.client?.full_name || "N/A"}</p>
+                      <p className="text-xs text-[var(--text-secondary)]">{inv.client?.full_name || "N/A"}</p>
                     </div>
                     <div className="text-right">
                       <p className="font-medium">{formatCurrency(inv.amount)}</p>

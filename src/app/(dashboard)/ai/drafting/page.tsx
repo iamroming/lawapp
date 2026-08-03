@@ -150,10 +150,10 @@ export default function AIDraftingPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <FileText className="h-8 w-8 text-blue-600" />
+        <FileText className="h-8 w-8 text-[var(--text-accent)]" />
         <div>
           <h1 className="text-2xl font-bold">AI Legal Drafting</h1>
-          <p className="text-gray-500">
+          <p className="text-[var(--text-secondary)]">
             Generate legal documents with AI assistance
           </p>
         </div>
@@ -165,13 +165,13 @@ export default function AIDraftingPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-blue-600" />
+                <Sparkles className="h-5 w-5 text-[var(--text-accent)]" />
                 Document Configuration
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                   Document Type *
                 </label>
                 <Select
@@ -182,7 +182,7 @@ export default function AIDraftingPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                   Jurisdiction
                 </label>
                 <Select
@@ -241,7 +241,7 @@ export default function AIDraftingPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                   Facts of the Case *
                 </label>
                 <Textarea
@@ -253,7 +253,7 @@ export default function AIDraftingPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                   Relief Sought
                 </label>
                 <Textarea
@@ -265,7 +265,7 @@ export default function AIDraftingPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                   Additional Instructions
                 </label>
                 <Textarea
@@ -314,17 +314,17 @@ export default function AIDraftingPage() {
                   <h2 className="text-lg font-bold text-center mb-4">
                     {result.title}
                   </h2>
-                  <div className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">
+                  <div className="whitespace-pre-wrap text-sm text-[var(--text-primary)] leading-relaxed">
                     {result.content}
                   </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <FileText className="h-16 w-16 text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900">
+                  <FileText className="h-16 w-16 text-[var(--text-tertiary)] mb-4" />
+                  <h3 className="text-lg font-medium text-[var(--text-primary)]">
                     No Document Generated
                   </h3>
-                  <p className="text-gray-500 mt-1">
+                  <p className="text-[var(--text-secondary)] mt-1">
                     Fill in the details on the left and click Generate to create
                     your legal document.
                   </p>

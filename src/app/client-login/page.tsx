@@ -55,15 +55,15 @@ export default function ClientLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--background)] py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Scale className="h-10 w-10 text-blue-600" />
+            <Scale className="h-10 w-10 text-[var(--text-accent)]" />
             <span className="font-bold text-2xl">LawXP</span>
           </div>
-          <h2 className="text-3xl font-bold text-gray-900">Client Portal</h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <h2 className="text-3xl font-bold text-[var(--text-primary)]">Client Portal</h2>
+          <p className="mt-2 text-sm text-[var(--text-secondary)]">
             Access your cases, documents, and payments
           </p>
         </div>
@@ -112,8 +112,8 @@ export default function ClientLoginPage() {
         </Card>
 
         <div className="text-center">
-          <p className="text-sm text-gray-600">
-            <Link href="/login" className="text-blue-600 hover:underline">
+          <p className="text-sm text-[var(--text-secondary)]">
+            <Link href="/login" className="text-[var(--text-accent)] hover:underline">
               Lawyer Login
             </Link>
           </p>

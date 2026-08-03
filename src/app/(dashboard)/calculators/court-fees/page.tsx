@@ -35,7 +35,7 @@ export default function CourtFeeCalculatorPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold">Court Fee Calculator</h1>
-          <p className="text-gray-500">Calculate court fees as per the Court Fees Act, 1870</p>
+          <p className="text-[var(--text-secondary)]">Calculate court fees as per the Court Fees Act, 1870</p>
         </div>
       </div>
 
@@ -90,29 +90,29 @@ export default function CourtFeeCalculatorPage() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-500">Case Type</p>
+                <p className="text-sm text-[var(--text-secondary)]">Case Type</p>
                 <p className="font-medium capitalize">{caseType}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Court Level</p>
+                <p className="text-sm text-[var(--text-secondary)]">Court Level</p>
                 <p className="font-medium capitalize">{courtLevel}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Claim Amount</p>
+                <p className="text-sm text-[var(--text-secondary)]">Claim Amount</p>
                 <p className="font-medium">{formatCurrency(parseFloat(claimAmount))}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Court Fee</p>
-                <p className="font-medium text-lg text-blue-600">{formatCurrency(courtFee)}</p>
+                <p className="text-sm text-[var(--text-secondary)]">Court Fee</p>
+                <p className="font-medium text-lg text-[var(--text-accent)]">{formatCurrency(courtFee)}</p>
               </div>
             </div>
 
             <div className="border-t pt-4">
-              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg">
-                <IndianRupee className="h-5 w-5 text-blue-600" />
+              <div className="flex items-center gap-3 p-4 bg-[var(--surface-subtle)] rounded-lg">
+                <IndianRupee className="h-5 w-5 text-[var(--text-accent)]" />
                 <div>
                   <p className="font-medium text-blue-800">Court Fee: {formatCurrency(courtFee)}</p>
-                  <p className="text-sm text-blue-600">
+                  <p className="text-sm text-[var(--text-accent)]">
                     This is the approximate court fee. Actual fees may vary based on specific court rules.
                   </p>
                 </div>
@@ -128,7 +128,7 @@ export default function CourtFeeCalculatorPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <div className="grid grid-cols-3 gap-4 text-sm font-medium text-gray-500 border-b pb-2">
+            <div className="grid grid-cols-3 gap-4 text-sm font-medium text-[var(--text-secondary)] border-b pb-2">
               <div>Claim Amount</div>
               <div>Fee</div>
               <div>Type</div>

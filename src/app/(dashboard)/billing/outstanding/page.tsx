@@ -112,16 +112,16 @@ export default function OutstandingPage() {
     amount: number;
   }) => (
     <div className="text-center">
-      <p className="text-xs text-gray-500">{label}</p>
+      <p className="text-xs text-[var(--text-secondary)]">{label}</p>
       <p className="text-lg font-bold">{count}</p>
-      <p className="text-xs text-gray-400">{formatCurrency(amount)}</p>
+      <p className="text-xs text-[var(--text-tertiary)]">{formatCurrency(amount)}</p>
     </div>
   );
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--text-accent)]" />
       </div>
     );
   }
@@ -139,14 +139,14 @@ export default function OutstandingPage() {
             <IndianRupee className="h-6 w-6 text-orange-600" />
             Outstanding Payments
           </h1>
-          <p className="text-gray-500">Track and manage unpaid invoices</p>
+          <p className="text-[var(--text-secondary)]">Track and manage unpaid invoices</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="md:col-span-1">
           <CardContent className="pt-6">
-            <p className="text-sm text-gray-500">Total Outstanding</p>
+            <p className="text-sm text-[var(--text-secondary)]">Total Outstanding</p>
             <p className="text-2xl font-bold text-orange-600">
               {formatCurrency(totalOutstanding)}
             </p>
@@ -208,7 +208,7 @@ export default function OutstandingPage() {
         </CardHeader>
         <CardContent>
           {filtered.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No outstanding invoices.</p>
+            <p className="text-[var(--text-secondary)] text-center py-8">No outstanding invoices.</p>
           ) : (
             <div className="space-y-3">
               {filtered.map((inv) => (
@@ -231,11 +231,11 @@ export default function OutstandingPage() {
                         </Badge>
                       ) : null}
                     </div>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-[var(--text-secondary)]">
                       {inv.client?.full_name || "N/A"} &middot; Due:{" "}
                       {formatDate(inv.due_date)}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-[var(--text-tertiary)]">
                       {inv.case?.case_number || "N/A"}
                     </p>
                   </div>

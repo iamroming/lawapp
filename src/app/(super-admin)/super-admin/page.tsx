@@ -87,7 +87,7 @@ export default function SuperAdminDashboardPage() {
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 rounded-full border-4 border-yellow-400 border-t-transparent animate-spin" />
-          <p className="text-gray-500">Loading command center...</p>
+          <p className="text-[var(--text-secondary)]">Loading command center...</p>
         </div>
       </div>
     );
@@ -99,7 +99,7 @@ export default function SuperAdminDashboardPage() {
         <Crown className="h-8 w-8 text-yellow-500" />
         <div>
           <h1 className="text-2xl font-bold">Command Center</h1>
-          <p className="text-gray-500">Complete overview of the entire platform</p>
+          <p className="text-[var(--text-secondary)]">Complete overview of the entire platform</p>
         </div>
       </div>
 
@@ -120,22 +120,22 @@ export default function SuperAdminDashboardPage() {
               <UserPlus className="h-5 w-5 text-blue-500" />
               Recent Signups
             </CardTitle>
-            <Link href="/super-admin/users" className="text-sm text-blue-600 hover:underline">View All</Link>
+            <Link href="/super-admin/users" className="text-sm text-[var(--text-accent)] hover:underline">View All</Link>
           </CardHeader>
           <CardContent>
             {stats.recentSignups.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No users yet.</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">No users yet.</p>
             ) : (
               <div className="space-y-3">
                 {stats.recentSignups.map((u) => (
-                  <Link key={u.id} href={`/super-admin/users/${u.id}`} className="flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50">
+                  <Link key={u.id} href={`/super-admin/users/${u.id}`} className="flex items-center justify-between p-3 rounded-lg border hover:bg-[var(--surface-subtle)]">
                     <div>
                       <p className="font-medium text-sm">{u.full_name || "Unnamed"}</p>
-                      <p className="text-xs text-gray-500">{u.email}</p>
+                      <p className="text-xs text-[var(--text-secondary)]">{u.email}</p>
                     </div>
                     <div className="text-right">
                       <Badge variant={u.role === "admin" ? "destructive" : "secondary"}>{u.role}</Badge>
-                      <p className="text-xs text-gray-500 mt-1">{formatDate(u.created_at)}</p>
+                      <p className="text-xs text-[var(--text-secondary)] mt-1">{formatDate(u.created_at)}</p>
                     </div>
                   </Link>
                 ))}
@@ -151,18 +151,18 @@ export default function SuperAdminDashboardPage() {
               <Briefcase className="h-5 w-5 text-purple-500" />
               Recent Cases
             </CardTitle>
-            <Link href="/super-admin/cases" className="text-sm text-blue-600 hover:underline">View All</Link>
+            <Link href="/super-admin/cases" className="text-sm text-[var(--text-accent)] hover:underline">View All</Link>
           </CardHeader>
           <CardContent>
             {stats.recentCases.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No cases yet.</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">No cases yet.</p>
             ) : (
               <div className="space-y-3">
                 {stats.recentCases.map((c) => (
                   <div key={c.id} className="flex items-center justify-between p-3 rounded-lg border">
                     <div>
                       <p className="font-medium text-sm">{c.title}</p>
-                      <p className="text-xs text-gray-500">{c.case_number}</p>
+                      <p className="text-xs text-[var(--text-secondary)]">{c.case_number}</p>
                     </div>
                     <Badge variant="outline">{c.status}</Badge>
                   </div>
@@ -184,10 +184,10 @@ export default function SuperAdminDashboardPage() {
         <CardContent>
           <div className="flex flex-wrap gap-4">
             {stats.subscriptionBreakdown.length === 0 ? (
-              <p className="text-gray-500">No subscriptions yet.</p>
+              <p className="text-[var(--text-secondary)]">No subscriptions yet.</p>
             ) : (
               stats.subscriptionBreakdown.map((item) => (
-                <div key={item.status} className="flex items-center gap-2 px-4 py-3 rounded-lg border bg-gray-50">
+                <div key={item.status} className="flex items-center gap-2 px-4 py-3 rounded-lg border bg-[var(--background)]">
                   <Badge
                     variant={
                       item.status === "active" ? "success" :
@@ -211,7 +211,7 @@ export default function SuperAdminDashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Link href="/super-admin/users" className="flex items-center gap-2 p-3 rounded-lg border hover:bg-blue-50 hover:border-blue-200 transition-colors">
+            <Link href="/super-admin/users" className="flex items-center gap-2 p-3 rounded-lg border hover:bg-[var(--surface-subtle)] hover:border-blue-200 transition-colors">
               <Users className="h-5 w-5 text-blue-500" />
               <span className="text-sm font-medium">All Users</span>
             </Link>

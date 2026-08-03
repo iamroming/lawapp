@@ -20,7 +20,7 @@ const typeIcons: Record<string, React.ReactNode> = {
   case_update: <FileText className="h-5 w-5 text-purple-500" />,
   document_uploaded: <FileText className="h-5 w-5 text-cyan-500" />,
   deadline_approaching: <AlertTriangle className="h-5 w-5 text-orange-500" />,
-  system: <Bell className="h-5 w-5 text-gray-500" />,
+  system: <Bell className="h-5 w-5 text-[var(--text-secondary)]" />,
 };
 
 const typeColors: Record<string, string> = {
@@ -89,7 +89,7 @@ export default function NotificationsPage() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Notifications</h1>
         </div>
-        <div className="text-center py-12 text-gray-500">Loading notifications...</div>
+        <div className="text-center py-12 text-[var(--text-secondary)]">Loading notifications...</div>
       </div>
     );
   }
@@ -99,7 +99,7 @@ export default function NotificationsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold">Notifications</h1>
-          <p className="text-gray-500 text-sm">
+          <p className="text-[var(--text-secondary)] text-sm">
             {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? "s" : ""}` : "All caught up!"}
           </p>
         </div>
@@ -124,8 +124,8 @@ export default function NotificationsPage() {
           <CardContent className="py-12">
             <div className="text-center">
               <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900">No notifications</h3>
-              <p className="text-gray-500 mt-1">You're all caught up! Check back later for updates.</p>
+              <h3 className="text-lg font-medium text-[var(--text-primary)]">No notifications</h3>
+              <p className="text-[var(--text-secondary)] mt-1">You're all caught up! Check back later for updates.</p>
             </div>
           </CardContent>
         </Card>
@@ -134,24 +134,24 @@ export default function NotificationsPage() {
           {notifications.map((notification) => (
             <Card
               key={notification.id}
-              className={`transition-colors ${!notification.read ? "bg-blue-50 border-blue-200" : ""}`}
+              className={`transition-colors ${!notification.read ? "bg-[var(--surface-subtle)] border-blue-200" : ""}`}
             >
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
                   <div className="flex-shrink-0 mt-1">
-                    {typeIcons[notification.type] || <Bell className="h-5 w-5 text-gray-500" />}
+                    {typeIcons[notification.type] || <Bell className="h-5 w-5 text-[var(--text-secondary)]" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className={`font-medium ${!notification.read ? "text-gray-900" : "text-gray-700"}`}>
+                      <h3 className={`font-medium ${!notification.read ? "text-[var(--text-primary)]" : "text-[var(--text-primary)]"}`}>
                         {notification.title}
                       </h3>
                       <Badge className={typeColors[notification.type] || "bg-gray-100 text-gray-800"}>
                         {notificationTypeLabels[notification.type]?.en || notification.type}
                       </Badge>
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">{notification.message}</p>
-                    <p className="text-xs text-gray-400">{formatDateTime(notification.created_at)}</p>
+                    <p className="text-sm text-[var(--text-secondary)] mb-2">{notification.message}</p>
+                    <p className="text-xs text-[var(--text-tertiary)]">{formatDateTime(notification.created_at)}</p>
                   </div>
                   <div className="flex items-center gap-1">
                     {!notification.read && (

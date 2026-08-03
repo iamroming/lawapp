@@ -48,7 +48,7 @@ export function InvoiceTemplateSettings({ currentTemplate = "classic", onSave }:
             <FileText className="h-5 w-5" />
             <h3 className="text-lg font-semibold">Invoice Template</h3>
           </div>
-          <p className="text-sm text-gray-500">Choose a design template for your invoices</p>
+          <p className="text-sm text-[var(--text-secondary)]">Choose a design template for your invoices</p>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -58,13 +58,13 @@ export function InvoiceTemplateSettings({ currentTemplate = "classic", onSave }:
                 onClick={() => setSelected(tmpl.id)}
                 className={`relative p-4 rounded-xl border-2 text-left transition-all ${
                   selected === tmpl.id
-                    ? "border-blue-500 bg-blue-50 shadow-md"
-                    : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                    ? "border-blue-500 bg-[var(--surface-subtle)] shadow-md"
+                    : "border-gray-200 hover:border-gray-300 hover:bg-[var(--surface-subtle)]"
                 }`}
               >
                 {selected === tmpl.id && (
                   <div className="absolute top-3 right-3">
-                    <CheckCircle className="h-5 w-5 text-blue-600" />
+                    <CheckCircle className="h-5 w-5 text-[var(--text-accent)]" />
                   </div>
                 )}
                 <div className={`h-24 rounded-lg bg-gradient-to-br ${templateColors[tmpl.id]} mb-3 flex items-center justify-center relative overflow-hidden`}>
@@ -81,10 +81,10 @@ export function InvoiceTemplateSettings({ currentTemplate = "classic", onSave }:
                     </div>
                   </div>
                 </div>
-                <h3 className="font-semibold text-gray-900">{tmpl.name}</h3>
-                <p className="text-xs text-gray-500 mt-0.5">{tmpl.description}</p>
+                <h3 className="font-semibold text-[var(--text-primary)]">{tmpl.name}</h3>
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">{tmpl.description}</p>
                 {selected === tmpl.id && (
-                  <Badge className="mt-2 bg-blue-100 text-blue-700 text-xs">Selected</Badge>
+                  <Badge className="mt-2 bg-[var(--surface-accent)] text-[var(--text-accent)] text-xs">Selected</Badge>
                 )}
               </button>
             ))}

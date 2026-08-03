@@ -80,7 +80,7 @@ export default function ClientInvoicesPage() {
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--text-accent)]" />
       </div>
     );
   }
@@ -88,10 +88,10 @@ export default function ClientInvoicesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Receipt className="h-8 w-8 text-blue-600" />
+        <Receipt className="h-8 w-8 text-[var(--text-accent)]" />
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Invoices</h1>
-          <p className="text-gray-500">View and download your invoices</p>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">My Invoices</h1>
+          <p className="text-[var(--text-secondary)]">View and download your invoices</p>
         </div>
       </div>
 
@@ -102,8 +102,8 @@ export default function ClientInvoicesPage() {
               <Receipt className="h-5 w-5 text-yellow-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Pending</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm text-[var(--text-secondary)]">Pending</p>
+              <p className="text-2xl font-bold text-[var(--text-primary)]">
                 {formatCurrency(totalPending)}
               </p>
             </div>
@@ -115,8 +115,8 @@ export default function ClientInvoicesPage() {
               <Receipt className="h-5 w-5 text-green-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Paid</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm text-[var(--text-secondary)]">Paid</p>
+              <p className="text-2xl font-bold text-[var(--text-primary)]">
                 {formatCurrency(totalPaid)}
               </p>
             </div>
@@ -130,11 +130,11 @@ export default function ClientInvoicesPage() {
         </CardHeader>
         <CardContent>
           {invoices.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No invoices yet.</p>
+            <p className="text-[var(--text-secondary)] text-center py-8">No invoices yet.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className="bg-[var(--background)]">
                   <tr>
                     <th className="px-4 py-2 text-left">Invoice #</th>
                     <th className="px-4 py-2 text-left">Case</th>
@@ -146,7 +146,7 @@ export default function ClientInvoicesPage() {
                 </thead>
                 <tbody>
                   {invoices.map((inv) => (
-                    <tr key={inv.id} className="border-t hover:bg-gray-50">
+                    <tr key={inv.id} className="border-t hover:bg-[var(--surface-subtle)]">
                       <td className="px-4 py-3 font-medium">
                         {inv.invoice_number}
                       </td>

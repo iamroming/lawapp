@@ -154,7 +154,7 @@ export function ProfileSettings() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading profile...</div>
+        <div className="text-[var(--text-secondary)]">Loading profile...</div>
       </div>
     );
   }
@@ -177,9 +177,9 @@ export function ProfileSettings() {
               />
               <label
                 htmlFor="avatar-upload"
-                className="absolute bottom-0 right-0 p-1.5 bg-white rounded-full shadow-md border cursor-pointer hover:bg-gray-50"
+                className="absolute bottom-0 right-0 p-1.5 bg-[var(--surface)] rounded-full shadow-md border cursor-pointer hover:bg-[var(--surface-subtle)]"
               >
-                <Camera className="h-4 w-4 text-gray-600" />
+                <Camera className="h-4 w-4 text-[var(--text-secondary)]" />
                 <input
                   id="avatar-upload"
                   type="file"
@@ -191,8 +191,8 @@ export function ProfileSettings() {
             </div>
             <div>
               <p className="font-medium">{profile?.full_name}</p>
-              <p className="text-sm text-gray-500">{profile?.email}</p>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-sm text-[var(--text-secondary)]">{profile?.email}</p>
+              <p className="text-xs text-[var(--text-tertiary)] mt-1">
                 Role: {profile?.role || "Member"}
               </p>
             </div>
@@ -220,9 +220,9 @@ export function ProfileSettings() {
               type="email"
               value={formData.email}
               disabled
-              className="bg-gray-50"
+              className="bg-[var(--background)]"
             />
-            <p className="text-xs text-gray-500">Email cannot be changed</p>
+            <p className="text-xs text-[var(--text-secondary)]">Email cannot be changed</p>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Phone</label>
