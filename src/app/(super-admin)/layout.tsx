@@ -41,10 +41,10 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
 
   if (authorized === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-12 w-12 rounded-full border-4 border-yellow-400 border-t-transparent animate-spin" />
-          <p className="text-gray-400">Verifying owner access...</p>
+          <div className="h-12 w-12 rounded-full border-4 border-[var(--text-primary)] border-t-transparent animate-spin" />
+          <p className="text-[var(--text-secondary)]">Verifying owner access...</p>
         </div>
       </div>
     );
@@ -52,7 +52,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
 
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-[var(--background)]">
         <SuperAdminSidebar />
         <div className="lg:pl-64">
           <div className="pt-14 lg:pt-0 pb-16 lg:pb-0">

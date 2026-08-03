@@ -6,7 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+      <div className="min-h-screen bg-[var(--background)] transition-colors">
         <Sidebar />
         <div className="lg:pl-64">
           <div className="pt-14 lg:pt-0 pb-16 lg:pb-0">

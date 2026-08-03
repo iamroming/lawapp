@@ -180,13 +180,13 @@ export function Sidebar() {
                 href={item.href}
                 onClick={() => isMobile && setMobileOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
                   isActive
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    ? "font-semibold text-[var(--text-primary)] bg-[var(--surface-subtle)]"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)]"
                 )}
               >
-                <item.icon className="h-5 w-5 shrink-0" />
+                <item.icon className="h-4 w-4 shrink-0" />
                 {item.name}
               </Link>
             );
@@ -198,12 +198,12 @@ export function Sidebar() {
             <button
               onClick={() => toggleGroup(group.label)}
               className={cn(
-                "flex items-center justify-between w-full px-3 py-2 text-xs font-semibold uppercase tracking-wider rounded-md transition-colors",
-                active ? "text-blue-600" : "text-gray-400 hover:text-gray-600"
+                "flex items-center justify-between w-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider rounded-md transition-colors",
+                active ? "text-[var(--text-primary)]" : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
               )}
             >
               {group.label}
-              {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+              {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
             </button>
             {open && group.items.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -213,10 +213,10 @@ export function Sidebar() {
                   href={item.href}
                   onClick={() => isMobile && setMobileOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 pl-6 pr-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                    "flex items-center gap-3 pl-5 pr-3 py-2 rounded-lg text-sm transition-colors",
                     isActive
-                      ? "bg-blue-50 text-blue-700"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      ? "font-semibold text-[var(--text-primary)] bg-[var(--surface-subtle)]"
+                      : "text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)]"
                   )}
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
@@ -228,18 +228,18 @@ export function Sidebar() {
         );
       })}
       {canAccessAdmin && (
-        <div className="mt-2 pt-2 border-t border-gray-100">
+        <div className="mt-2 pt-2 border-t border-[var(--border)]">
           <Link
             href="/admin"
             onClick={() => isMobile && setMobileOpen(false)}
             className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
               pathname.startsWith("/admin")
-                ? "bg-red-50 text-red-700"
-                : "text-red-600 hover:bg-red-50 hover:text-red-700"
+                ? "font-semibold text-[var(--text-primary)] bg-[var(--surface-subtle)]"
+                : "text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)]"
             )}
           >
-            <Shield className="h-5 w-5 shrink-0" />
+            <Shield className="h-4 w-4 shrink-0" />
             Owner Panel
           </Link>
         </div>
@@ -250,22 +250,22 @@ export function Sidebar() {
   return (
     <>
       {/* Mobile top bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 px-3 h-14 flex items-center">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-[var(--surface-warm)] border-b border-[var(--border)] px-3 h-14 flex items-center">
         <button
           onClick={() => setMobileOpen(true)}
-          className="text-gray-600 hover:text-gray-900 p-1 -ml-1"
+          className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1 -ml-1"
           aria-label="Open menu"
         >
-          <Menu className="h-6 w-6" />
+          <Menu className="h-5 w-5" />
         </button>
         <Link href="/dashboard" className="ml-3 flex items-center gap-2">
-          <Scale className="h-6 w-6 text-blue-600" />
-          <span className="font-bold text-lg">LawXP</span>
+          <Scale className="h-5 w-5 text-[var(--text-primary)]" />
+          <span className="font-semibold text-base text-[var(--text-primary)]">LawXP</span>
         </Link>
         <div className="flex-1" />
         <Link
           href="/dashboard"
-          className="p-2 text-gray-500 hover:text-gray-700"
+          className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
           aria-label="Search"
         >
           <Search className="h-5 w-5" />
@@ -275,29 +275,29 @@ export function Sidebar() {
       {/* Mobile overlay */}
       {mobileOpen && (
         <div className="lg:hidden fixed inset-0 z-50">
-          <div className="fixed inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-          <div className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-white shadow-xl flex flex-col">
-            <div className="flex items-center justify-between h-14 px-4 border-b shrink-0">
+          <div className="fixed inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
+          <div className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-[var(--surface-warm)] border-r border-[var(--border)] flex flex-col">
+            <div className="flex items-center justify-between h-14 px-4 border-b border-[var(--border)] shrink-0">
               <div className="flex items-center gap-2">
-                <Scale className="h-6 w-6 text-blue-600" />
-                <span className="font-bold text-lg">LawXP</span>
+                <Scale className="h-5 w-5 text-[var(--text-primary)]" />
+                <span className="font-semibold text-base text-[var(--text-primary)]">LawXP</span>
               </div>
               <button
                 onClick={() => setMobileOpen(false)}
-                className="p-1 -mr-1 text-gray-500 hover:text-gray-700"
+                className="p-1 -mr-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 aria-label="Close menu"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
             {renderNav(true)}
-            <div className="p-4 border-t shrink-0 space-y-3">
+            <div className="p-4 border-t border-[var(--border)] shrink-0 space-y-3">
               <LanguageSwitcher />
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-[var(--danger)] hover:bg-red-50 transition-colors"
               >
-                <LogOut className="h-5 w-5" />
+                <LogOut className="h-4 w-4" />
                 Sign Out
               </button>
             </div>
@@ -306,21 +306,21 @@ export function Sidebar() {
       )}
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white border-r border-gray-200">
-        <div className="flex items-center gap-2 h-16 px-6 border-b">
-          <Scale className="h-6 w-6 text-blue-600" />
-          <span className="font-bold text-xl">LawXP</span>
+      <div className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-[var(--surface-warm)] border-r border-[var(--border)]">
+        <div className="flex items-center gap-2 h-14 px-5 border-b border-[var(--border)]">
+          <Scale className="h-5 w-5 text-[var(--text-primary)]" />
+          <span className="font-semibold text-base text-[var(--text-primary)]">LawXP</span>
         </div>
         {renderNav()}
-        <div className="p-4 border-t">
+        <div className="p-4 border-t border-[var(--border)]">
           <div className="mb-3">
             <LanguageSwitcher />
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50"
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-[var(--danger)] hover:bg-red-50 transition-colors"
           >
-            <LogOut className="h-5 w-5" />
+            <LogOut className="h-4 w-4" />
             Sign Out
           </button>
         </div>

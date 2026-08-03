@@ -41,15 +41,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (isAdmin === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-500">Checking permissions...</div>
+      <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
+        <div className="text-[var(--text-secondary)]">Checking permissions...</div>
       </div>
     );
   }
 
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-[var(--background)]">
         <AdminSidebar />
         <div className="lg:pl-64">
           <div className="pt-14 lg:pt-0 pb-16 lg:pb-0">

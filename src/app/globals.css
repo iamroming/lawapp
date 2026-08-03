@@ -3,14 +3,41 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #0a0a0a;
+  /* Claude-style warm palette */
+  --background: #FAF9F6;
+  --foreground: #1A1A18;
+  --surface: #FFFFFF;
+  --surface-warm: #F5F0E8;
+  --surface-subtle: #F0EDE6;
+  --text-primary: #1A1A18;
+  --text-secondary: #5A5750;
+  --text-tertiary: #9B9690;
+  --border: #E2DDD6;
+  --border-strong: #C9C3BB;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --danger: #DC2626;
+  --success: #16A34A;
+  --warning: #D97706;
   color-scheme: light dark;
 }
 
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --background: #1C1B19;
+  --foreground: #EDE9E3;
+  --surface: #2A2927;
+  --surface-warm: #232220;
+  --surface-subtle: #302F2C;
+  --text-primary: #EDE9E3;
+  --text-secondary: #A09A92;
+  --text-tertiary: #6B6560;
+  --border: #3A3835;
+  --border-strong: #4E4B47;
+  --accent: #60A5FA;
+  --accent-hover: #93C5FD;
+  --danger: #F87171;
+  --success: #4ADE80;
+  --warning: #FBBF24;
 }
 
 html,
@@ -25,7 +52,8 @@ body {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: "Geist", Arial, Helvetica, sans-serif;
+  font-family: "Inter", "DM Sans", system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
 }
 
 * {
@@ -52,7 +80,6 @@ body {
     min-height: 44px;
   }
 
-  /* Larger tap targets for navigation items */
   nav a {
     min-height: 48px;
     display: flex;
@@ -66,7 +93,6 @@ body {
     overflow-x: hidden;
   }
 
-  /* Make tables scrollable on mobile */
   table {
     display: block;
     overflow-x: auto;
@@ -88,7 +114,6 @@ body {
     font-size: 16px;
   }
 
-  /* Ensure inputs are properly sized */
   input[type="text"],
   input[type="email"],
   input[type="password"],
@@ -114,13 +139,30 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Focus visible for keyboard navigation */
+/* Focus visible for keyboard navigation - warm coral ring */
 :focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
 /* Remove default focus outline for mouse users */
 :focus:not(:focus-visible) {
   outline: none;
+}
+
+/* Claude-style flat card utility */
+.claude-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+/* Claude-style warm surfaces */
+.claude-surface {
+  background: var(--surface-warm);
+}
+
+.claude-surface-subtle {
+  background: var(--surface-subtle);
 }

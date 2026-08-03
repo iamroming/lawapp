@@ -35,24 +35,24 @@ export function Modal({ open, onClose, children, title, description, className }
 
   return (
     <div className="fixed inset-0 z-50">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/40" onClick={onClose} />
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <div
           className={cn(
-            "relative w-full max-w-lg rounded-lg bg-white p-6 shadow-lg max-h-[90vh] overflow-y-auto",
+            "relative w-full max-w-lg rounded-xl bg-[var(--surface)] border border-[var(--border)] p-6 shadow-lg max-h-[90vh] overflow-y-auto",
             className
           )}
         >
           <button
             onClick={onClose}
-            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100"
+            className="absolute right-4 top-4 rounded-full p-1 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)] transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
           {title && (
             <div className="mb-4">
-              <h2 className="text-lg font-semibold">{title}</h2>
-              {description && <p className="text-sm text-gray-500 mt-1">{description}</p>}
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">{title}</h2>
+              {description && <p className="text-sm text-[var(--text-secondary)] mt-1">{description}</p>}
             </div>
           )}
           {children}
