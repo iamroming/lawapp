@@ -54,7 +54,7 @@ export function Pagination({ currentPage, totalPages, onPageChange }: Pagination
       </Button>
       {getVisiblePages().map((page, i) =>
         page === "..." ? (
-          <span key={`dots-${i}`} className="px-2 text-gray-500">
+          <span key={`dots-${i}`} className="px-2 text-[var(--text-secondary)]">
             ...
           </span>
         ) : (

@@ -16,9 +16,9 @@ export function SuperAdminHeader() {
   }, [supabase]);
 
   return (
-    <header className="h-14 lg:h-16 border-b border-gray-200 bg-white flex items-center justify-between pl-14 lg:pl-6 pr-3 lg:pr-6">
+    <header className="h-14 lg:h-16 border-b border-[var(--border)] bg-[var(--surface)] flex items-center justify-between pl-14 lg:pl-6 pr-3 lg:pr-6">
       <div className="flex items-center gap-2 text-sm">
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-[var(--text-accent)] to-[var(--text-accent)] text-white">
           <Crown className="h-3 w-3 mr-1" />
           OWNER ACCESS
         </span>
@@ -26,9 +26,9 @@ export function SuperAdminHeader() {
       <div className="flex items-center gap-3">
         <div className="text-right hidden sm:block">
           <p className="text-sm font-medium">{email}</p>
-          <p className="text-xs text-yellow-600 font-medium">Super Admin</p>
+          <p className="text-xs text-[var(--text-accent)] font-medium">Super Admin</p>
         </div>
-        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white font-bold">
+        <div className="h-10 w-10 rounded-full bg-[var(--text-accent)] flex items-center justify-center text-white font-bold">
           SA
         </div>
       </div>

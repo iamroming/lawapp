@@ -29,10 +29,10 @@ export function ConfirmDialog({
     <Modal open={open} onClose={onClose} title={title}>
       <div className="space-y-4">
         <div className="flex items-start gap-3">
-          <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${destructive ? "bg-red-100" : "bg-yellow-100"}`}>
-            <AlertTriangle className={`h-5 w-5 ${destructive ? "text-red-600" : "text-yellow-600"}`} />
+          <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${destructive ? "bg-red-100" : "bg-[var(--surface-subtle)]"}`}>
+            <AlertTriangle className={`h-5 w-5 ${destructive ? "text-red-600" : "text-[var(--text-accent)]"}`} />
           </div>
-          <p className="text-sm text-gray-600 pt-2">{message}</p>
+          <p className="text-sm text-[var(--text-secondary)] pt-2">{message}</p>
         </div>
         <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={onClose} disabled={loading}>

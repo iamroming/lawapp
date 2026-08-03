@@ -32,27 +32,27 @@ export function ConfirmationModal({
   const variantStyles = {
     danger: "bg-red-600 hover:bg-red-700 text-white",
     warning: "bg-yellow-600 hover:bg-yellow-700 text-white",
-    default: "bg-blue-600 hover:bg-blue-700 text-white",
+    default: "bg-[var(--text-primary)] text-[var(--background)]",
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+      <div className="relative bg-[var(--surface)] rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+          className="absolute top-4 right-4 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
         >
           <X className="h-5 w-5" />
         </button>
 
         <div className="flex items-start gap-4">
-          <div className={`p-2 rounded-full ${variant === "danger" ? "bg-red-100" : variant === "warning" ? "bg-yellow-100" : "bg-blue-100"}`}>
-            <AlertTriangle className={`h-5 w-5 ${variant === "danger" ? "text-red-600" : variant === "warning" ? "text-yellow-600" : "text-blue-600"}`} />
+          <div className={`p-2 rounded-full ${variant === "danger" ? "bg-red-100" : variant === "warning" ? "bg-yellow-100" : "bg-[var(--surface-subtle)]"}`}>
+            <AlertTriangle className={`h-5 w-5 ${variant === "danger" ? "text-red-600" : variant === "warning" ? "text-yellow-600" : "text-[var(--text-accent)]"}`} />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-            <p className="mt-2 text-sm text-gray-600">{message}</p>
+            <h3 className="text-lg font-semibold text-[var(--text-primary)]">{title}</h3>
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">{message}</p>
           </div>
         </div>
 

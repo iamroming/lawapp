@@ -32,8 +32,8 @@ export class ErrorBoundary extends React.Component<
         <div className="min-h-[400px] flex items-center justify-center p-8">
           <div className="text-center max-w-md">
             <AlertTriangle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Something went wrong</h2>
-            <p className="text-gray-500 text-sm mb-6">
+            <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-2">Something went wrong</h2>
+            <p className="text-[var(--text-secondary)] text-sm mb-6">
               An unexpected error occurred. Please try again or report this issue.
             </p>
             <div className="flex justify-center gap-3">

@@ -53,7 +53,6 @@ export function GlobalSearch() {
       setLoading(true);
       const term = q.toLowerCase();
 
-      // Get user's firm_id for scoping (BUG #8 fix)
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
@@ -167,12 +166,12 @@ export function GlobalSearch() {
   }, [query, search]);
 
   const typeIcons: Record<string, React.ReactNode> = {
-    case: <Briefcase className="h-4 w-4 text-blue-500" />,
-    client: <Users className="h-4 w-4 text-green-500" />,
-    document: <FileText className="h-4 w-4 text-purple-500" />,
-    invoice: <Receipt className="h-4 w-4 text-orange-500" />,
-    hearing: <Calendar className="h-4 w-4 text-red-500" />,
-    tag: <Tag className="h-4 w-4 text-yellow-500" />,
+    case: <Briefcase className="h-4 w-4 text-[var(--text-accent)]" />,
+    client: <Users className="h-4 w-4 text-green-600" />,
+    document: <FileText className="h-4 w-4 text-purple-600" />,
+    invoice: <Receipt className="h-4 w-4 text-orange-600" />,
+    hearing: <Calendar className="h-4 w-4 text-red-600" />,
+    tag: <Tag className="h-4 w-4 text-yellow-600" />,
   };
 
   const typeLabels: Record<string, string> = {
@@ -196,11 +195,11 @@ export function GlobalSearch() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 rounded-lg border bg-gray-50 px-3 py-2 text-sm text-gray-500 hover:bg-gray-100 transition-colors w-full sm:w-64"
+        className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-subtle)] px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface)] transition-colors w-full sm:w-64"
       >
         <Search className="h-4 w-4" />
         <span className="hidden sm:inline">Search...</span>
-        <kbd className="ml-auto hidden sm:inline-flex items-center gap-0.5 rounded border bg-white px-1.5 text-[10px] font-medium text-gray-500">
+        <kbd className="ml-auto hidden sm:inline-flex items-center gap-0.5 rounded border border-[var(--border)] bg-[var(--surface)] px-1.5 text-[10px] font-medium text-[var(--text-secondary)]">
           <span className="text-xs">Ctrl</span>+K
         </kbd>
       </button>
@@ -208,30 +207,30 @@ export function GlobalSearch() {
       <Modal open={open} onClose={() => setOpen(false)} title="Search">
         <div className="space-y-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
             <input
               ref={inputRef}
               type="text"
               placeholder="Search cases, clients, documents, invoices, hearings..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full rounded-lg border pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
             />
           </div>
 
           {loading && (
-            <p className="text-center text-sm text-gray-500 py-4">Searching...</p>
+            <p className="text-center text-sm text-[var(--text-secondary)] py-4">Searching...</p>
           )}
 
           {!loading && query.length >= 2 && results.length === 0 && (
-            <p className="text-center text-sm text-gray-500 py-4">No results found</p>
+            <p className="text-center text-sm text-[var(--text-secondary)] py-4">No results found</p>
           )}
 
           {!loading && Object.keys(grouped).length > 0 && (
             <div className="max-h-80 overflow-y-auto space-y-4">
               {Object.entries(grouped).map(([type, items]) => (
                 <div key={type}>
-                  <p className="text-xs font-medium text-gray-400 uppercase mb-2">
+                  <p className="text-xs font-medium text-[var(--text-tertiary)] uppercase mb-2">
                     {typeLabels[type]}
                   </p>
                   {items.map((r) => (
@@ -241,14 +240,14 @@ export function GlobalSearch() {
                         router.push(r.href);
                         setOpen(false);
                       }}
-                      className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-gray-50 text-left transition-colors"
+                      className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-[var(--surface-subtle)] text-left transition-colors"
                     >
                       {typeIcons[r.type]}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{r.title}</p>
-                        <p className="text-xs text-gray-500 truncate">{r.subtitle}</p>
+                        <p className="text-xs text-[var(--text-secondary)] truncate">{r.subtitle}</p>
                       </div>
-                      <ArrowRight className="h-4 w-4 text-gray-300 flex-shrink-0" />
+                      <ArrowRight className="h-4 w-4 text-[var(--text-tertiary)] flex-shrink-0" />
                     </button>
                   ))}
                 </div>
@@ -257,7 +256,7 @@ export function GlobalSearch() {
           )}
 
           {query.length < 2 && (
-            <p className="text-center text-sm text-gray-400 py-4">
+            <p className="text-center text-sm text-[var(--text-tertiary)] py-4">
               Type at least 2 characters to search
             </p>
           )}

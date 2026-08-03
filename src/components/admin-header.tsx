@@ -17,8 +17,8 @@ export function AdminHeader() {
   }, [supabase]);
 
   return (
-    <header className="h-14 lg:h-16 border-b bg-white flex items-center justify-between pl-14 lg:pl-6 pr-3 lg:pr-4">
-      <div className="flex items-center gap-2 text-sm text-gray-500">
+    <header className="h-14 lg:h-16 border-b border-[var(--border)] bg-[var(--surface)] flex items-center justify-between pl-14 lg:pl-6 pr-3 lg:pr-4">
+      <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
           Firm Owner
         </span>
@@ -26,7 +26,7 @@ export function AdminHeader() {
       <div className="flex items-center gap-3">
         <div className="text-right hidden sm:block">
           <p className="text-sm font-medium">{user?.email}</p>
-          <p className="text-xs text-gray-500">Owner</p>
+          <p className="text-xs text-[var(--text-secondary)]">Owner</p>
         </div>
         <Avatar
           name={user?.user_metadata?.full_name || user?.email || "O"}

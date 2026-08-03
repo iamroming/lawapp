@@ -266,7 +266,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--text-accent)]" />
       </div>
     );
   }
@@ -277,7 +277,7 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-bold">
           {isOwner ? "Firm Dashboard" : `Welcome, ${userName}`}
         </h1>
-        <p className="text-gray-500">
+        <p className="text-[var(--text-secondary)]">
           {isOwner ? "Overview of your firm's practice" : "Here's your work overview"}
         </p>
       </div>
@@ -314,7 +314,7 @@ export default function DashboardPage() {
 
       {/* Secondary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+        <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50 border-[var(--border)]">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -325,18 +325,18 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+        <Card className="bg-gradient-to-br from-[var(--surface-subtle)] to-[var(--surface)] border-[var(--border)]">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-blue-700">Billable Hours</p>
-                <p className="text-xl font-bold text-blue-900">{stats.billableHours}h</p>
+                <p className="text-sm text-[var(--text-secondary)]">Billable Hours</p>
+                <p className="text-xl font-bold text-[var(--text-primary)]">{stats.billableHours}h</p>
               </div>
-              <Clock className="h-6 w-6 text-blue-600" />
+              <Clock className="h-6 w-6 text-[var(--text-accent)]" />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+        <Card className="bg-gradient-to-br from-red-50 to-red-100/50 border-[var(--border)]">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -360,16 +360,16 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             {recentCases.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No cases yet. Create your first case!</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">No cases yet. Create your first case!</p>
             ) : (
               <div className="space-y-3">
                 {recentCases.map((caseItem) => (
-                  <div key={caseItem.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50">
+                  <div key={caseItem.id} className="flex items-center justify-between p-3 rounded-lg border border-[var(--border)] hover:bg-[var(--surface-subtle)]">
                     <div className="space-y-1">
                       <p className="font-medium text-sm">{caseItem.title}</p>
-                      <p className="text-xs text-gray-500">{caseItem.case_number}</p>
+                      <p className="text-xs text-[var(--text-secondary)]">{caseItem.case_number}</p>
                       {caseItem.client && (
-                        <p className="text-xs text-gray-400">{caseItem.client.full_name}</p>
+                        <p className="text-xs text-[var(--text-tertiary)]">{caseItem.client.full_name}</p>
                       )}
                     </div>
                     <div className="flex flex-col items-end gap-1">
@@ -377,7 +377,7 @@ export default function DashboardPage() {
                         {caseItem.status}
                       </Badge>
                       {caseItem.next_hearing_date && (
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-[var(--text-secondary)]">
                           {new Date(caseItem.next_hearing_date).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
                         </span>
                       )}
@@ -399,23 +399,23 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             {upcomingHearings.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No upcoming hearings scheduled.</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">No upcoming hearings scheduled.</p>
             ) : (
               <div className="space-y-3">
                 {upcomingHearings.map((hearing) => (
-                  <div key={hearing.id} className="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50">
-                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-blue-50 flex flex-col items-center justify-center">
-                      <span className="text-xs font-medium text-blue-600">
+                  <div key={hearing.id} className="flex items-start gap-3 p-3 rounded-lg border border-[var(--border)] hover:bg-[var(--surface-subtle)]">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-[var(--surface-subtle)] flex flex-col items-center justify-center">
+                      <span className="text-xs font-medium text-[var(--text-accent)]">
                         {new Date(hearing.hearing_date).toLocaleDateString("en-IN", { month: "short" })}
                       </span>
-                      <span className="text-lg font-bold text-blue-700">
+                      <span className="text-lg font-bold text-[var(--text-primary)]">
                         {new Date(hearing.hearing_date).getDate()}
                       </span>
                     </div>
                     <div className="space-y-1 flex-1">
                       <p className="font-medium text-sm">{hearing.case?.title}</p>
-                      <p className="text-xs text-gray-500">{hearing.case?.case_number}</p>
-                      <p className="text-xs text-gray-500">{hearing.purpose}</p>
+                      <p className="text-xs text-[var(--text-secondary)]">{hearing.case?.case_number}</p>
+                      <p className="text-xs text-[var(--text-secondary)]">{hearing.purpose}</p>
                     </div>
                     {new Date(hearing.hearing_date).toDateString() === new Date().toDateString() && (
                       <Badge className="bg-red-100 text-red-800">Today</Badge>
@@ -437,22 +437,22 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             {loadingCauseList ? (
-              <p className="text-gray-500 text-center py-4">Loading cause list...</p>
+              <p className="text-[var(--text-secondary)] text-center py-4">Loading cause list...</p>
             ) : causeList.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">
+              <p className="text-[var(--text-secondary)] text-center py-4">
                 No cause list available. Link cases to eCourts to auto-fetch daily cause lists.
               </p>
             ) : (
               <div className="space-y-2">
                 {causeList.map((item: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between p-2 rounded border text-sm hover:bg-gray-50">
+                  <div key={i} className="flex items-center justify-between p-2 rounded border border-[var(--border)] text-sm hover:bg-[var(--surface-subtle)]">
                     <div className="flex-1">
                       <p className="font-medium">{item.case_number || item.serial_number}</p>
-                      <p className="text-xs text-gray-500">{item.petitioner} vs {item.respondent}</p>
+                      <p className="text-xs text-[var(--text-secondary)]">{item.petitioner} vs {item.respondent}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs font-medium text-blue-600">{item.court_name || item.court?.toUpperCase()}</p>
-                      {item.bench && <p className="text-xs text-gray-400">{item.bench}</p>}
+                      <p className="text-xs font-medium text-[var(--text-accent)]">{item.court_name || item.court?.toUpperCase()}</p>
+                      {item.bench && <p className="text-xs text-[var(--text-tertiary)]">{item.bench}</p>}
                     </div>
                   </div>
                 ))}
@@ -475,12 +475,12 @@ export default function DashboardPage() {
                 {recentAlerts.map((alert: any) => {
                   const caseInfo = alert.case_alerts?.cases;
                   return (
-                    <div key={alert.id} className="flex items-center justify-between p-2 rounded border text-sm hover:bg-gray-50">
+                    <div key={alert.id} className="flex items-center justify-between p-2 rounded border border-[var(--border)] text-sm hover:bg-[var(--surface-subtle)]">
                       <div className="flex-1">
                         <p className="font-medium">{caseInfo?.case_number || "Unknown Case"}</p>
-                        <p className="text-xs text-gray-500">{alert.change_summary}</p>
+                        <p className="text-xs text-[var(--text-secondary)]">{alert.change_summary}</p>
                       </div>
-                      <p className="text-xs text-gray-400 ml-2 whitespace-nowrap">
+                      <p className="text-xs text-[var(--text-tertiary)] ml-2 whitespace-nowrap">
                         {new Date(alert.created_at).toLocaleDateString()}
                       </p>
                     </div>
