@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -31,6 +32,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
+
+  // Rate limit: 10 submissions per minute per IP
+  const ip = getClientIp(request);
+  const { allowed } = await checkRateLimit(`intake:${ip}`, { windowMs: 60000, maxRequests: 10 });
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+  }
 
   try {
     const body = await request.json();

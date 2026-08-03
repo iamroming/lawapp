@@ -80,7 +80,7 @@ export const paymentSchema = z.object({
   client_id: z.string().uuid().optional().or(z.literal("")),
   case_id: z.string().uuid().optional().or(z.literal("")),
   amount: z.number().min(1, "Amount must be greater than 0"),
-  payment_method: z.enum(["cash", "bank_transfer", "upi", "cheque", "card", "other"]),
+  payment_method: z.enum(["cash", "bank_transfer", "upi", "cheque", "card", "other"]).nullable(),
   payment_date: z.string().min(1, "Date is required"),
   reference_number: z.string().optional(),
   notes: z.string().optional(),

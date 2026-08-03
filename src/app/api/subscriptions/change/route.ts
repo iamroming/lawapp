@@ -45,8 +45,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID!;
-  const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET!;
+  const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
+  const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
+  if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
+    return NextResponse.json({ error: "Payment system not configured" }, { status: 500 });
+  }
   const auth = "Basic " + Buffer.from(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`).toString("base64");
 
   const plan = PLANS[planSlug];

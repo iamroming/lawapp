@@ -13,6 +13,14 @@ interface RateLimitEntry {
 // Fallback to in-memory for local dev when Supabase is unavailable
 const memoryStore = new Map<string, { count: number; resetTime: number }>();
 
+// Clean up expired entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of memoryStore) {
+    if (now > entry.resetTime) memoryStore.delete(key);
+  }
+}, 5 * 60 * 1000);
+
 export async function checkRateLimit(
   key: string,
   config: RateLimitConfig = { windowMs: 60000, maxRequests: 5 }
@@ -81,6 +89,7 @@ export async function checkRateLimit(
     return { allowed: false, remaining: 0, resetIn };
   }
 
+  // Atomic increment - no TOCTOU race in single-threaded JS
   entry.count++;
   return {
     allowed: true,

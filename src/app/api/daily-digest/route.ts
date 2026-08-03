@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       if (!owners?.length) continue;
 
       // 1. Today's hearings
-      const { data: todayHearings } = await supabase
+      const { data: todayHearings, error: todayError } = await supabase
         .from("hearings")
         .select("*, case:cases(id, title, case_number, court, judge_name)")
         .eq("firm_id", firmId)
@@ -52,9 +52,10 @@ export async function GET(request: NextRequest) {
         .lt("hearing_date", tomorrowStr)
         .eq("is_completed", false)
         .is("deleted_at", null);
+      if (todayError) console.error("Daily digest today hearings error:", todayError.message);
 
       // 2. This week's hearings
-      const { data: weekHearings } = await supabase
+      const { data: weekHearings, error: weekError } = await supabase
         .from("hearings")
         .select("*, case:cases(id, title, case_number, court)")
         .eq("firm_id", firmId)
@@ -62,9 +63,10 @@ export async function GET(request: NextRequest) {
         .lte("hearing_date", nextWeekStr)
         .eq("is_completed", false)
         .is("deleted_at", null);
+      if (weekError) console.error("Daily digest week hearings error:", weekError.message);
 
       // 3. Pending tasks
-      const { data: pendingTasks } = await supabase
+      const { data: pendingTasks, error: tasksError } = await supabase
         .from("tasks")
         .select("id, title, due_date, priority, assigned_to:profiles!tasks_assigned_to_fkey(full_name)")
         .eq("firm_id", firmId)
@@ -72,14 +74,16 @@ export async function GET(request: NextRequest) {
         .lte("due_date", nextWeekStr)
         .order("due_date", { ascending: true })
         .limit(10);
+      if (tasksError) console.error("Daily digest tasks error:", tasksError.message);
 
       // 4. Overdue invoices
-      const { data: overdueInvoices } = await supabase
+      const { data: overdueInvoices, error: invoicesError } = await supabase
         .from("invoices")
         .select("id, invoice_number, amount, tax_amount, due_date, client:clients(full_name)")
         .eq("firm_id", firmId)
         .eq("status", "pending")
         .lt("due_date", todayStr);
+      if (invoicesError) console.error("Daily digest invoices error:", invoicesError.message);
 
       // Build digest content
       const hearingCount = (todayHearings?.length || 0);

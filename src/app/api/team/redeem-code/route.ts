@@ -92,5 +92,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ valid: false, error: "Code has expired" });
   }
 
-  return NextResponse.json({ valid: true, role_id: invite.role_id });
+  return NextResponse.json({ valid: true });
 }

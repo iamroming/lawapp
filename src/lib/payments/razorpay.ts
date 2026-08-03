@@ -83,10 +83,11 @@ export function verifyPayment(
     .update(`${orderId}|${paymentId}`)
     .digest("hex");
 
-  return crypto.timingSafeEqual(
-    Buffer.from(generatedSignature),
-    Buffer.from(signature)
-  );
+  const sigBuffer = Buffer.from(generatedSignature);
+  const signatureBuffer = Buffer.from(signature);
+  if (sigBuffer.length !== signatureBuffer.length) return false;
+
+  return crypto.timingSafeEqual(sigBuffer, signatureBuffer);
 }
 
 export async function fetchPayment(paymentId: string): Promise<RazorpayPayment> {

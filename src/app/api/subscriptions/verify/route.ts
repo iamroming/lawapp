@@ -10,16 +10,21 @@ export async function POST(request: NextRequest) {
   }
 
   const crypto = await import("crypto");
-  const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET!;
+  const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
+  if (!RAZORPAY_KEY_SECRET) {
+    return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+  }
   const generatedSignature = crypto
     .createHmac("sha256", RAZORPAY_KEY_SECRET)
     .update(`${razorpay_payment_id}|${razorpay_subscription_id}`)
     .digest("hex");
 
-  const isValid = crypto.timingSafeEqual(
-    Buffer.from(generatedSignature, "hex"),
-    Buffer.from(razorpay_signature, "hex")
-  );
+  const sigBuffer = Buffer.from(generatedSignature, "hex");
+  const razorpayBuffer = Buffer.from(razorpay_signature, "hex");
+  if (sigBuffer.length !== razorpayBuffer.length) {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+  }
+  const isValid = crypto.timingSafeEqual(sigBuffer, razorpayBuffer);
   if (!isValid) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
