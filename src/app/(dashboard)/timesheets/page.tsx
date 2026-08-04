@@ -45,11 +45,30 @@ export default function TimesheetsPage() {
 
   const fetchData = async () => {
     const user = (await supabase.auth.getUser()).data.user;
-    const [tsRes, casesRes, timerRes] = await Promise.all([
-      supabase.from("timesheets").select("*, cases(id, title, case_number)").order("worked_date", { ascending: false }).limit(50),
-      supabase.from("cases").select("id, title, case_number"),
-      supabase.from("active_timers").select("*, cases(id, title, case_number)").eq("user_id", user?.id || "").single(),
-    ]);
+    if (!user) { setLoading(false); return; }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, firm_id")
+      .eq("id", user.id)
+      .single();
+
+    const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
+    const firmId = profile?.firm_id || user.id;
+
+    const tsQuery = supabase.from("timesheets").select("*, cases(id, title, case_number)").order("worked_date", { ascending: false }).limit(50);
+    const casesQuery = supabase.from("cases").select("id, title, case_number");
+    const timerQuery = supabase.from("active_timers").select("*, cases(id, title, case_number)").eq("user_id", user.id).single();
+
+    if (isOwner) {
+      tsQuery.eq("firm_id", firmId);
+      casesQuery.eq("firm_id", firmId);
+    } else {
+      tsQuery.eq("user_id", user.id);
+      casesQuery.or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`);
+    }
+
+    const [tsRes, casesRes, timerRes] = await Promise.all([tsQuery, casesQuery, timerQuery]);
     if (tsRes.data) setTimesheets(tsRes.data);
     if (casesRes.data) setCases(casesRes.data);
     if (timerRes.data) setActiveTimer(timerRes.data);

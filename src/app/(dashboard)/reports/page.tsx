@@ -95,6 +95,7 @@ export default function ReportsPage() {
       if (profileError || !profile) throw new Error("Profile not found");
 
       const isOwner = ["owner", "partner", "super_admin"].includes(profile.role);
+      const firmId = profile.firm_id || user.id;
 
       let casesQuery = supabase
         .from("cases")
@@ -115,7 +116,12 @@ export default function ReportsPage() {
         .select("id")
         .gte("hearing_date", new Date().toISOString());
 
-      if (!isOwner) {
+      if (isOwner) {
+        casesQuery = casesQuery.eq("firm_id", firmId);
+        clientsQuery = clientsQuery.eq("firm_id", firmId);
+        paymentsQuery = paymentsQuery.eq("firm_id", firmId);
+        hearingsQuery = hearingsQuery.eq("firm_id", firmId);
+      } else {
         casesQuery = casesQuery.or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`);
         clientsQuery = clientsQuery.eq("created_by", user.id);
         paymentsQuery = paymentsQuery.eq("received_by", user.id);

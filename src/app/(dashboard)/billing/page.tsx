@@ -31,11 +31,27 @@ export default function BillingPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data } = await supabase
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role, firm_id")
+        .eq("id", user.id)
+        .single();
+
+      const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
+      const firmId = profile?.firm_id || user.id;
+
+      let query = supabase
         .from("invoices")
         .select("*, client:clients(full_name), case:cases(case_number, title)")
-        .eq("issued_by", user.id)
         .order("created_at", { ascending: false });
+
+      if (isOwner) {
+        query = query.eq("firm_id", firmId);
+      } else {
+        query = query.eq("issued_by", user.id);
+      }
+
+      const { data } = await query;
 
       if (data) {
         setInvoices(data.map((inv) => ({

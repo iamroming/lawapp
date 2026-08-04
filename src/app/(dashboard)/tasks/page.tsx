@@ -34,10 +34,30 @@ export default function TasksPage() {
 
   const fetchTasks = async () => {
     setLoading(true);
-    const { data } = await supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setLoading(false); return; }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, firm_id")
+      .eq("id", user.id)
+      .single();
+
+    const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
+    const firmId = profile?.firm_id || user.id;
+
+    let query = supabase
       .from("tasks")
-      .select("*, cases(id, title, case_number), clients(id, full_name), assigned_user:profiles!tasks_assigned_to_fkey(full_name)")
+      .select("*, cases(id, title, case_number, firm_id), clients(id, full_name), assigned_user:profiles!tasks_assigned_to_fkey(full_name)")
       .order("created_at", { ascending: false });
+
+    if (isOwner) {
+      query = query.eq("firm_id", firmId);
+    } else {
+      query = query.or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`);
+    }
+
+    const { data } = await query;
     if (data) setTasks(data);
     setLoading(false);
   };

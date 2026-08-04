@@ -33,12 +33,31 @@ export default function ExpensesPage() {
 
   const fetchExpenses = async () => {
     setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setLoading(false); return; }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, firm_id")
+      .eq("id", user.id)
+      .single();
+
+    const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
+    const firmId = profile?.firm_id || user.id;
+
     const params = new URLSearchParams();
     if (categoryFilter !== "all") params.set("category", categoryFilter);
     if (billableFilter !== "all") params.set("billable", billableFilter);
 
+    let expensesQuery = supabase.from("expenses").select("*, cases(id, title, case_number), clients(id, full_name)").order("expense_date", { ascending: false });
+    if (isOwner) {
+      expensesQuery = expensesQuery.eq("firm_id", firmId);
+    } else {
+      expensesQuery = expensesQuery.eq("user_id", user.id);
+    }
+
     const [expensesRes, reportsRes] = await Promise.all([
-      supabase.from("expenses").select("*, cases(id, title, case_number), clients(id, full_name)").order("expense_date", { ascending: false }),
+      expensesQuery,
       fetch(`/api/expenses/reports?${params.toString()}`),
     ]);
 

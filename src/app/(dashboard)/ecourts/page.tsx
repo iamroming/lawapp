@@ -71,20 +71,56 @@ export default function ECourtsPage() {
   }, []);
 
   const fetchAllCases = async () => {
-    const { data } = await supabase
-      .from("cases")
-      .select("id, case_number, title")
-      .order("case_number");
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, firm_id")
+      .eq("id", user.id)
+      .single();
+
+    const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
+    const firmId = profile?.firm_id || user.id;
+
+    let query = supabase.from("cases").select("id, case_number, title").order("case_number");
+    if (isOwner) {
+      query = query.eq("firm_id", firmId);
+    } else {
+      query = query.or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`);
+    }
+
+    const { data } = await query;
     setAllCases((data || []) as { id: string; case_number: string; title: string }[]);
   };
 
   const fetchECourtsCases = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role, firm_id")
+        .eq("id", user.id)
+        .single();
+
+      const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
+      const firmId = profile?.firm_id || user.id;
+
+      let query = supabase
         .from("ecourts_cases")
         .select("*, case:cases(id, case_number, title, status)")
         .eq("is_active", true)
         .order("created_at", { ascending: false });
+
+      if (isOwner) {
+        query = query.eq("firm_id", firmId);
+      } else {
+        query = query.eq("user_id", user.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setCases((data || []) as ECourtsCase[]);

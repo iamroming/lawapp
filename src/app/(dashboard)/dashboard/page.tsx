@@ -96,25 +96,30 @@ export default function DashboardPage() {
         const owner = role === "owner" || role === "partner" || role === "super_admin";
         setIsOwner(owner);
         setUserName(profile?.full_name || user.email || "");
+        const firmId = profile?.firm_id || user.id;
 
         const now = new Date();
         const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const weekEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-        // For employees, filter by assigned_to or created_by
+        // Owner/partner: filter by firm_id; Employee: filter by assigned_to or created_by
         const casesQuery = supabase
           .from("cases")
           .select("id, case_number, title, status, next_hearing_date, total_fee, amount_received, client:clients(full_name)")
           .is("deleted_at", null);
-        if (!owner) {
+        if (owner) {
+          casesQuery.eq("firm_id", firmId);
+        } else {
           casesQuery.or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`);
         }
 
         const clientsQuery = supabase
           .from("clients")
           .select("id", { count: "exact", head: true });
-        if (!owner) {
+        if (owner) {
+          clientsQuery.eq("firm_id", firmId);
+        } else {
           clientsQuery.eq("created_by", user.id);
         }
 
@@ -124,17 +129,23 @@ export default function DashboardPage() {
           .gte("hearing_date", now.toISOString())
           .order("hearing_date")
           .limit(10);
-        if (!owner) {
+        if (owner) {
+          hearingsQuery.eq("firm_id", firmId);
+        } else {
           hearingsQuery.eq("created_by", user.id);
         }
 
         const paymentsQuery = supabase.from("payments").select("amount");
-        if (!owner) {
+        if (owner) {
+          paymentsQuery.eq("firm_id", firmId);
+        } else {
           paymentsQuery.eq("received_by", user.id);
         }
 
         const invoicesQuery = supabase.from("invoices").select("id, amount, tax_amount, status, due_date");
-        if (!owner) {
+        if (owner) {
+          invoicesQuery.eq("firm_id", firmId);
+        } else {
           invoicesQuery.eq("issued_by", user.id);
         }
 
@@ -142,7 +153,9 @@ export default function DashboardPage() {
           .from("time_entries")
           .select("id, hours, is_billable")
           .gte("date", startOfMonth.toISOString().split("T")[0]);
-        if (!owner) {
+        if (owner) {
+          timeQuery.eq("firm_id", firmId);
+        } else {
           timeQuery.eq("lawyer_id", user.id);
         }
 
@@ -150,6 +163,11 @@ export default function DashboardPage() {
           .from("ecourts_cases")
           .select("id", { count: "exact", head: true })
           .eq("is_active", true);
+        if (owner) {
+          ecourtsQuery.eq("firm_id", firmId);
+        } else {
+          ecourtsQuery.eq("user_id", user.id);
+        }
 
         const [casesRes, clientsRes, hearingsRes, paymentsRes, invoicesRes, timeRes, ecourtsRes] = await Promise.all([
           casesQuery,
@@ -215,11 +233,17 @@ export default function DashboardPage() {
         // Fetch cause list for courts linked to the firm
         setLoadingCauseList(true);
         try {
-          const { data: courtLinks } = await supabase
+          const courtLinksQuery = supabase
             .from("court_case_links")
             .select("court_code")
             .eq("auto_fetch", true)
             .limit(5);
+          if (owner) {
+            courtLinksQuery.eq("firm_id", firmId);
+          } else {
+            courtLinksQuery.eq("user_id", user.id);
+          }
+          const { data: courtLinks } = await courtLinksQuery;
 
           if (courtLinks && courtLinks.length > 0) {
             const today = new Date();
@@ -246,11 +270,15 @@ export default function DashboardPage() {
         setLoadingCauseList(false);
 
         // Fetch recent alert activity
-        const { data: alertsHistory } = await supabase
+        const alertsQuery = supabase
           .from("case_alert_history")
-          .select("id, change_type, change_summary, created_at, case_alerts(case_id, cases(case_number, title))")
+          .select("id, change_type, change_summary, created_at, case_alerts(case_id, cases(case_number, title, firm_id))")
           .order("created_at", { ascending: false })
           .limit(5);
+        if (owner) {
+          alertsQuery.eq("case_alerts.cases.firm_id", firmId);
+        }
+        const { data: alertsHistory } = await alertsQuery;
         setRecentAlerts(alertsHistory || []);
 
       } catch (error) {

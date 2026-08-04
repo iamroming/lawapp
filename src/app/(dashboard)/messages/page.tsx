@@ -71,11 +71,12 @@ export default function MessagesPage() {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, firm_id")
       .eq("id", user.id)
       .single();
 
     const isOwner = ["owner", "partner", "super_admin"].includes(profile?.role || "");
+    const firmId = profile?.firm_id || user.id;
 
     // Get all clients
     let clientsQuery = supabase
@@ -83,18 +84,29 @@ export default function MessagesPage() {
       .select("id, full_name, phone")
       .is("deleted_at", null);
 
-    if (!isOwner) {
+    if (isOwner) {
+      clientsQuery = clientsQuery.eq("firm_id", firmId);
+    } else {
       clientsQuery = clientsQuery.eq("created_by", user.id);
     }
 
     const { data: allClients } = await clientsQuery;
     if (!allClients) return;
 
-    // Get all messages
-    const { data: messagesData } = await supabase
+    // Get messages for this user's firm
+    let messagesQuery = supabase
       .from("messages")
-      .select("client_id, content, created_at, is_read, sender_id")
+      .select("client_id, content, created_at, is_read, sender_id, firm_id")
       .order("created_at", { ascending: false });
+
+    if (isOwner) {
+      messagesQuery = messagesQuery.eq("firm_id", firmId);
+    } else {
+      const clientIds = allClients.map((c) => c.id);
+      messagesQuery = messagesQuery.in("client_id", clientIds);
+    }
+
+    const { data: messagesData } = await messagesQuery;
 
     // Build conversation map from all clients
     const convMap = new Map<string, Conversation>();

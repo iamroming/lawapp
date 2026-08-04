@@ -40,7 +40,19 @@ export default function AdminUsersPage() {
   }, []);
 
   const fetchUsers = async () => {
-    const { data } = await supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setLoading(false); return; }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, firm_id")
+      .eq("id", user.id)
+      .single();
+
+    const isSuperAdmin = profile?.role === "super_admin";
+    const firmId = profile?.firm_id || user.id;
+
+    let query = supabase
       .from("profiles")
       .select(`
         *,
@@ -48,8 +60,14 @@ export default function AdminUsersPage() {
           status,
           plan:subscription_plans(name)
         )
-      `)
-      .order("created_at", { ascending: false });
+      `);
+
+    // Super admins see all users; firm owners/partners only see their firm
+    if (!isSuperAdmin) {
+      query = query.eq("firm_id", firmId);
+    }
+
+    const { data } = await query.order("created_at", { ascending: false });
 
     // Flatten subscription array
     const formatted = (data || []).map((u) => ({

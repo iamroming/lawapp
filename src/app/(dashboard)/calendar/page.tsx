@@ -81,22 +81,27 @@ export default function CalendarPage() {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, firm_id")
       .eq("id", user.id)
       .single();
 
     const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
+    const firmId = profile?.firm_id || user.id;
 
     let hearingsQuery = supabase
       .from("hearings")
       .select("*, case:cases(id, case_number, title, status)")
       .order("hearing_date");
-    if (!isOwner) {
+    if (isOwner) {
+      hearingsQuery = hearingsQuery.eq("firm_id", firmId);
+    } else {
       hearingsQuery = hearingsQuery.eq("created_by", user.id);
     }
 
     let casesQuery = supabase.from("cases").select("id, case_number, title").order("title");
-    if (!isOwner) {
+    if (isOwner) {
+      casesQuery = casesQuery.eq("firm_id", firmId);
+    } else {
       casesQuery = casesQuery.or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`);
     }
 

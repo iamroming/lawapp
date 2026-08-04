@@ -42,11 +42,12 @@ export default function CasesPage() {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, firm_id")
       .eq("id", user.id)
       .single();
 
     const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
+    const firmId = profile?.firm_id || user.id;
 
     let query = supabase
       .from("cases")
@@ -54,7 +55,9 @@ export default function CasesPage() {
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
-    if (!isOwner) {
+    if (isOwner) {
+      query = query.eq("firm_id", firmId);
+    } else {
       query = query.or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`);
     }
 

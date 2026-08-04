@@ -73,11 +73,27 @@ export default function ConsultationsPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data } = await supabase
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, firm_id")
+      .eq("id", user.id)
+      .single();
+
+    const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
+    const firmId = profile?.firm_id || user.id;
+
+    let query = supabase
       .from("consultations")
       .select("*")
-      .eq("lawyer_id", user.id)
       .order("scheduled_at", { ascending: false });
+
+    if (isOwner) {
+      query = query.eq("firm_id", firmId);
+    } else {
+      query = query.eq("lawyer_id", user.id);
+    }
+
+    const { data } = await query;
 
     setConsultations(data || []);
     setLoading(false);

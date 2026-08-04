@@ -37,14 +37,17 @@ export default function ClientsPage() {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, firm_id")
       .eq("id", user.id)
       .single();
 
     const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
+    const firmId = profile?.firm_id || user.id;
 
     let query = supabase.from("clients").select("*").is("deleted_at", null).order("full_name");
-    if (!isOwner) {
+    if (isOwner) {
+      query = query.eq("firm_id", firmId);
+    } else {
       query = query.eq("created_by", user.id);
     }
 

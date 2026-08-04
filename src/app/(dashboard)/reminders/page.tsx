@@ -74,10 +74,30 @@ export default function RemindersPage() {
   };
 
   const fetchCasesAndClients = async () => {
-    const [casesRes, clientsRes] = await Promise.all([
-      supabase.from("cases").select("id, case_number, title").is("deleted_at", null),
-      supabase.from("clients").select("id, full_name, phone").is("deleted_at", null),
-    ]);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, firm_id")
+      .eq("id", user.id)
+      .single();
+
+    const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
+    const firmId = profile?.firm_id || user.id;
+
+    const casesQuery = supabase.from("cases").select("id, case_number, title").is("deleted_at", null);
+    const clientsQuery = supabase.from("clients").select("id, full_name, phone").is("deleted_at", null);
+
+    if (isOwner) {
+      casesQuery.eq("firm_id", firmId);
+      clientsQuery.eq("firm_id", firmId);
+    } else {
+      casesQuery.or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`);
+      clientsQuery.eq("created_by", user.id);
+    }
+
+    const [casesRes, clientsRes] = await Promise.all([casesQuery, clientsQuery]);
     setCases((casesRes.data || []) as { id: string; case_number: string; title: string }[]);
     setClients((clientsRes.data || []) as { id: string; full_name: string; phone: string }[]);
   };

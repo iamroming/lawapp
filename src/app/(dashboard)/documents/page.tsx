@@ -59,14 +59,34 @@ export default function DocumentsPage() {
   }, []);
 
   const fetchData = async () => {
-    const [docsRes, casesRes] = await Promise.all([
-      supabase
-        .from("documents")
-        .select("*, case:cases(title, case_number)")
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false }),
-      supabase.from("cases").select("id, case_number, title").is("deleted_at", null).order("title"),
-    ]);
+    const user = (await supabase.auth.getUser()).data.user;
+    if (!user) { setLoading(false); return; }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, firm_id")
+      .eq("id", user.id)
+      .single();
+
+    const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
+    const firmId = profile?.firm_id || user.id;
+
+    const docsQuery = supabase
+      .from("documents")
+      .select("*, case:cases(title, case_number)")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false });
+    const casesQuery = supabase.from("cases").select("id, case_number, title").is("deleted_at", null).order("title");
+
+    if (isOwner) {
+      docsQuery.eq("firm_id", firmId);
+      casesQuery.eq("firm_id", firmId);
+    } else {
+      docsQuery.eq("uploaded_by", user.id);
+      casesQuery.or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`);
+    }
+
+    const [docsRes, casesRes] = await Promise.all([docsQuery, casesQuery]);
     setDocuments((docsRes.data as Document[]) || []);
     setCases((casesRes.data as CaseOption[]) || []);
     setLoading(false);
