@@ -219,11 +219,11 @@ export default function AdminSubscriptionsPage() {
                     {plan.max_storage_mb === -1 ? "Unlimited" : `${plan.max_storage_mb} MB`}
                   </p>
                 </div>
-                {plan.features && plan.features.length > 0 && (
+                {plan.features && (Array.isArray(plan.features) ? plan.features : typeof plan.features === "string" ? JSON.parse(plan.features) : []).length > 0 && (
                   <div className="text-sm">
                     <p className="font-medium mb-1">Features:</p>
                     <ul className="space-y-1">
-                      {(Array.isArray(plan.features) ? plan.features : []).map((f, i) => (
+                      {(Array.isArray(plan.features) ? plan.features : typeof plan.features === "string" ? JSON.parse(plan.features) : []).map((f, i) => (
                         <li key={i} className="flex items-center gap-1 text-[var(--text-secondary)]">
                           <CheckCircle className="h-3 w-3 text-green-500" />
                           {typeof f === "string" ? f : JSON.stringify(f)}

@@ -754,7 +754,7 @@ export default function SettingsPage() {
                             <li>• {plan.max_cases === -1 ? "Unlimited" : plan.max_cases} active cases</li>
                             <li>• {plan.max_users === -1 ? "Unlimited" : plan.max_users} user{(plan.max_users === -1 || plan.max_users > 1) ? "s" : ""}</li>
                             <li>• {plan.max_storage_mb === -1 ? "Unlimited" : `${Math.round(plan.max_storage_mb / 1024)} GB`} storage</li>
-                            {(plan.features || []).slice(0, 2).map((f, i) => (
+                            {(Array.isArray(plan.features) ? plan.features : typeof plan.features === "string" ? JSON.parse(plan.features) : []).slice(0, 2).map((f: string, i: number) => (
                               <li key={i}>• {f}</li>
                             ))}
                           </ul>
