@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Toggle } from "@/components/ui/toggle";
 import { createClient } from "@/lib/supabase/client";
 import { Building, Receipt, Settings } from "lucide-react";
 import toast from "react-hot-toast";
@@ -216,12 +217,10 @@ function ToggleRow({ label, sub, checked, onChange }: { label: string; sub: stri
   return (
     <div className="flex items-center justify-between py-3">
       <div>
-        <p className="font-medium text-sm">{label}</p>
-        <p className="text-xs text-[var(--text-secondary)]">{sub}</p>
+        <p className="font-medium text-sm text-gray-900">{label}</p>
+        <p className="text-xs text-gray-500">{sub}</p>
       </div>
-      <button type="button" onClick={onChange} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${checked ? "bg-[var(--text-accent)]" : "bg-gray-200"}`}>
-        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? "translate-x-6" : "translate-x-1"}`} />
-      </button>
+      <Toggle checked={checked} onChange={onChange} />
     </div>
   );
 }
