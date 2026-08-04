@@ -44,6 +44,7 @@ export async function updateSession(request: NextRequest) {
     "/privacy",
     "/client-login",
     "/subscription-required",
+    "/home",
   ];
 
   const publicPrefixes = [
