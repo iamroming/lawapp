@@ -57,12 +57,21 @@ export default function SubscriptionRequiredPage() {
   const handleSelect = async (planSlug: string, price: number) => {
     setSelecting(planSlug);
     try {
+      // Get CSRF token first
+      const csrfRes = await fetch("/api/csrf");
+      const { token: csrfToken } = await csrfRes.json();
+
+      const postBody = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-csrf-token": csrfToken,
+        },
+        body: JSON.stringify({ planSlug, billingCycle: "monthly" }),
+      };
+
       if (price === 0) {
-        const res = await fetch("/api/subscriptions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ planSlug, billingCycle: "monthly" }),
-        });
+        const res = await fetch("/api/subscriptions", postBody);
         const data = await res.json();
         if (data.error) {
           toast.error(data.error);
@@ -74,11 +83,7 @@ export default function SubscriptionRequiredPage() {
         return;
       }
 
-      const res = await fetch("/api/subscriptions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planSlug, billingCycle: "monthly" }),
-      });
+      const res = await fetch("/api/subscriptions", postBody);
       const data = await res.json();
       if (data.error) {
         toast.error(data.error);
