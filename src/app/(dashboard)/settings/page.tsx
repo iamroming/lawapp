@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Toggle } from "@/components/ui/toggle";
 import { ProfileSettings } from "@/components/settings/profile-settings";
 import { InvoiceTemplateSettings } from "@/components/settings/invoice-template-settings";
 import { InvoiceSettingsPanel } from "@/components/settings/invoice-settings-panel";
@@ -436,72 +437,64 @@ export default function SettingsPage() {
                 <CardTitle>Notification Settings</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                   <div>
-                    <p className="font-medium">Email Notifications</p>
-                    <p className="text-sm text-[var(--text-secondary)]">Receive updates via email</p>
+                    <p className="font-medium text-gray-900">Email Notifications</p>
+                    <p className="text-sm text-gray-500">Receive updates via email</p>
                   </div>
-                  <input
-                    type="checkbox"
+                  <Toggle
                     checked={notifications.emailNotifications}
-                    onChange={(e) =>
+                    onChange={(checked) =>
                       setNotifications((p) => ({
                         ...p,
-                        emailNotifications: e.target.checked,
+                        emailNotifications: checked,
                       }))
                     }
-                    className="h-4 w-4 rounded"
                   />
                 </div>
-                <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                   <div>
-                    <p className="font-medium">Hearing Reminders</p>
-                    <p className="text-sm text-[var(--text-secondary)]">Get reminders before hearings</p>
+                    <p className="font-medium text-gray-900">Hearing Reminders</p>
+                    <p className="text-sm text-gray-500">Get reminders before hearings</p>
                   </div>
-                  <input
-                    type="checkbox"
+                  <Toggle
                     checked={notifications.hearingReminders}
-                    onChange={(e) =>
+                    onChange={(checked) =>
                       setNotifications((p) => ({
                         ...p,
-                        hearingReminders: e.target.checked,
+                        hearingReminders: checked,
                       }))
                     }
-                    className="h-4 w-4 rounded"
                   />
                 </div>
-                <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                   <div>
-                    <p className="font-medium">Payment Alerts</p>
-                    <p className="text-sm text-[var(--text-secondary)]">Notifications for payments</p>
+                    <p className="font-medium text-gray-900">Payment Alerts</p>
+                    <p className="text-sm text-gray-500">Notifications for payments</p>
                   </div>
-                  <input
-                    type="checkbox"
+                  <Toggle
                     checked={notifications.paymentAlerts}
-                    onChange={(e) =>
+                    onChange={(checked) =>
                       setNotifications((p) => ({
                         ...p,
-                        paymentAlerts: e.target.checked,
+                        paymentAlerts: checked,
                       }))
                     }
-                    className="h-4 w-4 rounded"
                   />
                 </div>
-                <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                   <div>
-                    <p className="font-medium">Case Updates</p>
-                    <p className="text-sm text-[var(--text-secondary)]">Status changes and assignments</p>
+                    <p className="font-medium text-gray-900">Case Updates</p>
+                    <p className="text-sm text-gray-500">Status changes and assignments</p>
                   </div>
-                  <input
-                    type="checkbox"
+                  <Toggle
                     checked={notifications.caseUpdates}
-                    onChange={(e) =>
+                    onChange={(checked) =>
                       setNotifications((p) => ({
                         ...p,
-                        caseUpdates: e.target.checked,
+                        caseUpdates: checked,
                       }))
                     }
-                    className="h-4 w-4 rounded"
                   />
                 </div>
                 <Button onClick={async () => {
