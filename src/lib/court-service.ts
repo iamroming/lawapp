@@ -1,11 +1,13 @@
 const COURT_SERVICE_URL = process.env.COURT_SERVICE_URL || "";
 
 export async function courtServiceFetch(path: string, options?: RequestInit) {
-  // On Vercel, call Python serverless functions directly
-  // Locally, call the FastAPI service
-  const url = COURT_SERVICE_URL
-    ? `${COURT_SERVICE_URL}${path}`
-    : `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}${path}`;
+  if (!COURT_SERVICE_URL) {
+    // Court service backend is not configured - return empty data gracefully
+    console.warn(`Court service not configured. Skipping: ${path}`);
+    return [];
+  }
+
+  const url = `${COURT_SERVICE_URL}${path}`;
 
   const res = await fetch(url, {
     ...options,
