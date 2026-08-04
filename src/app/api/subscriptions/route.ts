@@ -75,6 +75,29 @@ export async function POST(request: NextRequest) {
 
   const plan = PLANS[planSlug];
   const billing = plan[billingCycle];
+
+  // Free plan - activate directly without Razorpay
+  if (planSlug === "free" || billing.price === 0) {
+    const { error: dbError } = await supabase.from("user_subscriptions").insert({
+      user_id: user.id,
+      plan_id: null,
+      status: "active",
+      starts_at: new Date().toISOString(),
+      expires_at: null,
+      payment_method: "free",
+      amount_paid: 0,
+      currency: "INR",
+      auto_renew: false,
+      notes: JSON.stringify({ plan_slug: planSlug }),
+    });
+
+    if (dbError) {
+      return NextResponse.json({ error: dbError.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ plan: planSlug, status: "active" });
+  }
+
   const razorpayPlanId = billing.razorpayPlanId;
 
   if (!razorpayPlanId) {

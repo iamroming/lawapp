@@ -57,16 +57,9 @@ export default function SubscriptionRequiredPage() {
   const handleSelect = async (planSlug: string, price: number) => {
     setSelecting(planSlug);
     try {
-      // Get CSRF token first
-      const csrfRes = await fetch("/api/csrf");
-      const { token: csrfToken } = await csrfRes.json();
-
       const postBody = {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-csrf-token": csrfToken,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ planSlug, billingCycle: "monthly" }),
       };
 

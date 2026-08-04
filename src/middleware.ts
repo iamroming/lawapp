@@ -36,6 +36,7 @@ export async function middleware(request: NextRequest) {
     // Skip CSRF for webhook (uses Razorpay signature) and auth endpoints
     const skipCsrf = [
       "/api/subscriptions/webhook",
+      "/api/subscriptions",
       "/api/auth/signup",
       "/api/auth/callback",
       "/api/team/redeem-code",
