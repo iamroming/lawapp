@@ -92,21 +92,33 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    // Force subscription selection when visiting profile/settings
-    if (profile && profile.is_active !== false && pathname.startsWith("/settings")) {
-      const { data: subscription } = await supabase
-        .from("user_subscriptions")
-        .select("id")
-        .eq("user_id", user.id)
-        .in("status", ["active", "trialing"])
-        .limit(1)
-        .maybeSingle();
+    // After profile exists, check if user has an active subscription
+    if (profile && profile.is_active !== false) {
+      const skipSubscriptionCheck = [
+        "/onboarding",
+        "/pricing",
+        "/api/",
+        "/super-admin",
+        "/admin",
+        "/auth/",
+      ];
+      const shouldSkip = skipSubscriptionCheck.some((p) => pathname.startsWith(p));
 
-      if (!subscription) {
-        const url = request.nextUrl.clone();
-        url.pathname = "/pricing";
-        url.searchParams.set("action", "subscribe");
-        return NextResponse.redirect(url);
+      if (!shouldSkip) {
+        const { data: subscription } = await supabase
+          .from("user_subscriptions")
+          .select("id, status")
+          .eq("user_id", user.id)
+          .in("status", ["active", "trialing"])
+          .limit(1)
+          .maybeSingle();
+
+        if (!subscription) {
+          const url = request.nextUrl.clone();
+          url.pathname = "/pricing";
+          url.searchParams.set("action", "subscribe");
+          return NextResponse.redirect(url);
+        }
       }
     }
 

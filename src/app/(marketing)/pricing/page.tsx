@@ -1,12 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { Check, X, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Check, X, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 const plans = [
   {
     name: "Free",
+    slug: "free",
     monthlyPrice: 0,
     annualPrice: 0,
     description: "For individual advocates just getting started.",
@@ -28,6 +32,7 @@ const plans = [
   },
   {
     name: "Solo",
+    slug: "solo",
     monthlyPrice: 299,
     annualPrice: 2999,
     description: "For solo practitioners handling a growing caseload.",
@@ -49,6 +54,7 @@ const plans = [
   },
   {
     name: "Professional",
+    slug: "professional",
     monthlyPrice: 799,
     annualPrice: 7999,
     description: "For established lawyers and small teams.",
@@ -73,6 +79,7 @@ const plans = [
   },
   {
     name: "Firm",
+    slug: "firm",
     monthlyPrice: 1999,
     annualPrice: 19999,
     description: "For law firms that need full team access.",
@@ -96,6 +103,7 @@ const plans = [
   },
   {
     name: "Enterprise",
+    slug: "enterprise",
     monthlyPrice: 4999,
     annualPrice: 49999,
     description: "For large firms needing full customization.",
@@ -188,6 +196,65 @@ function formatPrice(amount: number): string {
 export default function PricingPage() {
   const [annual, setAnnual] = useState(true);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [selectingPlan, setSelectingPlan] = useState<string | null>(null);
+  const router = useRouter();
+  const supabase = createClient();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setIsLoggedIn(!!user);
+    });
+  }, []);
+
+  const handleSelectPlan = async (planSlug: string, planPrice: number) => {
+    if (!isLoggedIn) {
+      router.push("/signup");
+      return;
+    }
+
+    setSelectingPlan(planSlug);
+
+    try {
+      // Free plan - create subscription directly
+      if (planPrice === 0) {
+        const res = await fetch("/api/subscriptions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ planSlug, billingCycle: "monthly" }),
+        });
+        const data = await res.json();
+        if (data.error) {
+          toast.error(data.error);
+        } else {
+          toast.success("Free plan activated!");
+          router.push("/dashboard");
+        }
+        setSelectingPlan(null);
+        return;
+      }
+
+      // Paid plan - go to Razorpay
+      const billingCycle = annual ? "annual" : "monthly";
+      const res = await fetch("/api/subscriptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planSlug, billingCycle }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        toast.error(data.error);
+      } else if (data.short_url) {
+        window.location.href = data.short_url;
+      } else {
+        toast.success("Subscription created!");
+        router.push("/dashboard");
+      }
+    } catch {
+      toast.error("Failed to start subscription");
+    }
+    setSelectingPlan(null);
+  };
 
   return (
     <div className="flex flex-col">
@@ -291,16 +358,21 @@ export default function PricingPage() {
                       </li>
                     ))}
                   </ul>
-                  <Link
-                    href="/signup"
-                    className={`mt-6 block rounded-lg px-4 py-2.5 text-center text-sm font-semibold transition-colors ${
+                  <button
+                    onClick={() => handleSelectPlan(plan.slug, plan.monthlyPrice)}
+                    disabled={selectingPlan === plan.slug}
+                    className={`mt-6 block w-full rounded-lg px-4 py-2.5 text-center text-sm font-semibold transition-colors ${
                       plan.highlighted
                         ? "bg-indigo-600 text-white hover:bg-indigo-500"
                         : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-                    }`}
+                    } disabled:opacity-50`}
                   >
-                    {plan.cta}
-                  </Link>
+                    {selectingPlan === plan.slug ? (
+                      <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                    ) : (
+                      plan.cta
+                    )}
+                  </button>
                 </div>
               );
             })}
