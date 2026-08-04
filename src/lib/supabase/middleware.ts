@@ -44,6 +44,7 @@ export async function updateSession(request: NextRequest) {
     "/terms",
     "/privacy",
     "/client-login",
+    "/subscription-required",
   ];
 
   const publicPrefixes = [
@@ -64,7 +65,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && isAuthPage && pathname !== "/auth/callback" && pathname !== "/pricing") {
+  if (user && isAuthPage && pathname !== "/auth/callback" && pathname !== "/pricing" && pathname !== "/subscription-required") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
@@ -96,6 +97,7 @@ export async function updateSession(request: NextRequest) {
     if (profile && profile.is_active !== false) {
       const skipSubscriptionCheck = [
         "/onboarding",
+        "/subscription-required",
         "/pricing",
         "/api/",
         "/super-admin",
@@ -115,8 +117,7 @@ export async function updateSession(request: NextRequest) {
 
         if (!subscription) {
           const url = request.nextUrl.clone();
-          url.pathname = "/pricing";
-          url.searchParams.set("action", "subscribe");
+          url.pathname = "/subscription-required";
           return NextResponse.redirect(url);
         }
       }
