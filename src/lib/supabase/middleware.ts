@@ -105,7 +105,7 @@ export async function updateSession(request: NextRequest) {
       ];
       const shouldSkip = skipSubscriptionCheck.some((p) => pathname.startsWith(p));
 
-      if (!shouldSkip && pathname !== "/dashboard") {
+      if (!shouldSkip) {
         const { data: subscription } = await supabase
           .from("user_subscriptions")
           .select("id")

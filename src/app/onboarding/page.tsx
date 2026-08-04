@@ -99,7 +99,7 @@ export default function OnboardingPage() {
       }
 
       toast.success("Welcome to LawXP!");
-      router.push("/dashboard");
+      router.push("/pricing");
     } catch {
       toast.error("An unexpected error occurred");
       setLoading(false);
