@@ -94,18 +94,8 @@ export async function updateSession(request: NextRequest) {
 
     // After profile exists, check if user has an active subscription (skip for free plan, onboarding, settings, pricing, api, super-admin)
     if (profile && profile.is_active !== false) {
-      const skipSubscriptionCheck = [
-        "/onboarding",
-        "/settings",
-        "/pricing",
-        "/api/",
-        "/super-admin",
-        "/admin",
-        "/auth/",
-      ];
-      const shouldSkip = skipSubscriptionCheck.some((p) => pathname.startsWith(p));
-
-      if (!shouldSkip) {
+      // Only enforce subscription on dashboard — don't block all routes
+      if (pathname === "/dashboard") {
         const { data: subscription } = await supabase
           .from("user_subscriptions")
           .select("id")
