@@ -92,6 +92,24 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
+    // Force subscription selection when visiting profile/settings
+    if (profile && profile.is_active !== false && pathname.startsWith("/settings")) {
+      const { data: subscription } = await supabase
+        .from("user_subscriptions")
+        .select("id")
+        .eq("user_id", user.id)
+        .in("status", ["active", "trialing"])
+        .limit(1)
+        .maybeSingle();
+
+      if (!subscription) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/pricing";
+        url.searchParams.set("action", "subscribe");
+        return NextResponse.redirect(url);
+      }
+    }
+
     if (pathname.startsWith("/super-admin")) {
       const { data: superAdmin } = await supabase
         .from("super_admins")
