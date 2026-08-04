@@ -92,27 +92,6 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    // After profile exists, check if user has an active subscription (skip for free plan, onboarding, settings, pricing, api, super-admin)
-    if (profile && profile.is_active !== false) {
-      // Only enforce subscription on dashboard — don't block all routes
-      if (pathname === "/dashboard") {
-        const { data: subscription } = await supabase
-          .from("user_subscriptions")
-          .select("id")
-          .eq("user_id", user.id)
-          .in("status", ["active", "trialing"])
-          .limit(1)
-          .maybeSingle();
-
-        if (!subscription) {
-          const url = request.nextUrl.clone();
-          url.pathname = "/pricing";
-          url.searchParams.set("action", "subscribe");
-          return NextResponse.redirect(url);
-        }
-      }
-    }
-
     if (pathname.startsWith("/super-admin")) {
       const { data: superAdmin } = await supabase
         .from("super_admins")
