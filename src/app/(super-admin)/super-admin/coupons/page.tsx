@@ -248,7 +248,7 @@ export default function CouponsPage() {
             <select value={newCoupon.plan_id} onChange={(e) => setNewCoupon((p) => ({ ...p, plan_id: e.target.value }))} className="w-full h-10 rounded-md border border-[var(--border)] px-3 text-sm">
               <option value="">All Plans</option>
               <option value="free">Free Plan</option>
-              <option value="starter">Starter Plan</option>
+              <option value="solo">Solo Plan</option>
               <option value="professional">Professional Plan</option>
               <option value="firm">Firm Plan</option>
               <option value="enterprise">Enterprise Plan</option>

@@ -2,13 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export const PLANS = {
-  starter: {
-    name: "Starter",
-    monthly: { price: 299, razorpayPlanId: process.env.RAZORPAY_PLAN_STARTER_MONTHLY || "" },
-    annual: { price: 2999, razorpayPlanId: process.env.RAZORPAY_PLAN_STARTER_ANNUAL || "" },
-    max_cases: 15,
+  free: {
+    name: "Free",
+    monthly: { price: 0, razorpayPlanId: "" },
+    annual: { price: 0, razorpayPlanId: "" },
+    max_cases: 3,
     max_users: 1,
-    max_storage_mb: 2048,
+    max_storage_mb: 100,
+    max_ai_queries: 5,
+  },
+  solo: {
+    name: "Solo",
+    monthly: { price: 299, razorpayPlanId: process.env.RAZORPAY_PLAN_SOLO_MONTHLY || "" },
+    annual: { price: 2999, razorpayPlanId: process.env.RAZORPAY_PLAN_SOLO_ANNUAL || "" },
+    max_cases: 20,
+    max_users: 1,
+    max_storage_mb: 1024,
     max_ai_queries: 50,
   },
   professional: {
@@ -17,7 +26,7 @@ export const PLANS = {
     annual: { price: 7999, razorpayPlanId: process.env.RAZORPAY_PLAN_PROFESSIONAL_ANNUAL || "" },
     max_cases: -1,
     max_users: 3,
-    max_storage_mb: 10240,
+    max_storage_mb: 5120,
     max_ai_queries: 200,
   },
   firm: {
@@ -26,7 +35,7 @@ export const PLANS = {
     annual: { price: 19999, razorpayPlanId: process.env.RAZORPAY_PLAN_FIRM_ANNUAL || "" },
     max_cases: -1,
     max_users: 10,
-    max_storage_mb: 51200,
+    max_storage_mb: 20480,
     max_ai_queries: -1,
   },
   enterprise: {

@@ -27,22 +27,22 @@ const plans = [
     extraUserPrice: null,
   },
   {
-    name: "Starter",
+    name: "Solo",
     monthlyPrice: 299,
     annualPrice: 2999,
-    description: "For solo practitioners ready to grow.",
+    description: "For solo practitioners handling a growing caseload.",
     highlighted: false,
     features: [
       { text: "1 user", included: true },
-      { text: "15 active cases", included: true },
-      { text: "2 GB storage", included: true },
+      { text: "20 active cases", included: true },
+      { text: "1 GB storage", included: true },
       { text: "Everything in Free", included: true },
-      { text: "Client portal (read-only)", included: true },
-      { text: "Basic invoicing (no GST)", included: true },
-      { text: "50 AI queries/month", included: true },
+      { text: "E-filing integration", included: true },
+      { text: "Court tracking", included: true },
+      { text: "Invoice generation", included: true },
       { text: "Email reminders", included: true },
-      { text: "AI drafting", included: false },
-      { text: "GST invoicing", included: false },
+      { text: "Client portal (read-only)", included: true },
+      { text: "50 AI queries/month", included: true },
     ],
     cta: "Start 14-Day Free Trial",
     extraUserPrice: null,
@@ -51,24 +51,22 @@ const plans = [
     name: "Professional",
     monthlyPrice: 799,
     annualPrice: 7999,
-    description: "For advocates who need the full toolkit.",
+    description: "For established lawyers and small teams.",
     highlighted: true,
     features: [
       { text: "Up to 3 users included", included: true },
       { text: "Unlimited active cases", included: true },
-      { text: "10 GB storage", included: true },
-      { text: "Everything in Starter", included: true },
+      { text: "5 GB storage", included: true },
+      { text: "Everything in Solo", included: true },
       { text: "Full client portal", included: true },
       { text: "GST invoicing + payment links", included: true },
       { text: "200 AI queries/month", included: true },
       { text: "AI drafting + chatbot", included: true },
-      { text: "Consultation booking", included: true },
-      { text: "Intake forms", included: true },
-      { text: "WhatsApp + SMS reminders", included: true },
+      { text: "Team collaboration", included: true },
       { text: "Court cause list tracking", included: true },
       { text: "Expense tracking + timesheets", included: true },
       { text: "Reports + analytics", included: true },
-      { text: "Hindi UI", included: true },
+      { text: "Priority support", included: true },
     ],
     cta: "Start 14-Day Free Trial",
     extraUserPrice: null,
@@ -77,22 +75,21 @@ const plans = [
     name: "Firm",
     monthlyPrice: 1999,
     annualPrice: 19999,
-    description: "For law firms that need team collaboration.",
+    description: "For law firms that need full team access.",
     highlighted: false,
     features: [
       { text: "Up to 10 users included", included: true },
       { text: "Unlimited active cases", included: true },
-      { text: "50 GB storage", included: true },
+      { text: "20 GB storage", included: true },
       { text: "Everything in Professional", included: true },
       { text: "Unlimited AI queries", included: true },
-      { text: "Collections workflow", included: true },
-      { text: "Daily digest emails", included: true },
-      { text: "Deadline auto-tracking", included: true },
-      { text: "Client feedback system", included: true },
+      { text: "Admin controls", included: true },
+      { text: "Bulk operations", included: true },
+      { text: "Custom reports", included: true },
       { text: "Custom branding", included: true },
       { text: "Priority support", included: true },
       { text: "Audit logging", included: true },
-      { text: "Profit sharing", included: true },
+      { text: "API access", included: true },
     ],
     cta: "Start 14-Day Free Trial",
     extraUserPrice: null,
@@ -123,28 +120,22 @@ const plans = [
 ];
 
 const comparison = [
-  { feature: "Users Included", free: "1", starter: "1", professional: "3", firm: "10", enterprise: "Unlimited" },
-  { feature: "Active Cases", free: "3", starter: "15", professional: "Unlimited", firm: "Unlimited", enterprise: "Unlimited" },
-  { feature: "Storage", free: "100 MB", starter: "2 GB", professional: "10 GB", firm: "50 GB", enterprise: "Unlimited" },
-  { feature: "Client Portal", free: "—", starter: "Read-only", professional: "Full Access", firm: "Full Access", enterprise: "Full Access" },
-  { feature: "Invoicing", free: "—", starter: "Basic (no GST)", professional: "GST + Payments", firm: "GST + Payments", enterprise: "GST + Payments" },
-  { feature: "AI Queries", free: "5/mo", starter: "50/mo", professional: "200/mo", firm: "Unlimited", enterprise: "Unlimited" },
-  { feature: "AI Drafting", free: "—", starter: "—", professional: "✓", firm: "✓", enterprise: "✓" },
-  { feature: "WhatsApp/SMS", free: "—", starter: "—", professional: "✓", firm: "✓", enterprise: "✓" },
-  { feature: "Court Cause List", free: "—", starter: "—", professional: "✓", firm: "✓", enterprise: "✓" },
-  { feature: "Expense Tracking", free: "—", starter: "—", professional: "✓", firm: "✓", enterprise: "✓" },
-  { feature: "Hindi UI", free: "—", starter: "—", professional: "✓", firm: "✓", enterprise: "✓" },
-  { feature: "Custom Branding", free: "—", starter: "—", professional: "—", firm: "✓", enterprise: "✓" },
-  { feature: "Collections Workflow", free: "—", starter: "—", professional: "—", firm: "✓", enterprise: "✓" },
-  { feature: "Daily Digest", free: "—", starter: "—", professional: "—", firm: "✓", enterprise: "✓" },
-  { feature: "Deadline Tracking", free: "—", starter: "—", professional: "—", firm: "✓", enterprise: "✓" },
-  { feature: "Client Feedback", free: "—", starter: "—", professional: "—", firm: "✓", enterprise: "✓" },
-  { feature: "Audit Logging", free: "—", starter: "—", professional: "—", firm: "✓", enterprise: "✓" },
-  { feature: "Profit Sharing", free: "—", starter: "—", professional: "—", firm: "✓", enterprise: "✓" },
-  { feature: "API Access", free: "—", starter: "—", professional: "—", firm: "—", enterprise: "✓" },
-  { feature: "Dedicated Manager", free: "—", starter: "—", professional: "—", firm: "—", enterprise: "✓" },
-  { feature: "White-label", free: "—", starter: "—", professional: "—", firm: "—", enterprise: "✓" },
-  { feature: "Support", free: "Community", starter: "Email", professional: "Priority Email", firm: "Priority Support", enterprise: "Phone + Email" },
+  { feature: "Users Included", free: "1", solo: "1", professional: "3", firm: "10", enterprise: "Unlimited" },
+  { feature: "Active Cases", free: "3", solo: "20", professional: "Unlimited", firm: "Unlimited", enterprise: "Unlimited" },
+  { feature: "Storage", free: "100 MB", solo: "1 GB", professional: "5 GB", firm: "20 GB", enterprise: "Unlimited" },
+  { feature: "Client Portal", free: "—", solo: "Read-only", professional: "Full Access", firm: "Full Access", enterprise: "Full Access" },
+  { feature: "Invoicing", free: "—", solo: "Basic", professional: "GST + Payments", firm: "GST + Payments", enterprise: "GST + Payments" },
+  { feature: "AI Queries", free: "5/mo", solo: "50/mo", professional: "200/mo", firm: "Unlimited", enterprise: "Unlimited" },
+  { feature: "E-filing", free: "—", solo: "✓", professional: "✓", firm: "✓", enterprise: "✓" },
+  { feature: "Court Tracking", free: "—", solo: "✓", professional: "✓", firm: "✓", enterprise: "✓" },
+  { feature: "AI Drafting", free: "—", solo: "—", professional: "✓", firm: "✓", enterprise: "✓" },
+  { feature: "Team Collaboration", free: "—", solo: "—", professional: "✓", firm: "✓", enterprise: "✓" },
+  { feature: "Expense Tracking", free: "—", solo: "—", professional: "✓", firm: "✓", enterprise: "✓" },
+  { feature: "Custom Branding", free: "—", solo: "—", professional: "—", firm: "✓", enterprise: "✓" },
+  { feature: "Admin Controls", free: "—", solo: "—", professional: "—", firm: "✓", enterprise: "✓" },
+  { feature: "Custom Reports", free: "—", solo: "—", professional: "—", firm: "✓", enterprise: "✓" },
+  { feature: "API Access", free: "—", solo: "—", professional: "—", firm: "✓", enterprise: "✓" },
+  { feature: "Support", free: "Community", solo: "Email", professional: "Priority Email", firm: "Priority Support", enterprise: "Phone + Email" },
 ];
 
 const addOns = [
@@ -350,7 +341,7 @@ export default function PricingPage() {
                 <tr className="border-b border-gray-200">
                   <th className="py-3 pr-4 font-semibold text-gray-900">Feature</th>
                   <th className="px-4 py-3 font-semibold text-gray-900">Free</th>
-                  <th className="px-4 py-3 font-semibold text-gray-900">Starter</th>
+                  <th className="px-4 py-3 font-semibold text-gray-900">Solo</th>
                   <th className="px-4 py-3 font-semibold text-indigo-600">Professional</th>
                   <th className="px-4 py-3 font-semibold text-gray-900">Firm</th>
                   <th className="pl-4 py-3 font-semibold text-gray-900">Enterprise</th>
@@ -361,7 +352,7 @@ export default function PricingPage() {
                   <tr key={row.feature} className="border-b border-gray-100">
                     <td className="py-3 pr-4 text-gray-700 font-medium">{row.feature}</td>
                     <td className="px-4 py-3 text-gray-600">{row.free}</td>
-                    <td className="px-4 py-3 text-gray-600">{row.starter}</td>
+                    <td className="px-4 py-3 text-gray-600">{row.solo}</td>
                     <td className="px-4 py-3 text-gray-600 font-medium">{row.professional}</td>
                     <td className="px-4 py-3 text-gray-600">{row.firm}</td>
                     <td className="pl-4 py-3 text-gray-600">{row.enterprise}</td>
