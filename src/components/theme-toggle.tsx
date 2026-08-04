@@ -18,7 +18,7 @@ export function ThemeToggle({ className }: { className?: string }) {
     <button
       onClick={cycle}
       className={cn(
-        "relative flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)]",
+        "relative flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-900",
         className
       )}
       title={`Current: ${theme}. Click to cycle.`}

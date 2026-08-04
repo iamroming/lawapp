@@ -3,40 +3,46 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* Claude-style warm palette */
-  --background: #FAF9F6;
-  --foreground: #1A1A18;
+  /* Professional vibrant palette */
+  --background: #F8F9FA;
+  --foreground: #111827;
   --surface: #FFFFFF;
-  --surface-warm: #F5F0E8;
-  --surface-subtle: #F0EDE6;
-  --text-primary: #1A1A18;
-  --text-secondary: #5A5750;
-  --text-tertiary: #9B9690;
-  --border: #E2DDD6;
-  --border-strong: #C9C3BB;
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
+  --surface-warm: #F3F4F6;
+  --surface-subtle: #F9FAFB;
+  --surface-accent: #EEF2FF;
+  --text-primary: #111827;
+  --text-secondary: #4B5563;
+  --text-tertiary: #9CA3AF;
+  --border: #E5E7EB;
+  --border-strong: #D1D5DB;
+  --ring: #6366F1;
+  --accent: #4F46E5;
+  --accent-hover: #4338CA;
+  --accent-light: #818CF8;
   --danger: #DC2626;
-  --success: #16A34A;
+  --success: #059669;
   --warning: #D97706;
   color-scheme: light dark;
 }
 
 .dark {
-  --background: #1C1B19;
-  --foreground: #EDE9E3;
-  --surface: #2A2927;
-  --surface-warm: #232220;
-  --surface-subtle: #302F2C;
-  --text-primary: #EDE9E3;
-  --text-secondary: #A09A92;
-  --text-tertiary: #6B6560;
-  --border: #3A3835;
-  --border-strong: #4E4B47;
-  --accent: #60A5FA;
-  --accent-hover: #93C5FD;
+  --background: #0F172A;
+  --foreground: #F1F5F9;
+  --surface: #1E293B;
+  --surface-warm: #1E293B;
+  --surface-subtle: #334155;
+  --surface-accent: #312E81;
+  --text-primary: #F1F5F9;
+  --text-secondary: #94A3B8;
+  --text-tertiary: #64748B;
+  --border: #334155;
+  --border-strong: #475569;
+  --ring: #818CF8;
+  --accent: #818CF8;
+  --accent-hover: #A5B4FC;
+  --accent-light: #C7D2FE;
   --danger: #F87171;
-  --success: #4ADE80;
+  --success: #34D399;
   --warning: #FBBF24;
 }
 
@@ -139,9 +145,9 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Focus visible for keyboard navigation - warm coral ring */
+/* Focus visible for keyboard navigation */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
@@ -150,19 +156,11 @@ html {
   outline: none;
 }
 
-/* Claude-style flat card utility */
-.claude-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: none;
+/* Subtle card shadow utility */
+.card-shadow {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
 }
 
-/* Claude-style warm surfaces */
-.claude-surface {
-  background: var(--surface-warm);
-}
-
-.claude-surface-subtle {
-  background: var(--surface-subtle);
+.card-shadow-hover:hover {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.06);
 }

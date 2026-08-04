@@ -195,11 +195,11 @@ export function GlobalSearch() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-subtle)] px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface)] transition-colors w-full sm:w-64"
+        className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500 hover:bg-gray-100 transition-colors w-full sm:w-64"
       >
         <Search className="h-4 w-4" />
         <span className="hidden sm:inline">Search...</span>
-        <kbd className="ml-auto hidden sm:inline-flex items-center gap-0.5 rounded border border-[var(--border)] bg-[var(--surface)] px-1.5 text-[10px] font-medium text-[var(--text-secondary)]">
+        <kbd className="ml-auto hidden sm:inline-flex items-center gap-0.5 rounded border border-gray-200 bg-white px-1.5 text-[10px] font-medium text-gray-500">
           <span className="text-xs">Ctrl</span>+K
         </kbd>
       </button>

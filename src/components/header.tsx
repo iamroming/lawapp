@@ -33,7 +33,7 @@ export function Header() {
   }, [supabase]);
 
   return (
-    <header className="h-14 lg:h-14 border-b border-[var(--border)] bg-[var(--background)] flex items-center justify-between pl-14 lg:pl-6 pr-3 lg:pr-6 gap-2">
+    <header className="h-14 lg:h-14 border-b border-gray-200 bg-white flex items-center justify-between pl-14 lg:pl-6 pr-3 lg:pr-6 gap-2">
       <div className="flex-1 max-w-md min-w-0">
         <GlobalSearch />
       </div>
@@ -41,8 +41,8 @@ export function Header() {
         <ThemeToggle className="hidden sm:flex" />
         <NotificationBell />
         <div className="text-right hidden md:block">
-          <p className="text-sm font-medium text-[var(--text-primary)] truncate max-w-[160px]">{user?.email}</p>
-          <p className="text-xs text-[var(--text-tertiary)]">
+          <p className="text-sm font-medium text-gray-900 truncate max-w-[160px]">{user?.email}</p>
+          <p className="text-xs text-gray-500">
             {ROLE_DISPLAY_NAMES[userRole || ""] || userRole || "Associate"}
           </p>
         </div>

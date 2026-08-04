@@ -266,7 +266,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-[var(--text-accent)]" />
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" />
       </div>
     );
   }
@@ -274,10 +274,10 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">
+        <h1 className="text-2xl font-bold text-gray-900">
           {isOwner ? "Firm Dashboard" : `Welcome, ${userName}`}
         </h1>
-        <p className="text-[var(--text-secondary)]">
+        <p className="text-gray-500">
           {isOwner ? "Overview of your firm's practice" : "Here's your work overview"}
         </p>
       </div>
@@ -314,36 +314,36 @@ export default function DashboardPage() {
 
       {/* Secondary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50 border-[var(--border)]">
+        <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-orange-700">Pending Payments</p>
-                <p className="text-xl font-bold text-orange-900">{formatCurrency(stats.pendingPayments)}</p>
+                <p className="text-sm font-medium text-amber-700">Pending Payments</p>
+                <p className="text-xl font-bold text-amber-900">{formatCurrency(stats.pendingPayments)}</p>
               </div>
-              <AlertCircle className="h-6 w-6 text-orange-600" />
+              <AlertCircle className="h-6 w-6 text-amber-500" />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-[var(--surface-subtle)] to-[var(--surface)] border-[var(--border)]">
+        <Card className="bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-200">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-[var(--text-secondary)]">Billable Hours</p>
-                <p className="text-xl font-bold text-[var(--text-primary)]">{stats.billableHours}h</p>
+                <p className="text-sm font-medium text-indigo-700">Billable Hours</p>
+                <p className="text-xl font-bold text-indigo-900">{stats.billableHours}h</p>
               </div>
-              <Clock className="h-6 w-6 text-[var(--text-accent)]" />
+              <Clock className="h-6 w-6 text-indigo-500" />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-red-50 to-red-100/50 border-[var(--border)]">
+        <Card className="bg-gradient-to-br from-red-50 to-rose-50 border-red-200">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-red-700">Overdue</p>
+                <p className="text-sm font-medium text-red-700">Overdue</p>
                 <p className="text-xl font-bold text-red-900">{formatCurrency(stats.overdueInvoices)}</p>
               </div>
-              <IndianRupee className="h-6 w-6 text-red-600" />
+              <IndianRupee className="h-6 w-6 text-red-500" />
             </div>
           </CardContent>
         </Card>
