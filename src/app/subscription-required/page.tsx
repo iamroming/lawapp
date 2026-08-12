@@ -95,6 +95,11 @@ function SubscriptionRequiredContent() {
       });
       const orderData = await orderRes.json();
       if (orderData.error) {
+        if (orderData.error.includes("already have an active subscription")) {
+          toast.success("You already have an active subscription!");
+          router.push("/dashboard");
+          return;
+        }
         toast.error(orderData.error);
         setSelecting(null);
         return;
@@ -173,6 +178,11 @@ function SubscriptionRequiredContent() {
       });
       const data = await res.json();
       if (!res.ok) {
+        if (data.error?.includes("already have an active subscription")) {
+          toast.success("You already have an active subscription!");
+          router.push("/dashboard");
+          return;
+        }
         toast.error(data.error || "Failed to start trial");
         return;
       }
@@ -209,6 +219,27 @@ function SubscriptionRequiredContent() {
         }
       })
       .catch(() => toast.error("Failed to start subscription"));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const checkExistingSubscription = async () => {
+      const auth = getFirebaseAuth();
+      const user = auth.currentUser;
+      if (!user) return;
+      try {
+        const idToken = await user.getIdToken();
+        const res = await fetch("/api/auth/profile", {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        if (!res.ok) return;
+        const { subscription } = await res.json();
+        if (subscription) {
+          toast.success("You already have an active subscription!");
+          router.push("/dashboard");
+        }
+      } catch {}
+    };
+    checkExistingSubscription();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (

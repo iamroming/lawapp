@@ -162,10 +162,18 @@ export async function POST(req: NextRequest) {
       notes: JSON.stringify({ plan_slug: planSlug, billing_cycle: billingCycle, coupon_code: couponCode }),
     };
 
+    let dbError;
     if (existing) {
-      await supabase.from("user_subscriptions").update(subData).eq("id", existing.id);
+      const { error } = await supabase.from("user_subscriptions").update(subData).eq("id", existing.id);
+      dbError = error;
     } else {
-      await supabase.from("user_subscriptions").insert(subData);
+      const { error } = await supabase.from("user_subscriptions").insert(subData);
+      dbError = error;
+    }
+
+    if (dbError) {
+      console.error("Failed to save subscription:", dbError);
+      return NextResponse.json({ error: "Failed to activate subscription" }, { status: 500 });
     }
 
     return NextResponse.json({
