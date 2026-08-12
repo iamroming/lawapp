@@ -416,3 +416,113 @@ export async function softDeleteSuperAdminDocument(docId: string, userId: string
     details: { title, file_name: fileName },
   });
 }
+
+export async function getSuperAdminPlans() {
+  const access = await checkSuperAdminAccess();
+  if (!access.authorized) throw new Error("Unauthorized");
+
+  const serviceRoleClient = createServiceRoleClient();
+  const { data, error } = await serviceRoleClient
+    .from("subscription_plans")
+    .select("*")
+    .order("price", { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createSuperAdminPlan(plan: {
+  name: string;
+  slug: string;
+  description?: string;
+  price: number;
+  billing_period: string;
+  features?: string[];
+  max_cases?: number;
+  max_users?: number;
+  max_storage_mb?: number;
+  is_active?: boolean;
+}) {
+  const access = await checkSuperAdminAccess();
+  if (!access.authorized) throw new Error("Unauthorized");
+
+  const serviceRoleClient = createServiceRoleClient();
+  const { data, error } = await serviceRoleClient
+    .from("subscription_plans")
+    .insert({
+      name: plan.name,
+      slug: plan.slug,
+      description: plan.description || null,
+      price: plan.price,
+      billing_period: plan.billing_period,
+      features: plan.features || [],
+      max_cases: plan.max_cases ?? -1,
+      max_users: plan.max_users ?? 1,
+      max_storage_mb: plan.max_storage_mb ?? 100,
+      is_active: plan.is_active ?? true,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateSuperAdminPlan(planId: string, updates: {
+  name?: string;
+  slug?: string;
+  description?: string;
+  price?: number;
+  billing_period?: string;
+  features?: string[];
+  max_cases?: number;
+  max_users?: number;
+  max_storage_mb?: number;
+  is_active?: boolean;
+}) {
+  const access = await checkSuperAdminAccess();
+  if (!access.authorized) throw new Error("Unauthorized");
+
+  const serviceRoleClient = createServiceRoleClient();
+  const { data, error } = await serviceRoleClient
+    .from("subscription_plans")
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq("id", planId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteSuperAdminPlan(planId: string) {
+  const access = await checkSuperAdminAccess();
+  if (!access.authorized) throw new Error("Unauthorized");
+
+  const serviceRoleClient = createServiceRoleClient();
+
+  const { count } = await serviceRoleClient
+    .from("user_subscriptions")
+    .select("id", { count: "exact", head: true })
+    .eq("plan_id", planId)
+    .in("status", ["active", "trialing"]);
+
+  if (count && count > 0) {
+    throw new Error(`Cannot delete: ${count} active subscription(s) use this plan. Deactivate it instead.`);
+  }
+
+  const { error } = await serviceRoleClient
+    .from("subscription_plans")
+    .delete()
+    .eq("id", planId);
+  if (error) throw error;
+}
+
+export async function toggleSuperAdminPlanActive(planId: string, isActive: boolean) {
+  const access = await checkSuperAdminAccess();
+  if (!access.authorized) throw new Error("Unauthorized");
+
+  const serviceRoleClient = createServiceRoleClient();
+  const { error } = await serviceRoleClient
+    .from("subscription_plans")
+    .update({ is_active: !isActive, updated_at: new Date().toISOString() })
+    .eq("id", planId);
+  if (error) throw error;
+}

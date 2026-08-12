@@ -18,6 +18,7 @@ import {
   IndianRupee,
   Ticket,
   PenSquare,
+  Package,
 } from "lucide-react";
 import { getFirebaseAuth } from "@/lib/firebase/config";
 import { signOut as firebaseSignOut } from "firebase/auth";
@@ -29,6 +30,7 @@ const superAdminNav = [
   { name: "All Cases", href: "/super-admin/cases", icon: Briefcase },
   { name: "All Clients", href: "/super-admin/clients", icon: Users },
   { name: "Subscriptions", href: "/super-admin/subscriptions", icon: Receipt },
+  { name: "Plans", href: "/super-admin/plans", icon: Package },
   { name: "Coupons", href: "/super-admin/coupons", icon: Ticket },
   { name: "Revenue", href: "/super-admin/revenue", icon: IndianRupee },
   { name: "Blog", href: "/super-admin/blog", icon: PenSquare },
