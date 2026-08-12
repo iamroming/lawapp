@@ -24,6 +24,7 @@ import {
   Eye,
 } from "lucide-react";
 import Link from "next/link";
+import { useUser } from "@/hooks/use-user";
 
 interface ActivityLog {
   id: string;
@@ -60,6 +61,7 @@ const actionColors: Record<string, string> = {
 };
 
 export default function AdminActivityPage() {
+  const { user: appUser } = useUser();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -72,11 +74,25 @@ export default function AdminActivityPage() {
   }, []);
 
   const fetchLogs = async () => {
-    const { data } = await supabase
+    if (!appUser) { setLoading(false); return; }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("firm_id")
+      .eq("id", appUser?.uuid)
+      .single();
+
+    let query = supabase
       .from("activity_logs")
       .select("*, user:profiles(id, full_name, email)")
       .order("created_at", { ascending: false })
       .limit(200);
+
+    if (profile?.firm_id) {
+      query = query.eq("firm_id", profile.firm_id);
+    }
+
+    const { data } = await query;
 
     const formatted = (data || []).map((log: any) => ({
       ...log,
@@ -95,7 +111,7 @@ export default function AdminActivityPage() {
       log.action?.toLowerCase().includes(search.toLowerCase()) ||
       log.entity_name?.toLowerCase().includes(search.toLowerCase()) ||
       log.user?.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-      log.user?.email?.toLowerCase().includes(search.toLowerCase());
+      log.appUser?.email?.toLowerCase().includes(search.toLowerCase());
     const matchesAction = actionFilter === "all" || log.action === actionFilter;
     const matchesEntity = entityFilter === "all" || log.entity_type === entityFilter;
     return matchesSearch && matchesAction && matchesEntity;
@@ -104,7 +120,7 @@ export default function AdminActivityPage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayLogs = logs.filter((l) => new Date(l.created_at) >= today);
-  const uniqueUsersToday = new Set(todayLogs.map((l) => l.user?.id || l.id)).size;
+  const uniqueUsersToday = new Set(todayLogs.map((l) => l.appUser?.uuid || l.id)).size;
 
   return (
     <div className="space-y-6">
@@ -200,11 +216,11 @@ export default function AdminActivityPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <Avatar
-                            name={log.user?.full_name || log.user?.email || "?"}
+                            name={log.user?.full_name || log.appUser?.email || "?"}
                             size="sm"
                           />
                           <span className="font-medium text-sm">
-                            {log.user?.full_name || log.user?.email || "Unknown User"}
+                            {log.user?.full_name || log.appUser?.email || "Unknown User"}
                           </span>
                           <span className="text-[var(--text-secondary)] text-sm">{log.action}</span>
                           {log.entity_type && (

@@ -1,11 +1,12 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { getFirebaseAuth } from "@/lib/firebase/config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Scale, Phone, Building, Briefcase, Users, KeyRound, CheckCircle } from "lucide-react";
+import Link from "next/link";
 import toast from "react-hot-toast";
 
 type OnboardingMode = null | "owner" | "employee";
@@ -17,12 +18,13 @@ export default function OnboardingPage() {
   const [inviteValid, setInviteValid] = useState<boolean | null>(null);
   const [inviteRole, setInviteRole] = useState("");
   const [validatingCode, setValidatingCode] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const [formData, setFormData] = useState({
     full_name: "",
     phone: "",
     firm_name: "",
   });
-  const supabase = createClient();
   const router = useRouter();
 
   const validateInviteCode = async (code: string) => {
@@ -52,54 +54,56 @@ export default function OnboardingPage() {
       toast.error("Please enter a valid invite code");
       return;
     }
+    if (!formData.full_name?.trim()) {
+      toast.error("Please enter your full name");
+      return;
+    }
+    if (!acceptTerms) {
+      toast.error("Please accept the Terms & Conditions and Privacy Policy");
+      return;
+    }
 
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const auth = getFirebaseAuth();
+      const user = auth.currentUser;
       if (!user) {
         router.push("/login");
         return;
       }
 
-      if (mode === "owner") {
-        const { error } = await supabase.from("profiles").upsert({
-          id: user.id,
-          full_name: formData.full_name || user.user_metadata?.full_name || "",
-          email: user.email || "",
+      const idToken = await user.getIdToken();
+
+      const res = await fetch("/api/auth/onboarding", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          full_name: formData.full_name || user.displayName || "",
           phone: formData.phone,
           firm_name: formData.firm_name,
-          role: "owner",
-          firm_id: user.id,
-          is_active: true,
-        }, { onConflict: "id" });
+          mode,
+          ...(mode === "employee" && { invite_code: inviteCode.trim() }),
+        }),
+      });
 
-        if (error) {
-          toast.error(error.message);
-          setLoading(false);
-          return;
-        }
-      } else {
-        const redeemRes = await fetch("/api/team/redeem-code", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code: inviteCode.trim() }),
-        });
-        const redeemData = await redeemRes.json();
-        if (!redeemRes.ok) {
-          toast.error(redeemData.error || "Failed to apply invite code");
-          setLoading(false);
-          return;
-        }
-
-        await supabase.from("profiles").update({
-          full_name: formData.full_name || user.user_metadata?.full_name || "",
-          phone: formData.phone,
-          updated_at: new Date().toISOString(),
-        }).eq("id", user.id);
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Failed to complete onboarding");
+        setLoading(false);
+        return;
       }
 
-      toast.success("Welcome to LawXP!");
-      router.push("/dashboard");
+      toast.success("Welcome to CaseFiles!");
+      const selectedPlan = document.cookie.split("; ").find(c => c.startsWith("selected_plan="))?.split("=")[1];
+      if (selectedPlan) {
+        document.cookie = "selected_plan=; path=/; max-age=0";
+        router.push(`/subscription-required?plan=${selectedPlan}`);
+      } else {
+        router.push("/subscription-required");
+      }
     } catch {
       toast.error("An unexpected error occurred");
       setLoading(false);
@@ -124,7 +128,7 @@ export default function OnboardingPage() {
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface-accent)]">
               <Scale className="h-6 w-6 text-[var(--text-accent)]" />
             </div>
-            <CardTitle className="text-2xl">Welcome to LawXP</CardTitle>
+            <CardTitle className="text-2xl">Welcome to CaseFiles</CardTitle>
             <CardDescription>Complete your profile to get started</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -202,7 +206,8 @@ export default function OnboardingPage() {
                 onChange={(e) => {
                   const val = e.target.value.toUpperCase();
                   setInviteCode(val);
-                  validateInviteCode(val);
+                  if (debounceRef.current) clearTimeout(debounceRef.current);
+                  debounceRef.current = setTimeout(() => validateInviteCode(val), 300);
                 }}
                 className="font-mono text-lg tracking-wider"
                 maxLength={8}
@@ -256,6 +261,27 @@ export default function OnboardingPage() {
                 </div>
               </div>
             )}
+            <div className="flex items-start gap-3 p-4 rounded-lg bg-[var(--surface-subtle)] border border-[var(--border)]">
+              <input
+                type="checkbox"
+                id="accept-terms"
+                checked={acceptTerms}
+                onChange={(e) => setAcceptTerms(e.target.checked)}
+                className="mt-1 h-4 w-4 shrink-0 rounded border-[var(--border)] accent-[var(--accent)]"
+              />
+              <label htmlFor="accept-terms" className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                I agree to the{" "}
+                <Link href="/terms" target="_blank" className="text-[var(--accent)] hover:underline font-medium">
+                  Terms &amp; Conditions
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy" target="_blank" className="text-[var(--accent)] hover:underline font-medium">
+                  Privacy Policy
+                </Link>{" "}
+                of CaseFiles. I understand that my data will be processed in accordance with these policies.
+              </label>
+            </div>
+
             <Button
               type="submit"
               className="w-full"

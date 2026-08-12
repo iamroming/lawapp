@@ -1,19 +1,19 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getFirebaseAuth } from "@/lib/firebase/config";
 import { Crown } from "lucide-react";
 
 export function SuperAdminHeader() {
   const [email, setEmail] = useState("");
-  const supabase = createClient();
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) setEmail(user.email || "");
+      const auth = getFirebaseAuth();
+      const firebaseUser = auth.currentUser;
+      if (firebaseUser) setEmail(firebaseUser.email || "");
     };
     getUser();
-  }, [supabase]);
+  }, []);
 
   return (
     <header className="h-14 lg:h-16 border-b border-gray-200 bg-white flex items-center justify-between pl-14 lg:pl-6 pr-3 lg:pr-6">

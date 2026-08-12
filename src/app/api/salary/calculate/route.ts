@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("firm_id, role")
-      .eq("id", user.id)
+      .eq("id", user.uuid)
       .single();
 
     if (!profile?.firm_id) return NextResponse.json({ error: "No firm" }, { status: 400 });
@@ -70,17 +71,19 @@ export async function POST(request: NextRequest) {
 
     const total_earnings = base_salary + percentage_earned;
 
-    // Calculate deductions
+    // Calculate deductions - PF on basic+DA up to ₹15,000 ceiling
     let pf_deduction = 0;
     let esi_deduction = 0;
     let tds_deduction = 0;
 
-    if (employee.pf_enabled) pf_deduction = total_earnings * 0.12;
-    if (employee.esi_enabled) esi_deduction = total_earnings * 0.0075;
-    if (employee.tds_rate) tds_deduction = total_earnings * (employee.tds_rate / 100);
+    const pfWage = Math.min(base_salary || total_earnings, 15000);
+    if (employee.pf_enabled) pf_deduction = Math.round(pfWage * 0.12 * 100) / 100;
+    // ESI only if gross <= ₹21,000
+    if (employee.esi_enabled && total_earnings <= 21000) esi_deduction = Math.round(total_earnings * 0.0075 * 100) / 100;
+    if (employee.tds_rate) tds_deduction = Math.round(total_earnings * (employee.tds_rate / 100) * 100) / 100;
 
-    const total_deductions = pf_deduction + esi_deduction + tds_deduction;
-    const net_payable = total_earnings - total_deductions;
+    const total_deductions = Math.round((pf_deduction + esi_deduction + tds_deduction) * 100) / 100;
+    const net_payable = Math.round((total_earnings - total_deductions) * 100) / 100;
 
     return NextResponse.json({
       employee_id,

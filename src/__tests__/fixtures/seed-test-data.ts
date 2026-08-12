@@ -1,7 +1,7 @@
 /**
  * Test Data Pool Generator
  * 
- * Generates realistic dummy data for testing LawXP.
+ * Generates realistic dummy data for testing CaseFiles.
  * Run: npx tsx src/__tests__/fixtures/seed-test-data.ts
  * 
  * Requires: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY env vars
@@ -23,14 +23,14 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 export const TEST_USERS = {
   owner: {
-    email: "owner.test@lawxp.com",
+    email: "owner.test@casefiles.com",
     password: "TestOwner@123",
     full_name: "Advocate Priya Sharma",
     phone: "9876543210",
     firm_name: "Sharma & Associates",
   },
   employee: {
-    email: "employee.test@lawxp.com",
+    email: "employee.test@casefiles.com",
     password: "TestEmployee@123",
     full_name: "Advocate Rahul Verma",
     phone: "9876543211",
@@ -330,7 +330,7 @@ async function main() {
     return;
   }
 
-  console.log("=== LawXP Test Data Pool ===\n");
+  console.log("=== CaseFiles Test Data Pool ===\n");
 
   // Get or create owner
   console.log("Setting up owner user...");

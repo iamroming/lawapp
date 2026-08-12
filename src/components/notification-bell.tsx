@@ -4,7 +4,9 @@ import React, { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { getUnreadCount } from "@/lib/notifications/service";
 import { createClient } from "@/lib/supabase/client";
+import { getFirebaseAuth } from "@/lib/firebase/config";
 import Link from "next/link";
+import { firebaseUidToUuid } from "@/lib/firebase/uid";
 
 export function NotificationBell() {
   const [count, setCount] = useState(0);
@@ -14,9 +16,10 @@ export function NotificationBell() {
     let channel: any;
 
     const fetchCount = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const auth = getFirebaseAuth();
+      const user = auth.currentUser;
       if (user) {
-        const unreadCount = await getUnreadCount(user.id);
+        const unreadCount = await getUnreadCount(firebaseUidToUuid(user.uid));
         setCount(unreadCount);
       }
     };

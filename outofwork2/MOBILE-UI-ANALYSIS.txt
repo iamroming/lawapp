@@ -79,7 +79,7 @@ This means: dark mode is triggered, but the UI wasn't built to support it.
 SHORT ANSWER: NO - A responsive web redesign is sufficient.
 
 DETAILED ANSWER:
-  LawXP is a practice management tool (like a desktop CRM). Lawyers need it
+  CaseFiles is a practice management tool (like a desktop CRM). Lawyers need it
   for case management, billing, document uploads, and court tracking. These
   are all browser-compatible tasks.
 

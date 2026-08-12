@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import courtData from "@/lib/court-data.json";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const { searchParams } = new URL(request.url);
     const stateCode = searchParams.get("state_code");

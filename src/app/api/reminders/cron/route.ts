@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 
 interface ReminderClient {
   id: string;
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const supabase = await createClient();
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
     // Find reminders that are due (status=pending and date <= now)
     const { data: dueReminders, error: fetchError } = await supabase
@@ -183,7 +183,7 @@ async function sendReminderEmail(reminder: ReminderRecord) {
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   await resend.emails.send({
-    from: process.env.EMAIL_FROM || "LawXP <reminders@LawXP.in>",
+    from: process.env.EMAIL_FROM || "CaseFiles <reminders@CaseFiles.in>",
     to: client.email,
     subject: `Reminder: ${reminder.title}`,
     html: `
@@ -196,7 +196,7 @@ async function sendReminderEmail(reminder: ReminderRecord) {
         })}</p>
         ${reminder.case ? `<p><strong>Case:</strong> ${reminder.case.case_number || ""} - ${reminder.case.title || ""}</p>` : ""}
         <hr style="margin: 20px 0; border: 1px solid #e5e7eb;" />
-        <p style="color: #6b7280; font-size: 12px;">This is an automated reminder from LawXP</p>
+        <p style="color: #6b7280; font-size: 12px;">This is an automated reminder from CaseFiles</p>
       </div>
     `,
   });
@@ -208,7 +208,7 @@ async function sendReminderSMS(reminder: ReminderRecord) {
   const client = reminder.client;
   if (!client?.phone) return;
 
-  const message = `LawXP: ${reminder.title}\n${reminder.message || ""}\nDate: ${new Date(reminder.reminder_date).toLocaleString("en-IN")}`;
+  const message = `CaseFiles: ${reminder.title}\n${reminder.message || ""}\nDate: ${new Date(reminder.reminder_date).toLocaleString("en-IN")}`;
 
   await fetch("https://api.msg91.com/api/v5/flow", {
     method: "POST",
@@ -230,7 +230,7 @@ async function sendReminderWhatsApp(reminder: ReminderRecord) {
   const client = reminder.client;
   if (!client?.phone) return;
 
-  const message = `Hi ${client.full_name},\n\nReminder: ${reminder.title}\n${reminder.message || ""}\n\nDate: ${new Date(reminder.reminder_date).toLocaleString("en-IN")}\n\n- LawXP`;
+  const message = `Hi ${client.full_name},\n\nReminder: ${reminder.title}\n${reminder.message || ""}\n\nDate: ${new Date(reminder.reminder_date).toLocaleString("en-IN")}\n\n- CaseFiles`;
 
   await fetch("https://api.interakt.shop/v1/public/message/", {
     method: "POST",

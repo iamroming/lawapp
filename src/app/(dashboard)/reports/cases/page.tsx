@@ -16,6 +16,7 @@ import {
   FileDown,
 } from "lucide-react";
 import Link from "next/link";
+import { useUser } from "@/hooks/use-user";
 
 interface CaseByStatus {
   status: string;
@@ -70,6 +71,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function CaseStatisticsPage() {
+  const { user: appUser } = useUser();
   const [stats, setStats] = useState<CaseStats>({
     totalCases: 0,
     casesByStatus: [],
@@ -105,13 +107,12 @@ export default function CaseStatisticsPage() {
     try {
       const startDate = getDateFilter();
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!appUser) throw new Error("Not authenticated");
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("firm_id, role")
-        .eq("id", user.id)
+        .eq("id", appUser?.uuid)
         .single();
       if (profileError || !profile) throw new Error("Profile not found");
 
@@ -121,7 +122,7 @@ export default function CaseStatisticsPage() {
         .gte("created_at", startDate);
 
       if (!["owner", "partner", "super_admin"].includes(profile.role)) {
-        query = query.or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`);
+        query = query.or(`assigned_to.eq.${appUser?.uuid},created_by.eq.${appUser?.uuid}`);
       }
 
       const { data: cases, error: casesError } = await query;

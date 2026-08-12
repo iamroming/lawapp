@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, BookOpen, FileText, Scale, Bookmark } from "lucide-react";
-import { searchLegalResearch } from "@/lib/ai/service";
+import { Search, BookOpen, FileText, Scale, Bookmark, Lock } from "lucide-react";
 import type { ResearchResult } from "@/lib/ai/types";
 import toast from "react-hot-toast";
+import { useAiUsage } from "@/hooks/use-ai-usage";
+import Link from "next/link";
 
 const legalTopics = [
   { value: "", label: "All Topics" },
@@ -36,6 +37,7 @@ export default function AIResearchPage() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<ResearchResult[]>([]);
   const [savedNotes, setSavedNotes] = useState<string[]>([]);
+  const { usage, isAtLimit, isUnlimited, refreshUsage } = useAiUsage();
 
   const handleSearch = async () => {
     if (!query.trim()) {
@@ -45,9 +47,22 @@ export default function AIResearchPage() {
 
     setLoading(true);
     try {
-      const searchResults = await searchLegalResearch(query, topic || undefined);
-      setResults(searchResults);
-      toast.success(`Found ${searchResults.length} results`);
+      const res = await fetch("/api/ai/research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: query.trim(), act: topic || undefined }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || "Search failed. Please try again.");
+        return;
+      }
+
+      const data = await res.json();
+      setResults(data.results);
+      refreshUsage();
+      toast.success(`Found ${data.results.length} results`);
     } catch (error) {
       toast.error("Search failed. Please try again.");
     }
@@ -89,15 +104,29 @@ export default function AIResearchPage() {
                 onChange={(e) => setTopic(e.target.value)}
               />
             </div>
-            <Button onClick={handleSearch} disabled={loading} className="w-full sm:w-auto">
+            <Button onClick={handleSearch} disabled={loading || isAtLimit} className="w-full sm:w-auto">
               {loading ? (
                 <Search className="h-4 w-4 animate-pulse" />
+              ) : isAtLimit ? (
+                <Lock className="h-4 w-4 mr-2" />
               ) : (
                 <Search className="h-4 w-4 mr-2" />
               )}
-              Search
+              {isAtLimit ? "Limit Reached" : "Search"}
             </Button>
           </div>
+          {usage && !isUnlimited && (
+            <p className={`text-xs mt-2 ${isAtLimit ? "text-red-600" : "text-[var(--text-secondary)]"}`}>
+              {usage.used}/{usage.limit} queries used today
+              {isAtLimit && (
+                usage.isOwnerOrPartner ? (
+                  <Link href="/subscription" className="ml-2 underline font-medium">Upgrade</Link>
+                ) : (
+                  <span className="ml-2">Contact owner to upgrade</span>
+                )
+              )}
+            </p>
+          )}
         </CardContent>
       </Card>
 

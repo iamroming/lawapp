@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
 interface UnpaidInvoice {
   id: string;
@@ -28,7 +29,7 @@ async function sendReminderEmail(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: process.env.EMAIL_FROM || "LawXP <noreply@LawXP.app>",
+        from: process.env.EMAIL_FROM || "CaseFiles <noreply@CaseFiles.app>",
         to,
         subject,
         html: body,
@@ -56,9 +57,9 @@ export async function POST(request: NextRequest) {
       );
     } else {
       supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await verifySessionFromRequest(request);
       if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      userId = user.id;
+      userId = user.uuid;
     }
 
     let body: { invoice_id?: string } = {};
@@ -108,21 +109,21 @@ export async function POST(request: NextRequest) {
         body = `<p>Dear ${clientName},</p>
           <p>This is an escalation notice for Invoice <strong>${inv.invoice_number}</strong> of <strong>₹${totalAmount.toLocaleString("en-IN")}</strong>, which is now <strong>${daysOverdue} days overdue</strong>.</p>
           <p>Immediate payment is required to avoid further action. Please settle this amount at the earliest.</p>
-          <p>Regards,<br/>LawXP Legal</p>`;
+          <p>Regards,<br/>CaseFiles Legal</p>`;
       } else if (daysOverdue >= 30) {
         action = "final_notice";
         subject = `Final Notice - Invoice ${inv.invoice_number}`;
         body = `<p>Dear ${clientName},</p>
           <p>This is a final notice for Invoice <strong>${inv.invoice_number}</strong> of <strong>₹${totalAmount.toLocaleString("en-IN")}</strong>, which is <strong>${daysOverdue} days overdue</strong>.</p>
           <p>Please make payment within 7 days to avoid escalation.</p>
-          <p>Regards,<br/>LawXP Legal</p>`;
+          <p>Regards,<br/>CaseFiles Legal</p>`;
       } else if (daysOverdue >= 7) {
         action = "gentle_reminder";
         subject = `Payment Reminder - Invoice ${inv.invoice_number}`;
         body = `<p>Dear ${clientName},</p>
           <p>This is a gentle reminder that Invoice <strong>${inv.invoice_number}</strong> of <strong>₹${totalAmount.toLocaleString("en-IN")}</strong> is now <strong>${daysOverdue} days overdue</strong>.</p>
           <p>Please make payment at your earliest convenience.</p>
-          <p>Regards,<br/>LawXP Legal</p>`;
+          <p>Regards,<br/>CaseFiles Legal</p>`;
       } else {
         continue;
       }

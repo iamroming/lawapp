@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
@@ -14,7 +13,7 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from("consultations")
     .select("*")
-    .eq("lawyer_id", user.id)
+    .eq("lawyer_id", user.uuid)
     .order("scheduled_at", { ascending: false });
 
   if (status) {
@@ -28,9 +27,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
@@ -44,7 +41,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from("consultations")
       .insert({
-        lawyer_id: user.id,
+        lawyer_id: user.uuid,
         client_name,
         client_email: client_email || null,
         client_phone: client_phone || null,
@@ -67,9 +64,7 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
@@ -96,7 +91,7 @@ export async function PATCH(request: NextRequest) {
       .from("consultations")
       .update(updates)
       .eq("id", id)
-      .eq("lawyer_id", user.id)
+      .eq("lawyer_id", user.uuid)
       .select()
       .single();
 

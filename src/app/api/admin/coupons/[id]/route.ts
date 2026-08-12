@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
-async function checkSuperAdmin(supabase: any) {
-  const { data: { user } } = await supabase.auth.getUser();
+async function checkSuperAdmin(request: NextRequest, supabase: any) {
+  const user = await verifySessionFromRequest(request);
   if (!user) return { error: "Unauthorized", status: 401 };
-  const { data } = await supabase.from("super_admins").select("id").eq("id", user.id).single();
+  const { data } = await supabase.from("super_admins").select("id").eq("id", user.uuid).single();
   if (!data) return { error: "Forbidden", status: 403 };
   return { user };
 }
@@ -14,16 +15,33 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createClient();
-  const auth = await checkSuperAdmin(supabase);
+  const auth = await checkSuperAdmin(request, supabase);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const { id } = await params;
   const body = await request.json();
   const updates: Record<string, unknown> = {};
 
-  if (body.code !== undefined) updates.code = body.code.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (body.code !== undefined) {
+    const newCode = body.code.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const { data: existing } = await supabase
+      .from("coupon_codes")
+      .select("id")
+      .eq("code", newCode)
+      .neq("id", id)
+      .single();
+    if (existing) {
+      return NextResponse.json({ error: "Coupon code already exists" }, { status: 409 });
+    }
+    updates.code = newCode;
+  }
   if (body.plan_id !== undefined) updates.plan_id = body.plan_id || null;
-  if (body.discount_type !== undefined) updates.discount_type = body.discount_type;
+  if (body.discount_type !== undefined) {
+    if (!["percent", "fixed", "free"].includes(body.discount_type)) {
+      return NextResponse.json({ error: "discount_type must be one of: percent, fixed, free" }, { status: 400 });
+    }
+    updates.discount_type = body.discount_type;
+  }
   if (body.discount_value !== undefined) updates.discount_value = body.discount_value;
   if (body.max_uses !== undefined) updates.max_uses = body.max_uses;
   if (body.valid_from !== undefined) updates.valid_from = body.valid_from;
@@ -47,7 +65,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createClient();
-  const auth = await checkSuperAdmin(supabase);
+  const auth = await checkSuperAdmin(request, supabase);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const { id } = await params;

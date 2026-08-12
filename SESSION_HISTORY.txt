@@ -1,0 +1,363 @@
+================================================================================
+CASEFILES - COMPLETE SESSION HISTORY & CHANGE LOG
+================================================================================
+Last Updated: 2026-08-12
+Project: CaseFiles - Law Practice Management SaaS
+URL: https://www.casefiles.in
+Firebase: casefiles-a (project ID)
+================================================================================
+
+
+## PROJECT OVERVIEW
+================================================================================
+Mobile-first law practice management SaaS with:
+- Firebase Auth (migrated from Supabase Auth)
+- Supabase PostgreSQL database (RLS disabled)
+- Razorpay payments
+- AI tools (case analysis, drafting, research)
+- Calendar with court rules
+- PDF/Excel export, WhatsApp sharing
+- Coupon system
+- Multi-tenant with firm-level data isolation
+- Next.js 16.2.10 (Turbopack), TypeScript, Tailwind CSS v4
+
+Plans: Solo (₹299), Professional (₹799), Firm (₹1999), Enterprise (₹4999)
+Production URL: https://www.casefiles.in
+
+
+## SESSION 1: FIREBASE AUTH MIGRATION
+================================================================================
+
+### Firebase Auth Setup
+- Created new Firebase project: casefiles-a (replaces old lawapp-f8343)
+- Auth domain: casefiles-a.firebaseapp.com
+- Project ID: casefiles-a
+- App ID: 1:960084326451:web:db8944bc51aa5b36ba8b46
+
+### UUID Conversion (src/lib/firebase/uid.ts)
+- Firebase UIDs (e.g., Vp4z6gBWqrbrKZIEcXBbm1c1K3z1) are NOT valid UUIDs
+- Supabase profiles.id requires UUID format
+- Solution: firebaseUidToUuid(uid) generates deterministic UUID via double hash
+- AuthUser interface has both uid (Firebase UID) and uuid (Supabase-compatible UUID)
+
+### Session Management
+- Session cookie: firebase-session, HTTP-only, 5-day max age
+- Created session API endpoints
+
+### Auth Flow Fixes
+- /api/auth/signup: Fixed profile check to use firebaseUidToUuid(existingUser.uid)
+- /api/auth/onboarding: Simplified to direct profile upsert with onConflict: "id"
+- /api/db/write: Added row-level authorization with ownerField per table
+- Profile guard: Fixed to not allow access on network errors
+- Login page: Replaced broken Supabase client profile query with /api/auth/profile
+- Signup page: Removed broken supabase.auth.getUser() calls
+
+### 53+ Dashboard Pages
+- All supabase.auth.getUser() calls replaced with useUser() hook (src/hooks/use-user.ts)
+- Sidebar now shows firm name from profiles.firm_id instead of hardcoded "CaseFiles"
+- Dashboard greeting falls back to Firebase display name → email prefix → "there"
+
+### Subscription System
+- Added "Start Free Trial" button (14-day Solo plan, no credit card)
+- /api/subscriptions/trial endpoint created
+
+### Dead Code Removed
+- src/lib/supabase/middleware.ts
+- src/app/auth/callback/route.ts
+
+
+## SESSION 2: EMPLOYEE INVITE FLOW BUG FIXES
+================================================================================
+
+### Bug 1: Invite Validation Blocked (src/app/api/team/redeem-code/route.ts)
+- GET handler required auth - unauthenticated users couldn't validate codes during signup
+- Fix: Removed auth requirement from GET - it's just checking if a code is valid
+
+### Bug 2&3: Payment/Salary Fields Lost During Signup
+- Fields not copied: payment_type, monthly_salary, percentage_rate, upi_id, allotment_status, pf_enabled, esi_enabled, tds_rate
+- Fix: Added all fields to profile upsert in both signup and onboarding APIs
+- Files: src/app/api/auth/signup/route.ts, src/app/api/auth/onboarding/route.ts
+
+### Bug 4&5: Admin Pages Stuck Loading
+- useEffect dependency arrays missing appUser
+- Fix: Added appUser to dependency arrays
+- Files: src/app/(admin)/admin/add-employee/page.tsx, src/app/(admin)/admin/employees/page.tsx
+
+### Bug 6: Service Role in Client (src/app/(admin)/admin/employees/page.tsx)
+- Used createServiceRoleClient() in browser component
+- Fix: Replaced with createClient() (browser-safe)
+
+### Bug 7: Account Takeover Prevention (src/app/api/auth/signup/route.ts)
+- Previously: Created profile without password verification for existing emails
+- Fix: Now rejects signup if email already exists in Firebase - tells user to sign in
+
+
+## SESSION 3: DATA ISOLATION SECURITY AUDIT & FIXES
+================================================================================
+RLS is DISABLED on all tables. All isolation depends on API-level filtering.
+
+### CRITICAL: Hearings GET - case_id Bypasses Firm Isolation
+- File: src/app/api/hearings/route.ts
+- Issue: When case_id supplied, firm_id filter was entirely skipped
+- Fix: Added firm verification on the case before returning hearings
+
+### CRITICAL: Share Route - Owners Can Access Other Firms' Data
+- File: src/app/api/share/route.ts
+- Issue: !isOwner exception let firm owners share other firms' data
+- Fix: Removed owner bypass - firm_id now always enforced
+
+### HIGH: Consultations Slots - No Firm Filter on lawyer_id
+- File: src/app/api/consultations/slots/route.ts
+- Issue: Could read any lawyer's availability/pricing across firms
+- Fix: Added firm verification when requesting another lawyer's slots
+
+### HIGH: Case Alerts Check - No Firm Filter
+- File: src/app/api/case-alerts/check/route.ts
+- Issue: Fetched ALL active alerts across ALL firms
+- Fix: Scoped to cases.firm_id for non-cron calls
+
+### HIGH: Notifications Schedule - No Firm Filter
+- File: src/app/api/notifications/schedule/route.ts
+- Issue: Fetched ALL tomorrow's hearings across ALL firms
+- Fix: Scoped to case.firm_id for non-cron calls
+
+### HIGH: Collections POST - Firm Check Skipped for Null firm_id
+- File: src/app/api/collections/route.ts
+- Fix: Falls back to user.uuid for firm comparison
+
+### HIGH: Payments POST - Client Firm Check Skipped
+- File: src/app/api/payments/route.ts
+- Fix: Always verifies client belongs to firm (falls back to user.uuid)
+
+### HIGH: Clients GET - Missing Request Param (Runtime Crash)
+- File: src/app/api/clients/route.ts
+- Fix: Added request: NextRequest parameter
+
+### HIGH: Timesheets Timer - Missing Request Param (Runtime Crash)
+- File: src/app/api/timesheets/timer/route.ts
+- Fix: Added request: NextRequest to GET and DELETE handlers
+
+### HIGH: Cases Similar - No firm_id on Initial Query
+- File: src/app/api/cases/[id]/similar/route.ts
+- Fix: Now requires firm_id match first
+
+### HIGH: DB Write - Wrong firm_id for Firm Members
+- File: src/app/api/db/write/route.ts
+- Issue: Always set firm_id = user.uuid (wrong for firm members)
+- Fix: Looks up actual firm_id from profiles table
+
+### MEDIUM: Clients Feedback - user.id → user.uuid
+- File: src/app/api/clients/feedback/route.ts
+- Fix: Changed user?.id to user?.uuid
+
+
+## SESSION 4: FORMS, REPORTS & CALCULATIONS AUDIT
+================================================================================
+
+### CRITICAL: Super-Admin Undefined Variable Crash
+- File: src/app/(super-admin)/super-admin/users/[id]/page.tsx
+- Issue: authUser referenced but never defined (should be appUser)
+- Fix: Replaced authUser with appUser
+
+### CRITICAL: Reports API - total_amount Field Doesn't Exist
+- File: src/app/api/reports/route.ts
+- Issue: Used i.total_amount which doesn't exist in DB - outstanding was always ₹0
+- Fix: Changed to (i.amount || 0) + (i.tax_amount || 0)
+
+### CRITICAL: Salary PF/ESI Calculation Errors
+- Files: src/app/api/salary/calculate/route.ts, src/app/api/salary/route.ts
+- Issues:
+  1. PF calculated on total_earnings instead of basic+DA with ₹15,000 ceiling
+  2. ESI applied without ₹21,000 threshold check
+  3. No rounding of monetary amounts (floating point issues)
+- Fix:
+  - PF: min(base_salary, 15000) * 0.12
+  - ESI: Only if total_earnings <= 21000
+  - All amounts rounded to 2 decimal places
+
+### HIGH: Silent Error Swallowing in Forms
+- Files: expenses/new, tasks/new, timesheets/new
+- Issue: API errors returned with no user feedback
+- Fix: Added toast.error() for all error cases
+
+### HIGH: Contact Form Fake Submission
+- File: src/app/(marketing)/contact/page.tsx
+- Issue: Used setTimeout(1000) - no data actually sent
+- Fix: Created /api/contact endpoint, form now calls it
+
+### HIGH: Missing Error Handling in Report Pages
+- Files: financial, clients-deep, team report pages
+- Issue: No try/catch - infinite loading on API failure
+- Fix: Added try/catch with error state and user-facing error message
+
+### HIGH: Overview Tab - Missing firm_id for Non-Owners
+- File: src/app/(dashboard)/reports/_components/overview-tab.tsx
+- Issue: Non-owner queries had no firm_id filter
+- Fix: Added .eq("firm_id", firmId) for all non-owner queries
+
+### HIGH: Performance Report - Wrong Date Field
+- File: src/app/(dashboard)/reports/performance/page.tsx
+- Issue: "Monthly Resolution" chart used created_at instead of resolution date
+- Fix: Now uses updated_at (when case was actually resolved)
+
+### MEDIUM: Profile Settings - alert() Instead of toast
+- File: src/components/settings/profile-settings.tsx
+- Fix: Replaced alert("Passwords do not match") with toast.error()
+
+### MEDIUM: Onboarding - Missing full_name Validation
+- File: src/app/onboarding/page.tsx
+- Fix: Added required check for full_name before submission
+
+### NEW: /api/contact Endpoint Created
+- File: src/app/api/contact/route.ts
+- Features:
+  - Validates required fields
+  - Stores in contact_submissions table
+  - Sends notification email via Resend if configured
+
+
+## KNOWN ISSUES (NOT YET FIXED)
+================================================================================
+
+### Security: Service Role Key Exposed to Browser
+- 14 super-admin/admin files import createServiceRoleClient() in "use client" components
+- This bundles the service role key into client JavaScript
+- Fix required: Move all DB queries to API routes
+- Affected files:
+  1. src/app/(admin)/admin/users/page.tsx
+  2. src/app/(admin)/admin/users/[id]/page.tsx
+  3. src/app/(admin)/admin/subscriptions/page.tsx
+  4. src/app/(super-admin)/super-admin/users/[id]/page.tsx
+  5. src/app/(super-admin)/super-admin/users/page.tsx
+  6. src/app/(super-admin)/super-admin/page.tsx
+  7. src/app/(super-admin)/super-admin/revenue/page.tsx
+  8. src/app/(super-admin)/super-admin/subscriptions/page.tsx
+  9. src/app/(super-admin)/super-admin/activity/page.tsx
+  10. src/app/(super-admin)/super-admin/settings/page.tsx
+  11. src/app/(super-admin)/super-admin/clients/page.tsx
+  12. src/app/(super-admin)/super-admin/documents/page.tsx
+  13. src/app/(super-admin)/super-admin/cases/page.tsx
+  14. src/app/(super-admin)/super-admin/coupons/page.tsx
+
+### Calculation Issues (Not Fixed)
+- billing.ts: CGST+SGST may not sum to totalGST due to independent rounding
+- gst.ts: formatNumberToWords rounds paise away for invoice amounts
+- Two conflicting calculateGST implementations (gst.ts vs billing.ts)
+- formatCurrency uses 0 decimal places (loses paise)
+- Court fee slab gap for fractional amounts
+- No input validation for negative amounts in court-fees.ts
+
+### Report Issues (Not Fixed)
+- Revenue report GST Summary hardcodes intra-state split (CGST/SGST 50/50)
+- Unreliable date sorting of month labels (new Date("Jan 2024") is implementation-dependent)
+- "Active Clients" label is misleading (counts created, not active)
+- Avg case duration includes unresolved cases
+- Inconsistent outstanding amount across revenue report page vs invoices list
+
+
+## DATABASE STRUCTURE
+================================================================================
+
+### Key Tables
+- profiles: id (UUID), firm_id, role, full_name, email, phone, payment_type, monthly_salary, percentage_rate, pf_enabled, esi_enabled, tds_rate, upi_id, allotment_status
+- cases: id, firm_id, created_by, assigned_to, status, case_number, title, acts, sections, clauses
+- clients: id, firm_id, created_by, full_name, phone
+- invoices: id, firm_id, amount, tax_amount, status (sent/overdue/paid)
+- payments: id, firm_id, received_by, amount, payment_date
+- hearings: id, case_id, firm_id, hearing_date, court_name, judge_name
+- salary_payments: id, employee_id, firm_id, base_salary, pf_deduction, esi_deduction, tds_deduction, net_payable
+- team_members: id, firm_id, user_id, role
+- consultation_slots: id, lawyer_id, day_of_week, start_time, end_time, fee
+- case_alerts: id, user_id, case_id, is_active, channels
+- collection_logs: id, invoice_id, firm_id, user_id, action
+- contact_submissions: id, name, email, phone, subject, message
+
+
+## API ROUTES SUMMARY
+================================================================================
+
+### Authentication
+- POST /api/auth/signup - Create account + profile
+- POST /api/auth/onboarding - Complete onboarding
+- GET /api/auth/profile - Get user profile
+- POST /api/auth/session - Create session cookie
+- DELETE /api/auth/session - Clear session
+
+### Core Entities
+- /api/cases - CRUD for cases
+- /api/clients - CRUD for clients
+- /api/invoices - CRUD for invoices
+- /api/payments - CRUD for payments
+- /api/hearings - CRUD for hearings
+- /api/tasks - CRUD for tasks
+- /api/timesheets - CRUD for timesheets
+- /api/expenses - CRUD for expenses
+- /api/documents - CRUD for documents
+- /api/tags - CRUD for tags
+
+### Reports & Analytics
+- GET /api/reports?type=cases|revenue - Report data
+- GET /api/analytics?type=... - Analytics data
+- GET /api/dashboard - Dashboard stats
+
+### Billing & Subscriptions
+- /api/subscriptions - Subscription management
+- /api/subscriptions/trial - Start free trial
+- /api/subscriptions/webhook - Razorpay webhook
+- /api/coupons/apply|validate - Coupon system
+
+### Team Management
+- /api/team/invite - Send invite
+- /api/team/redeem-code - Validate/redeem invite code
+- /api/team/[id] - Remove team member
+
+### Salary
+- /api/salary - Salary payments CRUD
+- /api/salary/calculate - Calculate salary
+
+### AI
+- /api/ai/analyze - Case analysis
+- /api/ai/draft - Document drafting
+- /api/ai/research - Legal research
+- /api/ai/chat - AI chat
+
+### Exports
+- /api/export/cases-pdf|excel - Case exports
+- /api/export/clients-pdf|excel - Client exports
+- /api/export/calendar-pdf|ics - Calendar exports
+
+### Utilities
+- /api/db/write - Generic authenticated write endpoint
+- /api/share - Generate share links
+- /api/contact - Contact form submissions
+- /api/notifications/schedule - Hearing reminders
+- /api/case-alerts/check - Check case status changes
+
+
+## DEPLOYMENT
+================================================================================
+- Platform: Vercel (via CLI)
+- Build: next build (Turbopack)
+- TypeScript errors: ignored (ignoreBuildErrors: true)
+- Deploy command: npx vercel --yes --prod
+- Production URL: https://www.casefiles.in
+- Alias: https://lawapp-l7xodod7w-iamromings-projects.vercel.app
+
+
+## IMPORTANT NOTES FOR FUTURE SESSIONS
+================================================================================
+
+1. RLS IS DISABLED - All data isolation is at API level
+2. Firebase UIDs need conversion via firebaseUidToUuid() for Supabase
+3. useUser() hook returns { uid, uuid, email, displayName }
+4. createServiceRoleClient() should NEVER be used in "use client" components
+5. All monetary calculations should use Math.round(x * 100) / 100
+6. Firm members use firm owner's UUID as firm_id, not their own
+7. Profile guard should not allow access on network errors
+8. Session cookie is firebase-session, HTTP-only, 5-day max age
+9. Onboarding page is in public routes (no auth required)
+10. contact_submissions table needs to be created in Supabase
+
+================================================================================
+END OF SESSION HISTORY
+================================================================================

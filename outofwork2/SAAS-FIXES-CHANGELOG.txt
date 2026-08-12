@@ -204,7 +204,7 @@ Files Modified:
     fetches user profile and sends paymentFailedEmail via Resend.
 
   Email includes:
-  - Subject: "Payment Failed for LawXP [Plan]"
+  - Subject: "Payment Failed for CaseFiles [Plan]"
   - Red-themed HTML with clear CTA
   - Link to settings?tab=billing to update payment method
 

@@ -1,0 +1,200 @@
+CASEFILES - CHANGELOG & APP WORKING GUIDE
+==========================================
+Generated: 2026-08-09
+Build Status: ✓ Passing (208 pages, ~21s)
+
+================================================================================
+PART 1: WHAT WAS FIXED (This Session)
+================================================================================
+
+1. QUOTATION DROPDOWNS EMPTY
+   Problem: /quotations/new page showed empty Client and Case dropdowns
+   Cause: APIs return flat arrays [..] but page expected { clients: [...] }
+   Fix: Updated fetch handlers to handle both formats
+   File: src/app/(dashboard)/quotations/new/page.tsx
+
+2. QUOTATION CASE DROPDOWN SHOWS ALL CASES
+   Problem: Related Case dropdown showed all cases instead of selected client's cases
+   Fix: Added client-side filtering - cases filtered by client_id when client selected
+   Fix: Changing client clears the case selection
+   File: src/app/(dashboard)/quotations/new/page.tsx
+
+3. EXPENSES 403 FORBIDDEN
+   Problem: POST /api/expenses returned 403 Forbidden
+   Cause: Page used direct Supabase client insert without user_id/firm_id
+   Fix: Changed to use API route /api/expenses which handles both fields
+   File: src/app/(dashboard)/expenses/new/page.tsx
+
+4. ALL FORMS NOT ENTERING DATA (28 pages fixed)
+   Problem: 28 pages used direct Supabase client inserts/updates without
+   required fields (user_id, firm_id) that RLS policies need
+   Root Cause: RLS policies check firm_id = user's firm_id, but inserts
+   didn't include firm_id, so RLS blocked them with 403
+
+   PAGES FIXED:
+
+   Core CRUD (added firm_id to inserts/updates):
+   - clients/new/page.tsx
+   - clients/[id]/edit/page.tsx
+   - clients/[id]/page.tsx (cascading soft-deletes)
+   - cases/new/page.tsx
+   - cases/[id]/edit/page.tsx
+   - cases/[id]/page.tsx (cascading soft-deletes, status change)
+
+   Tasks & Timesheets (added user_id + firm_id):
+   - tasks/new/page.tsx
+   - timesheets/new/page.tsx
+   - timesheets/page.tsx (timer start/stop)
+
+   Messages (added firm_id):
+   - messages/page.tsx
+   - client/messages/page.tsx
+
+   Super Admin (switched to service-role client to bypass RLS):
+   - super-admin/users/page.tsx
+   - super-admin/users/[id]/page.tsx
+   - super-admin/settings/page.tsx
+   - super-admin/documents/page.tsx
+   - super-admin/subscriptions/page.tsx
+   - super-admin/coupons/page.tsx
+   - super-admin/page.tsx
+   - super-admin/clients/page.tsx
+   - super-admin/revenue/page.tsx
+   - super-admin/cases/page.tsx
+   - super-admin/activity/page.tsx
+
+   Admin (added firm_id scoping):
+   - admin/employees/page.tsx
+   - admin/users/page.tsx
+   - admin/users/[id]/page.tsx
+   - admin/subscriptions/page.tsx
+
+   Already OK (no changes needed):
+   - calendar/page.tsx (already had firm_id)
+   - documents/page.tsx (already scoped)
+   - tasks/page.tsx (update by ID, RLS-scoped from fetch)
+   - consultations/page.tsx (update by ID)
+   - settings/page.tsx (user-scoped operations)
+   - onboarding/page.tsx (user creates own profile)
+
+================================================================================
+PART 2: HOW THE APP WORKS
+================================================================================
+
+ARCHITECTURE:
+- Frontend: Next.js 16.2.10 (Turbopack) + React + TypeScript
+- Backend: Supabase (PostgreSQL + Auth + RLS)
+- Styling: Tailwind CSS v4 (light theme only)
+- Payments: Razorpay
+- Storage: Cloudinary (client-side unsigned uploads)
+- AI: OpenAI-compatible API (mimo-v2.5-free model)
+
+DATABASE SCHEMA:
+- profiles: User accounts (id, firm_id, role, full_name, email)
+- firms: Law firms (owner = profile.id)
+- cases: Legal cases (firm_id, client_id, assigned_to, status)
+- clients: Client records (firm_id, created_by)
+- documents: File attachments (firm_id, uploaded_by, cloudinary references)
+- invoices: Billing (firm_id, issued_by, invoice_number, amount)
+- payments: Payment records (firm_id, received_by)
+- expenses: Firm expenses (firm_id, user_id, category, amount)
+- time_entries: Billable hours (firm_id, lawyer_id, case_id)
+- timesheets: Time tracking (firm_id, user_id, hours)
+- active_timers: Running timers (user_id, case_id)
+- hearings: Court dates (firm_id, case_id)
+- messages: Internal messaging (firm_id, sender_id)
+- notifications: User notifications (firm_id, user_id)
+- tasks: Task management (firm_id, assigned_to)
+- tags: Client/case tags (firm_id)
+- consultations: Client consultations (firm_id)
+- coupon_codes: Discount coupons (created_by super_admin)
+- coupon_uses: Coupon redemption tracking
+- user_subscriptions: Active subscriptions (plan, status, firm_id)
+- subscription_plans: Available plans (Solo/Professional/Firm/Enterprise)
+- collection_logs: Payment collection tracking (firm_id, invoice_id)
+- ecourts_cases: Court case tracking (linked to cases)
+- quotation_items: Quotation line items
+- quotations: Client quotations (firm_id, client_id)
+
+ROW LEVEL SECURITY (RLS):
+All tables have RLS enabled. Policies follow this pattern:
+- Owners/Partners: See ALL firm data (firm_id = user's firm_id)
+- Employees: See only data they created or are assigned to
+- Super Admins: Use service-role client (bypasses RLS entirely)
+
+AUTHENTICATION:
+- Supabase Auth (email/password)
+- Roles: owner, partner, senior_associate, associate, employee, intern, paralegal
+- Super Admins: Separate table (super_admins), bypass all RLS
+- Session management via Supabase JWT tokens
+
+USER ROLES & PERMISSIONS:
+- owner: Full firm access, billing, team management
+- partner: Full firm access, billing
+- senior_associate: Can create cases, clients, invoices, time entries
+- associate: Can create cases, clients, time entries
+- employee: Read-only (can view firm data)
+- intern: Read-only
+- paralegal: Read-only
+
+FIRM ISOLATION:
+Every table has a firm_id column. RLS policies ensure:
+1. Users can only see data from their own firm
+2. Owners/partners see all firm data
+3. Employees see only data they created or are assigned to
+4. Super admins bypass all RLS via service-role client
+
+DATA FLOW:
+1. User signs up → profile created with firm_id
+2. Creates cases/clients → firm_id automatically set from profile
+3. Uploads documents → stored in Cloudinary, metadata in Supabase
+4. Creates invoices → invoice number generated atomically via RPC
+5. Processes payments → Razorpay handles payment, webhook updates subscription
+6. AI tools → messages sent to AI API with prompt injection protection
+
+KEY API ROUTES:
+- /api/auth/signup - User registration
+- /api/clients - Client CRUD
+- /api/cases - Case CRUD
+- /api/documents - Document upload/delete
+- /api/invoices - Invoice CRUD with auto-numbering
+- /api/expenses - Expense tracking
+- /api/time-entries - Billable time tracking
+- /api/payments/* - Razorpay payment processing
+- /api/quotations - Quotation generation
+- /api/ai/* - AI chat, drafting, research, analysis
+- /api/admin/* - Super admin operations (coupons, subscriptions)
+- /api/courts/* - Indian court integration (eCourts, High Courts)
+
+SUBSCRIPTION PLANS:
+- Solo: ₹299/mo (1GB storage, 50 cases)
+- Professional: ₹799/mo (3GB storage, 200 cases)
+- Firm: ₹1999/mo (7GB storage, unlimited cases)
+- Enterprise: ₹4999/mo (20GB storage, unlimited cases)
+
+FILE STRUCTURE:
+src/
+  app/
+    (auth)/          - Login, signup, reset password
+    (dashboard)/     - Main app pages (cases, clients, billing, etc.)
+    (admin)/         - Admin panel (employees, salary, subscriptions)
+    (super-admin)/   - Super admin panel (users, coupons, revenue)
+    (client-portal)/ - Client-facing portal
+    (marketing)/     - Public pages (pricing, features, about)
+    api/             - API routes
+  components/        - Reusable UI components
+  lib/
+    supabase/        - Supabase client setup (browser, server, admin)
+    ai/              - AI service with injection protection
+    security/        - Rate limiting, CSRF, file validation, account lockout
+  contexts/          - React contexts (auth, theme, super-admin)
+
+KNOWN ISSUES:
+- ignoreBuildErrors: true (12+ TypeScript errors in admin pages)
+- In-memory rate limiter (resets on serverless cold starts)
+- CSRF_SECRET defined but CSRF system needs middleware integration
+- Some pages still have implicit any types
+
+================================================================================
+END OF FILE
+================================================================================

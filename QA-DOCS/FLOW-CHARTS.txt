@@ -1,0 +1,803 @@
+======================================================================
+              FLOW CHARTS — CASEFILES APP
+======================================================================
+
+======================================================================
+FLOW 1: USER SIGNUP → FIRST LOGIN
+======================================================================
+
+    ┌─────────────┐
+    │  Marketing   │
+    │   Website    │
+    └──────┬──────┘
+           │ Click "Sign Up"
+           ▼
+    ┌─────────────┐
+    │  Signup Form │
+    │ name, email, │
+    │  password    │
+    └──────┬──────┘
+           │ POST /api/auth/signup
+           ▼
+    ┌─────────────┐     ┌──────────────┐
+    │  Supabase    │────▶│ auth.users    │
+    │  Auth API    │     │ (row created) │
+    └──────┬──────┘     └──────┬───────┘
+           │                    │ Trigger fires
+           │                    ▼
+           │            ┌──────────────┐
+           │            │   profiles    │
+           │            │ (row created) │
+           │            └──────┬───────┘
+           │                    │
+           ▼                    ▼
+    ┌─────────────┐     ┌──────────────┐
+    │ Confirmation │     │ firm_id set   │
+    │   Email Sent │     │ to own user_id│
+    └──────┬──────┘     └──────────────┘
+           │
+           ▼
+    ┌─────────────┐
+    │ User Clicks  │
+    │ Confirm Link │
+    └──────┬──────┘
+           │
+           ▼
+    ┌─────────────┐     ┌──────────────┐
+    │  Login Page  │────▶│ Session      │
+    │ email+pass   │     │ Created      │
+    └──────┬──────┘     └──────┬───────┘
+           │                    │
+           ▼                    ▼
+    ┌─────────────────────────────────┐
+    │         MIDDLEWARE              │
+    │  Check session + subscription   │
+    └──────────┬──────────────────────┘
+               │
+       ┌───────┴───────┐
+       │               │
+       ▼               ▼
+  ┌─────────┐    ┌──────────────┐
+  │Has Sub? │    │  No Sub?     │
+  │  YES    │    │              │
+  └────┬────┘    └──────┬───────┘
+       │                │
+       ▼                ▼
+  ┌─────────┐    ┌──────────────┐
+  │Dashboard│    │ Subscription │
+  │  Page   │    │  Required    │
+  └─────────┘    │    Page      │
+                 └──────────────┘
+
+
+======================================================================
+FLOW 2: SUBSCRIPTION PAYMENT (RAZORPAY)
+======================================================================
+
+    ┌─────────────┐
+    │ /subscription│
+    │    Page      │
+    └──────┬──────┘
+           │
+           ▼
+    ┌─────────────┐
+    │ Select Plan  │
+    │ + Billing    │
+    │   Cycle      │
+    └──────┬──────┘
+           │
+       ┌───┴────┐
+       │        │
+       ▼        ▼
+  ┌────────┐  ┌────────┐
+  │ No     │  │ Coupon │
+  │ Coupon │  │ Applied│
+  └───┬────┘  └───┬────┘
+      │           │
+      │           ▼
+      │    ┌────────────┐
+      │    │ /api/coupons│
+      │    │  /validate  │
+      │    └──────┬─────┘
+      │           │ discount
+      ▼           ▼
+    ┌─────────────────┐
+    │ POST /api/      │
+    │ payments/       │
+    │ create-order    │
+    └────────┬────────┘
+             │
+         ┌───┴───────────────┐
+         │                   │
+         ▼                   ▼
+  ┌────────────┐    ┌────────────┐
+  │ Free       │    │ Paid       │
+  │ (₹0)      │    │ (₹>0)     │
+  └─────┬──────┘    └─────┬──────┘
+        │                  │
+        │                  ▼
+        │         ┌────────────────┐
+        │         │  Razorpay SDK   │
+        │         │  Checkout.js    │
+        │         └────────┬───────┘
+        │                  │
+        │                  ▼
+        │         ┌────────────────┐
+        │         │  User Pays     │
+        │         │  UPI/Card/     │
+        │         │  Netbanking    │
+        │         └────────┬───────┘
+        │                  │
+        │                  ▼
+        │         ┌────────────────┐
+        │         │ POST /api/     │
+        │         │ payments/      │
+        │         │ verify         │
+        │         └────────┬───────┘
+        │                  │
+        │                  ▼
+        │         ┌────────────────┐
+        │         │ Verify Razorpay│
+        │         │ Signature      │
+        │         └────────┬───────┘
+        │                  │
+        ▼                  ▼
+    ┌──────────────────────────┐
+    │  Create/Update           │
+    │  user_subscriptions      │
+    │  status: "active"        │
+    └──────────┬───────────────┘
+               │
+               ▼
+    ┌──────────────────────────┐
+    │  If coupon used:         │
+    │  coupon_codes.uses + 1   │
+    │  coupon_uses record      │
+    └──────────┬───────────────┘
+               │
+               ▼
+    ┌──────────────────────────┐
+    │  Redirect to Dashboard   │
+    │  "Payment Successful!"   │
+    └──────────────────────────┘
+
+
+======================================================================
+FLOW 3: COUPON SYSTEM
+======================================================================
+
+    ┌─────────────────┐
+    │  Super Admin     │
+    │  /super-admin/   │
+    │  coupons         │
+    └────────┬────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │ Create Coupon    │
+    │ discount_type:   │
+    │ percent/fixed/   │
+    │ free             │
+    │ max_uses: 100    │
+    │ max_per_user: 1  │
+    │ billing_cycle:   │
+    │ both/monthly/    │
+    │ annual           │
+    └────────┬────────┘
+             │ POST /api/admin/coupons
+             ▼
+    ┌─────────────────┐
+    │ coupon_codes     │
+    │ table (stored)   │
+    └────────┬────────┘
+             │
+             ▼
+    ┌─────────────────────────────────────────┐
+    │              USER FLOW                   │
+    └─────────────────┬───────────────────────┘
+                      │
+                      ▼
+    ┌─────────────────┐
+    │ User enters code │
+    │ on /subscription │
+    └────────┬────────┘
+             │ POST /api/coupons/validate
+             ▼
+    ┌─────────────────┐
+    │ CHECK:           │
+    │ □ Code exists?   │──NO──▶ "Invalid coupon"
+    │ □ is_active?     │──NO──▶ "Invalid coupon"
+    │ □ Not expired?   │──NO──▶ "Coupon expired"
+    │ □ Under limit?   │──NO──▶ "Usage limit reached"
+    │ □ User hasn't    │──NO──▶ "Already used"
+    │   used before?   │
+    │ □ Billing cycle  │──NO──▶ "Wrong billing cycle"
+    │   matches?       │
+    │ □ Plan matches?  │──NO──▶ "Wrong plan"
+    └────────┬────────┘
+             │ ALL PASS
+             ▼
+    ┌─────────────────┐
+    │ Return:          │
+    │ valid: true      │
+    │ discount_type    │
+    │ discount_value   │
+    └────────┬────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │ Frontend updates │
+    │ plan prices:     │
+    │ ₹799 → ₹559     │
+    │ (strikethrough)  │
+    └────────┬────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │ User clicks      │
+    │ "Upgrade"        │
+    └────────┬────────┘
+             │ POST /api/payments/create-order
+             │ (with couponCode)
+             ▼
+    ┌─────────────────┐
+    │ API applies      │
+    │ discount to      │
+    │ Razorpay amount  │
+    └────────┬────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │ Razorpay checkout│
+    │ for discounted   │
+    │ amount           │
+    └────────┬────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │ After payment:   │
+    │ coupon_codes     │
+    │ .current_uses +1 │
+    │ coupon_uses      │
+    │ record created   │
+    └─────────────────┘
+
+
+======================================================================
+FLOW 4: CASE LIFECYCLE
+======================================================================
+
+    ┌─────────────┐
+    │ User creates│
+    │ new case    │
+    └──────┬──────┘
+           │ POST /api/cases
+           ▼
+    ┌─────────────┐
+    │ Auto-generate│
+    │ case_number  │
+    │ CASE-YYYYMMDD│
+    │ -XXXX        │
+    └──────┬──────┘
+           │
+           ▼
+    ┌─────────────┐
+    │ cases table  │
+    │ row created  │
+    │ firm_id set  │
+    └──────┬──────┘
+           │
+       ┌───┴───────────────┐
+       │                   │
+       ▼                   ▼
+  ┌─────────┐    ┌─────────────────┐
+  │ Link    │    │ Assign Team     │
+  │ Client  │    │ POST /api/      │
+  │         │    │ cases/team      │
+  └────┬────┘    └────────┬────────┘
+       │                  │
+       ▼                  ▼
+  ┌─────────┐    ┌─────────────────┐
+  │ Schedule│    │ Team member     │
+  │ Hearing │    │ notified        │
+  │ POST /  │    └────────┬────────┘
+  │ hearings│             │
+  └────┬────┘             │
+       │                  │
+       ▼                  ▼
+  ┌─────────┐    ┌─────────────────┐
+  │ Hearing │    │ Upload          │
+  │ created │    │ Documents       │
+  └────┬────┘    │ POST /api/      │
+       │         │ documents       │
+       │         └────────┬────────┘
+       │                  │
+       ▼                  ▼
+  ┌─────────┐    ┌─────────────────┐
+  │Reminders│    │ Record Time     │
+  │ auto-   │    │ POST /api/      │
+  │ created │    │ timesheets      │
+  │ (7/3/1  │    └────────┬────────┘
+  │  days)  │             │
+  └────┬────┘             │
+       │                  │
+       ▼                  ▼
+  ┌─────────┐    ┌─────────────────┐
+  │ Court   │    │ Create Invoice  │
+  │ Hearing │    │ POST /api/      │
+  │ Day     │    │ invoices        │
+  └────┬────┘    └────────┬────────┘
+       │                  │
+       ▼                  ▼
+  ┌─────────┐    ┌─────────────────┐
+  │ Outcome │    │ Record Payment  │
+  │ recorded│    │ POST /api/      │
+  │ won/lost│    │ payments        │
+  └────┬────┘    └────────┬────────┘
+       │                  │
+       └────────┬─────────┘
+                │
+                ▼
+       ┌─────────────────┐
+       │ Case Status     │
+       │ Updated         │
+       │ won/lost/       │
+       │ settled/closed  │
+       └─────────────────┘
+
+
+======================================================================
+FLOW 5: AI TOOLS
+======================================================================
+
+    ┌─────────────┐
+    │ User clicks │
+    │ "AI Tools"  │
+    └──────┬──────┘
+           │
+           ▼
+    ┌─────────────┐
+    │ GET /api/ai │
+    │ /usage-status│
+    └──────┬──────┘
+           │
+           ▼
+    ┌─────────────────┐
+    │ Usage Bar Shows: │
+    │ "AI Queries:     │
+    │  5/50 (10%)"     │
+    └────────┬────────┘
+             │
+       ┌─────┴──────┐
+       │            │
+       ▼            ▼
+  ┌─────────┐  ┌─────────┐
+  │ Under    │  │ At      │
+  │ Limit    │  │ Limit   │
+  └────┬────┘  └────┬────┘
+       │            │
+       │            ▼
+       │    ┌──────────────┐
+       │    │ "Daily limit │
+       │    │  reached"    │
+       │    │              │
+       │    │ Owner:       │
+       │    │ "Upgrade"    │
+       │    │              │
+       │    │ Employee:    │
+       │    │ "Contact     │
+       │    │  owner"      │
+       │    └──────────────┘
+       │
+       ▼
+  ┌─────────────────────┐
+  │ Select AI Tool:      │
+  │ □ Case Analysis      │
+  │ □ Document Drafting  │
+  │ □ AI Chat            │
+  │ □ Summarize          │
+  └──────────┬──────────┘
+             │
+             ▼
+  ┌─────────────────────┐
+  │ Enter prompt/text    │
+  └──────────┬──────────┘
+             │ POST /api/ai/analyze (or draft/chat)
+             ▼
+  ┌─────────────────────┐
+  │ Check usage limit    │
+  │ (server-side)        │
+  └──────────┬──────────┘
+             │
+         ┌───┴───┐
+         │       │
+         ▼       ▼
+  ┌──────────┐ ┌──────────┐
+  │ Allowed  │ │ Exceeded │
+  └────┬─────┘ └────┬─────┘
+       │             │
+       ▼             ▼
+  ┌──────────┐ ┌──────────┐
+  │ OpenAI   │ │ Error    │
+  │ API Call │ │ Response │
+  └────┬─────┘ └──────────┘
+       │
+       ▼
+  ┌─────────────────────┐
+  │ Response displayed   │
+  │ ai_usage logged      │
+  │ usage counter +1     │
+  └─────────────────────┘
+
+
+======================================================================
+FLOW 6: MULTI-TENANCY & DATA ISOLATION
+======================================================================
+
+    ┌──────────────────────────────────────────┐
+    │              USER LOGS IN                 │
+    └──────────────────┬───────────────────────┘
+                       │
+                       ▼
+    ┌──────────────────────────────────────────┐
+    │          MIDDLEWARE INTERCEPTS            │
+    │  1. Read session from cookies             │
+    │  2. Lookup firm_id from profiles          │
+    │  3. Set supabase.auth.setClaims()         │
+    └──────────────────┬───────────────────────┘
+                       │
+                       ▼
+    ┌──────────────────────────────────────────┐
+    │         API ROUTE CALLED                  │
+    │  e.g., GET /api/cases                    │
+    └──────────────────┬───────────────────────┘
+                       │
+                       ▼
+    ┌──────────────────────────────────────────┐
+    │         ROLE CHECK                        │
+    │  profiles.role = owner/partner?           │
+    └──────────┬───────────────────┬───────────┘
+               │                   │
+               ▼                   ▼
+    ┌──────────────────┐  ┌──────────────────┐
+    │  OWNER/PARTNER   │  │  EMPLOYEE         │
+    │  See ALL firm    │  │  See ONLY own     │
+    │  data            │  │  + assigned data  │
+    │                  │  │                   │
+    │  WHERE firm_id = │  │  WHERE            │
+    │  my_firm_id      │  │  (created_by = me │
+    │                  │  │  OR assigned_to   │
+    │                  │  │  = me)            │
+    └────────┬─────────┘  └────────┬──────────┘
+             │                     │
+             ▼                     ▼
+    ┌──────────────────────────────────────────┐
+    │         RLS POLICIES ENFORCE             │
+    │  Even if API logic has bugs,             │
+    │  database-level RLS blocks               │
+    │  cross-firm access                       │
+    └──────────────────────────────────────────┘
+
+
+======================================================================
+FLOW 7: INVOICE → PAYMENT → COLLECTION
+======================================================================
+
+    ┌─────────────┐
+    │ Create      │
+    │ Invoice     │
+    └──────┬──────┘
+           │ POST /api/invoices
+           ▼
+    ┌─────────────┐
+    │ Auto-number │
+    │ INV-YYYYMMDD│
+    │ -XXXX       │
+    └──────┬──────┘
+           │
+           ▼
+    ┌─────────────┐
+    │ Line items  │
+    │ + GST calc  │
+    │ + discount  │
+    └──────┬──────┘
+           │
+           ▼
+    ┌─────────────┐
+    │ invoices    │
+    │ table       │
+    │ status:     │
+    │ "pending"   │
+    └──────┬──────┘
+           │
+       ┌───┴───────────┐
+       │               │
+       ▼               ▼
+  ┌─────────┐    ┌──────────┐
+  │ Share   │    │ Wait for │
+  │ via     │    │ Payment  │
+  │ WhatsApp│    └────┬─────┘
+  │ /Email  │         │
+  └────┬────┘    ┌────┴─────┐
+       │         │          │
+       │         ▼          ▼
+       │   ┌──────────┐ ┌──────────┐
+       │   │ Online   │ │ Cash/    │
+       │   │ Payment  │ │ Bank     │
+       │   │ Razorpay │ │ Transfer │
+       │   └────┬─────┘ └────┬─────┘
+       │        │            │
+       │        ▼            ▼
+       │   ┌──────────────────────┐
+       │   │ POST /api/payments   │
+       │   │ record payment       │
+       │   └──────────┬───────────┘
+       │              │
+       │              ▼
+       │   ┌──────────────────────┐
+       │   │ Invoice status       │
+       │   │ → "paid" or          │
+       │   │   "partially_paid"   │
+       │   └──────────┬───────────┘
+       │              │
+       └──────┬───────┘
+              │
+          ┌───┴───────┐
+          │           │
+          ▼           ▼
+     ┌─────────┐ ┌──────────┐
+     │ Paid    │ │ Overdue  │
+     │ ✓ Done  │ │          │
+     └─────────┘ └────┬─────┘
+                      │
+                      ▼
+              ┌──────────────┐
+              │ Collection   │
+              │ Workflow     │
+              │              │
+              │ Day 7:       │
+              │  Reminder    │
+              │ Day 15:      │
+              │  Final Notice│
+              │ Day 30:      │
+              │  Legal Notice│
+              │ Day 60:      │
+              │  Recovery    │
+              └──────────────┘
+
+
+======================================================================
+FLOW 8: DOCUMENT UPLOAD
+======================================================================
+
+    ┌─────────────┐
+    │ User clicks │
+    │ "Upload"    │
+    └──────┬──────┘
+           │
+           ▼
+    ┌─────────────┐
+    │ Select file │
+    │ from disk   │
+    └──────┬──────┘
+           │
+           ▼
+    ┌─────────────────────┐
+    │ GET /api/documents   │
+    │ /storage-check       │
+    └──────────┬──────────┘
+               │
+           ┌───┴───────┐
+           │           │
+           ▼           ▼
+    ┌──────────┐ ┌──────────┐
+    │ Under    │ │ Over     │
+    │ Limit    │ │ Limit    │
+    └────┬─────┘ └────┬─────┘
+         │            │
+         │            ▼
+         │    ┌──────────────┐
+         │    │ Error:       │
+         │    │ "Storage     │
+         │    │  limit       │
+         │    │  reached"    │
+         │    └──────────────┘
+         │
+         ▼
+    ┌─────────────────────┐
+    │ uploadToCloudinary()│
+    │ (client-side)       │
+    └──────────┬──────────┘
+               │
+           ┌───┴───────┐
+           │           │
+           ▼           ▼
+    ┌──────────┐ ┌──────────┐
+    │ Success  │ │ Failed   │
+    │ URL      │ │ Error    │
+    └────┬─────┘ └────┬─────┘
+         │            │
+         │            ▼
+         │    ┌──────────────┐
+         │    │ Show error   │
+         │    │ "Upload      │
+         │    │  failed"     │
+         │    └──────────────┘
+         │
+         ▼
+    ┌─────────────────────┐
+    │ POST /api/documents  │
+    │ { file_url, title,   │
+    │   file_size, ... }   │
+    └──────────┬──────────┘
+               │
+           ┌───┴───────┐
+           │           │
+           ▼           ▼
+    ┌──────────┐ ┌──────────┐
+    │ Success  │ │ Failed   │
+    │ Record   │ │          │
+    │ Created  │ │ Cleanup: │
+    └────┬─────┘ │ Delete   │
+         │       │ Cloudi-  │
+         │       │ nary     │
+         │       │ file     │
+         │       └──────────┘
+         │
+         ▼
+    ┌─────────────────────┐
+    │ Document appears in  │
+    │ document list        │
+    └─────────────────────┘
+
+
+======================================================================
+FLOW 9: EMPLOYEE ONBOARDING
+======================================================================
+
+    ┌─────────────────┐
+    │ Firm Owner       │
+    │ clicks           │
+    │ "Add Employee"   │
+    └────────┬────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │ POST /api/team/  │
+    │ invite-code      │
+    └────────┬────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │ 6-char code      │
+    │ generated        │
+    │ e.g., "ABC123"   │
+    └────────┬────────┘
+             │
+             │ Owner shares code
+             │ (in person / email / WhatsApp)
+             ▼
+    ┌─────────────────┐
+    │ New Employee     │
+    │ visits           │
+    │ /login           │
+    └────────┬────────┘
+             │
+         ┌───┴───────┐
+         │           │
+         ▼           ▼
+  ┌──────────┐ ┌──────────┐
+  │ Has      │ │ No       │
+  │ Account  │ │ Account  │
+  └────┬─────┘ └────┬─────┘
+       │            │
+       │            ▼
+       │    ┌──────────────┐
+       │    │ Sign Up      │
+       │    │ with code    │
+       │    └──────┬───────┘
+       │           │
+       ▼           ▼
+    ┌─────────────────┐
+    │ POST /api/team/  │
+    │ redeem-code      │
+    │ { code: "ABC123" }│
+    └────────┬────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │ CHECK:           │
+    │ □ Code valid?    │──NO──▶ "Invalid code"
+    │ □ Not expired?   │──NO──▶ "Code expired"
+    │ □ Not in other   │──NO──▶ "Already in firm"
+    │   firm?          │
+    └────────┬────────┘
+             │ ALL PASS
+             ▼
+    ┌─────────────────┐
+    │ firm_members     │
+    │ row created      │
+    │ firm_id = owner's│
+    │ role = assigned  │
+    └────────┬────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │ Notification to  │
+    │ owner: "Employee │
+    │ joined"          │
+    └────────┬────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │ Employee sees    │
+    │ dashboard with   │
+    │ owner's plan     │
+    │ limits           │
+    └─────────────────┘
+
+
+======================================================================
+FLOW 10: NOTIFICATION SYSTEM
+======================================================================
+
+    ┌─────────────────┐
+    │ EVENT OCCURS     │
+    │ (hearing created,│
+    │  case updated,   │
+    │  payment due)    │
+    └────────┬────────┘
+             │
+       ┌─────┴──────┐
+       │            │
+       ▼            ▼
+  ┌──────────┐ ┌──────────┐
+  │ DB       │ │ API      │
+  │ Trigger  │ │ Route    │
+  └────┬─────┘ └────┬─────┘
+       │            │
+       └─────┬──────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │ notifications    │
+    │ table            │
+    │ row created      │
+    │ user_id, type,   │
+    │ title, message   │
+    └────────┬────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │ scheduled_       │
+    │ reminders        │
+    │ (for hearings)   │
+    │                  │
+    │ 7 days before:   │
+    │  → email         │
+    │ 3 days before:   │
+    │  → email + SMS   │
+    │ 1 day before:    │
+    │  → email + SMS   │
+    │    + WhatsApp    │
+    └────────┬────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │ Notification Bell│
+    │ shows badge      │
+    │ on new notif     │
+    └────────┬────────┘
+             │
+             ▼
+    ┌─────────────────┐
+    │ User clicks bell │
+    │ → /notifications │
+    │ → sees all       │
+    │ → marks as read  │
+    └─────────────────┘
+
+
+======================================================================
+                         END OF FLOW CHARTS
+======================================================================

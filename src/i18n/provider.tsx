@@ -18,7 +18,7 @@ const I18nContext = createContext<I18nContextType | undefined>(undefined);
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(() => {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("LawXP-locale") as Locale;
+      const stored = localStorage.getItem("CaseFiles-locale") as Locale;
       if (stored && locales.includes(stored)) return stored;
     }
     return defaultLocale;
@@ -26,7 +26,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
-    localStorage.setItem("LawXP-locale", newLocale);
+    localStorage.setItem("CaseFiles-locale", newLocale);
   }, []);
 
   const t = useCallback(

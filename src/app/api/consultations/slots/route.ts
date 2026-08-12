@@ -1,16 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
   const date = searchParams.get("date");
-  const lawyerId = searchParams.get("lawyer_id") || user.id;
+  const requestedLawyerId = searchParams.get("lawyer_id");
+  const lawyerId = requestedLawyerId || user.uuid;
+
+  // If requesting another lawyer's slots, verify they're in the same firm
+  if (requestedLawyerId && requestedLawyerId !== user.uuid) {
+    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.uuid).single();
+    const firmId = profile?.firm_id || user.uuid;
+    const { data: lawyerProfile } = await supabase.from("profiles").select("firm_id").eq("id", requestedLawyerId).single();
+    if (!lawyerProfile || lawyerProfile.firm_id !== firmId) {
+      return NextResponse.json({ error: "Lawyer not found" }, { status: 404 });
+    }
+  }
 
   let query = supabase
     .from("consultation_slots")
@@ -30,9 +40,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
@@ -46,7 +54,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from("consultation_slots")
       .insert({
-        lawyer_id: user.id,
+        lawyer_id: user.uuid,
         day_of_week,
         start_time,
         end_time,

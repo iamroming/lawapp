@@ -17,8 +17,11 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/client"
+import { getFirebaseAuth } from "@/lib/firebase/config"
+import { signOut as firebaseSignOut } from "firebase/auth"
 import { toast } from "react-hot-toast"
 import { ThemeProvider } from "@/components/theme-provider"
+import { firebaseUidToUuid } from "@/lib/firebase/uid"
 
 const navItems = [
   { href: "/client/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -43,7 +46,8 @@ export default function ClientPortalLayout({
   useEffect(() => {
     async function loadUser() {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        const auth = getFirebaseAuth();
+        const user = auth.currentUser;
         if (!user) {
           router.push("/client-login")
           return
@@ -51,7 +55,7 @@ export default function ClientPortalLayout({
         const { data: profile } = await supabase
           .from("client_portal_users")
           .select("client_id, clients(full_name)")
-          .eq("user_id", user.id)
+          .eq("user_id", firebaseUidToUuid(user.uid))
           .single()
         if (profile?.clients) {
           setClientName((profile.clients as any).full_name || "Client")
@@ -66,7 +70,8 @@ export default function ClientPortalLayout({
   }, [supabase, router])
 
   async function handleLogout() {
-    await supabase.auth.signOut()
+    await firebaseSignOut(getFirebaseAuth());
+    await fetch("/api/auth/session", { method: "DELETE" });
     toast.success("Logged out successfully")
     router.push("/client-login")
   }
@@ -101,7 +106,7 @@ export default function ClientPortalLayout({
           <div className="flex items-center justify-between border-b px-6 py-5">
             <Link href="/client/dashboard" className="flex items-center gap-2">
               <Scale className="h-7 w-7 text-primary" />
-              <span className="text-xl font-bold text-[var(--text-primary)]">LawXP</span>
+              <span className="text-xl font-bold text-[var(--text-primary)]">CaseFiles</span>
             </Link>
             <button className="lg:hidden" onClick={() => setSidebarOpen(false)}>
               <X className="h-5 w-5 text-[var(--text-secondary)]" />

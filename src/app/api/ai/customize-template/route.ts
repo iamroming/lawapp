@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const ip = getClientIp(request);
-  const { allowed } = await checkRateLimit(`ai-template:${user.id}:${ip}`, {
+  const { allowed } = await checkRateLimit(`ai-template:${user.uuid}:${ip}`, {
     windowMs: 3600000,
     maxRequests: 10,
   });

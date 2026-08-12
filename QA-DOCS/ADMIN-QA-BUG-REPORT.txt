@@ -1,0 +1,644 @@
+======================================================================
+     ADMIN/OWNER QA BUG REPORT — CASEFILES APP
+======================================================================
+Date: August 7, 2026
+Tested As: Firm Owner (admin role)
+Total Bugs Found: 120+
+Critical: 12 | High: 28 | Medium: 45 | Low: 35+
+
+======================================================================
+CRITICAL BUGS (Security / Data Integrity)
+======================================================================
+
+#1 Open Redirect in Auth Callback
+  File: src/app/auth/callback/route.ts:7
+  Bug: `next` parameter from URL is used directly in redirect without
+       validation. Attacker can craft ?next=https://evil.com to steal
+       session tokens after authentication.
+  Impact: Session hijacking via phishing link.
+
+#2 Client Portal createUser Uses Anon Key Instead of Service Role
+  File: src/app/api/client-portal/route.ts:36
+  Bug: `supabase.auth.admin.createUser()` requires service role key,
+       but the route uses the session client (anon key). This call
+       will always fail with permission error.
+  Impact: Client portal user creation is completely broken.
+
+#3 Privilege Escalation via signup_mode
+  File: src/app/api/auth/signup/route.ts:67
+  Bug: `signup_mode` is extracted from request body and stored in
+       `user_metadata` without validation. If signup_mode === "owner",
+       it creates an owner profile. No server-side check for valid
+       invite code when signup_mode is "employee".
+  Impact: Any user can create an owner account with full firm access.
+
+#4 Client Detail Page Bypasses Firm Scoping
+  File: src/app/(dashboard)/clients/[id]/page.tsx:51
+  Bug: `supabase.from("clients").select("*").eq("id", params.id)`
+       has no firm_id filter. Any authenticated user can view any
+       client by guessing the UUID.
+  Impact: Cross-firm client data leak.
+
+#5 Client Delete Bypasses Firm Scoping
+  File: src/app/(dashboard)/clients/[id]/page.tsx:66-84
+  Bug: Delete handler performs all cascading deletes directly via
+       client-side Supabase without firm_id checks. Any user can
+       soft-delete any client and all related records.
+  Impact: Cross-firm data destruction.
+
+#6 Document Delete Bypasses Firm Scoping
+  File: src/app/(dashboard)/documents/page.tsx:188-209
+  Bug: `handleDelete` does `supabase.from("documents").update(
+       {deleted_at}).eq("id", doc.id)` with no firm_id check.
+  Impact: Any user can soft-delete any document.
+
+#7 AI Analyze API Has No Case Ownership Validation
+  File: src/app/api/ai/analyze/route.ts:40-44
+  Bug: Case query `.eq("id", caseId).single()` has no firm_id filter.
+       Any user can analyze any case by providing its ID.
+  Impact: Cross-firm case data leak via AI analysis.
+
+#8 Calendar Clients Query Not Firm-Scoped
+  File: src/app/(dashboard)/calendar/page.tsx:228-232
+  Bug: `supabase.from("clients").select("id, full_name")` fetches
+       ALL clients across ALL firms. Users can see other firms'
+       clients in the hearing scheduling dropdown.
+  Impact: Cross-firm client data leak in calendar.
+
+#9 Calendar Hearings Insert Missing firm_id and created_by
+  File: src/app/(dashboard)/calendar/page.tsx:245-254
+  Bug: Direct Supabase insert without firm_id or created_by fields.
+       Newly created hearings are invisible to firm-scoped queries.
+  Impact: Data integrity — hearings created but not visible.
+
+#10 Revenue Reports Missing firm_id Filter
+  File: src/app/(dashboard)/reports/revenue/page.tsx:102-115
+  Bug: Payments and invoices queries for owner/partner have NO firm_id
+       filter. Owners see payments from ALL firms.
+  Impact: Cross-firm financial data leak.
+
+#11 Super Admin Coupon Operations Bypass API
+  File: src/app/(super-admin)/super-admin/coupons/page.tsx:107-125
+  Bug: toggleActive, deleteCoupon, viewUses all use direct Supabase
+       client instead of API routes. No server-side authorization.
+  Impact: Any authenticated user could toggle/delete coupons if RLS
+          is not properly configured.
+
+#12 In-Memory Rate Limiter Ineffective in Serverless
+  File: src/app/api/auth/signup/route.ts:6
+  Bug: signupAttempts Map is in-memory. In Vercel/serverless, each
+       invocation gets a fresh copy. Rate limit is bypassed.
+  Impact: Unlimited signup attempts in production.
+
+======================================================================
+HIGH BUGS (Functional / Data Integrity)
+======================================================================
+
+#13 Login Page Shows "Signing up..." for Google Button
+  File: src/app/(auth)/login/page.tsx:272
+  Bug: Google button loading text says "Signing up..." on login page.
+  Fix: Should say "Signing in...".
+
+#14 Sidebar Missing Quotations and Subscription Items
+  File: src/components/sidebar.tsx:68-74
+  Bug: Quotations (/quotations) and Subscription (/subscription) are
+       defined in allNavItems but never added to any group in
+       buildGroups(). They are invisible in the sidebar.
+  Impact: Users can't navigate to Quotations or Subscription pages.
+
+#15 super_admin Role Inconsistency Between Client and Server
+  Files: cases/page.tsx:56, clients/page.tsx:44, documents/page.tsx:72
+         vs. api/cases/route.ts:13, api/clients/route.ts:12
+  Bug: Client-side pages treat super_admin as owner-level. Server API
+       routes only check ["owner", "partner"]. Data mismatch.
+  Impact: super_admin sees firm-wide data in UI but API scopes to
+          created_by only.
+
+#16 reset-password Allows Weaker Password Than Signup
+  File: src/app/(auth)/reset-password/page.tsx:58
+  Bug: Password reset requires only 6 chars (no complexity). Signup
+       requires 8 chars + uppercase + number.
+  Impact: Users can reset to weaker passwords.
+
+#17 Non-Transactional User + Profile Creation
+  File: src/app/api/auth/signup/route.ts:59-94
+  Bug: If createUser succeeds but profiles upsert fails, user exists
+       in Auth but has no profile. Retry fails with "User already
+       exists".
+  Impact: Broken user state on partial failure.
+
+#18 Client Detail Delete Hard-Deletes time_entries
+  File: src/app/(dashboard)/clients/[id]/page.tsx:71
+  Bug: `supabase.from("time_entries").delete()` — hard DELETE while
+       everything else uses soft-delete (deleted_at).
+  Impact: Permanent data loss inconsistent with soft-delete pattern.
+
+#19 Invoice billing_type Accepted But Never Stored
+  File: src/app/api/invoices/route.ts:26,80-101
+  Bug: billing_type is destructured from request body but never
+       included in the insert call.
+  Impact: Billing type data silently lost.
+
+#20 Empty .in() Clause in Documents for Non-Owners
+  File: src/app/api/documents/route.ts:29-34
+  Bug: When caseIds is empty, `.or(\`uploaded_by.eq.${id},
+       case_id.in.()\`)` produces empty IN clause. May cause SQL
+       error or unexpected results.
+  Impact: Documents query fails for users with no cases.
+
+#21 AI Chat API Missing Message Role Validation
+  File: src/app/api/ai/chat/route.ts:61-67
+  Bug: Messages mapped without validating role is "user" or
+       "assistant". Attacker can inject "system" role messages.
+  Impact: System prompt injection via role spoofing.
+
+#22 AI Usage API Failure Bypasses Quota
+  File: src/hooks/use-ai-usage.ts:16-23
+  Bug: When usage API is unreachable, error is silently caught.
+       isAtLimit becomes false, allowing unlimited AI usage.
+  Impact: Quota enforcement bypassed on network errors.
+
+#23 Inconsistent firmId Fallback Across Codebase
+  Files: clients/page.tsx:45, documents/page.tsx:73 use
+         `|| user.id` fallback.
+         api/clients/route.ts:11, api/clients/[id]/route.ts:11
+         use `profile?.firm_id` without fallback.
+  Bug: When firm_id is null, different modules query differently.
+  Impact: Inconsistent data visibility across modules.
+
+#24 GET Client Detail Fails for Employees Without firm_id
+  File: src/app/api/clients/[id]/route.ts:13-19
+  Bug: Always filters by firm_id. If firm_id is null, query
+       `.eq("firm_id", null)` doesn't match correctly.
+  Impact: Employees without firm_id can never fetch client details.
+
+#25 Subscription Page Doesn't Show Firm Owner's Subscription
+  File: src/app/(dashboard)/subscription/page.tsx:67-73
+  Bug: Queries user_subscriptions by user.id (employee's own ID),
+       not by firm owner's ID. Employees see "No Active Subscription"
+       even when the firm has one.
+  Impact: Employees can't see or manage firm subscription.
+
+#26 Subscription Page JSON.parse Can Crash
+  File: src/app/(dashboard)/subscription/page.tsx:77
+  Bug: `JSON.parse(subData.notes || "{}")` with no try/catch.
+       Corrupted notes field crashes the page.
+  Impact: Page crash on malformed data.
+
+#27 Calendar Rules/Events Not Persisted to Database
+  File: src/app/(dashboard)/calendar/page.tsx:273-318
+  Bug: handleAddRule and handleAddEvent only update React state.
+       Rules and events are lost on page refresh.
+  Impact: Data loss — calendar rules/events disappear.
+
+#28 Case Detail Page No firm_id on Status Update
+  File: src/app/(dashboard)/cases/[id]/page.tsx:238
+  Bug: `supabase.from("cases").update({status}).eq("id", params.id)`
+       has no firm_id check. Any user who knows case ID can change
+       its status.
+  Impact: Unauthorized status changes.
+
+#29 Super Admin Users Page N+1 Query
+  File: src/app/(super-admin)/super-admin/users/page.tsx:46-71
+  Bug: Fetches ALL users, then runs 5 queries PER USER. For 100
+       users, that's 501 queries.
+  Impact: Extremely slow page load, potential rate limit hits.
+
+#30 Settings Page Billing Save Silently Drops Fields
+  File: src/app/(dashboard)/settings/page.tsx:313-324
+  Bug: If first update fails (missing columns), silently falls back
+       to saving only firm_name. User sees "Saved!" toast.
+  Impact: Data silently lost without user awareness.
+
+#31 Subscription Page Loading Stuck When User is Null
+  File: src/app/(dashboard)/subscription/page.tsx:64
+  Bug: If user is null, returns early without setLoading(false).
+       Page shows infinite loading spinner.
+  Impact: UX — permanent loading state.
+
+#32 Salary Page Loading Stuck When Profile is Null
+  File: src/app/(admin)/admin/salary/page.tsx:91,99
+  Bug: Same as #31 — early returns without setLoading(false).
+  Impact: UX — permanent loading state.
+
+#33 Employee Page colSpan Mismatch
+  File: src/app/(admin)/employees/page.tsx:186
+  Bug: Empty state colSpan={5} but table has 6 columns.
+  Impact: UI — empty state doesn't span full table width.
+
+#34 Case Reports Missing firm_id for Owners
+  File: src/app/(dashboard)/reports/cases/page.tsx:118-125
+  Bug: Owner query has NO firm_id filter. Owners see cases from
+       all firms where they appear as created_by.
+  Impact: Cross-firm data leak in reports.
+
+#35 Super Admin Loading Text Says "Verifying owner access..."
+  File: src/app/(super-admin)/layout.tsx:47
+  Bug: Should say "Verifying super admin access...".
+  Impact: Misleading UI text.
+
+#36 Hearings API POST Missing firm_id on Insert
+  File: src/app/api/hearings/route.ts:63-67
+  Bug: Hearing insert doesn't set firm_id. If the hearings table
+       has a firm_id column, hearings are invisible to firm queries.
+  Impact: Data integrity — hearings created but not findable.
+
+#37 Client Portal Email Has HTML Injection
+  File: src/app/api/client-portal/route.ts:36-39
+  Bug: firmName and client.full_name inserted into HTML without
+       escaping. Attacker could inject HTML/script in email.
+  Impact: XSS in invitation emails.
+
+#38 Client Portal Firm Name Derived from Email Prefix
+  File: src/app/api/client-portal/route.ts:51
+  Bug: `user.email?.split("@")[0]` used as firm name. Shows "john"
+       instead of "Law Firm Name".
+  Impact: Unprofessional email content.
+
+#39 AI Chat Page Sends Full History (Wasted Bandwidth)
+  Files: src/app/(dashboard)/ai/chat/page.tsx:47
+         src/app/api/ai/chat/route.ts:63
+  Bug: Client sends all messages, API truncates to last 20.
+       Early context silently dropped.
+  Impact: Silent context loss in long conversations.
+
+#40 Reports Export Buttons Have No onClick Handler
+  Files: reports/cases/page.tsx:229, reports/revenue/page.tsx:222
+  Bug: Export buttons render but clicking does nothing.
+  Impact: Non-functional UI elements.
+
+#41 Subscription Page Coupon Validation Uses Stale billingCycle
+  File: src/app/(dashboard)/subscription/page.tsx:303-306
+  Bug: validateCoupon() called via setTimeout after setBillingCycle,
+       but closure captures old billingCycle value.
+  Impact: Coupon validated against wrong billing cycle.
+
+#42 Subscription Page Hardcoded Plans Out of Sync with DB
+  File: src/app/(dashboard)/subscription/page.tsx:36-41
+  Bug: Plans array is hardcoded. May differ from subscription_plans
+       table if pricing changes.
+  Impact: Stale pricing displayed.
+
+#43 Razorpay Script Re-Appended on Every Plan Click
+  Files: settings/page.tsx:904, subscription/page.tsx:188
+  Bug: New <script> tag appended to DOM on every click. Multiple
+       scripts accumulate. Never cleaned up on cancel.
+  Impact: DOM pollution, potential memory leak.
+
+#44 Admin Layout useEffect May Infinite Loop
+  Files: admin/layout.tsx:16, employees/page.tsx:83,
+         add-employee/page.tsx:107
+  Bug: createClient() in dependency array. If it returns new
+       reference each render, useEffect re-fires infinitely.
+  Impact: Potential infinite re-render loop.
+
+#45 super_admin Coupon Form Sends Slug Instead of UUID
+  File: src/app/(super-admin)/super-admin/coupons/page.tsx:292-298
+  Bug: Plan dropdown sends "solo" but database expects UUID.
+  Impact: Coupon creation fails or creates orphan references.
+
+#46 No Role-Based Access Control on Case API PUT/DELETE
+  File: src/app/api/cases/[id]/route.ts:27-96
+  Bug: Any user who can see a case can update or delete it.
+       Paralegal can delete partner's case.
+  Impact: Privilege escalation within firm.
+
+#47 No Role-Based Access Control on Team Operations
+  File: src/app/api/cases/team/route.ts (all handlers)
+  Bug: Any authenticated user from the firm can add, update, or
+       remove team members from any case.
+  Impact: Unauthorized team management.
+
+#48 case_team and case_alerts Not Cascaded on Case Delete
+  File: src/app/api/cases/[id]/route.ts:74-96
+  Bug: API DELETE only soft-deletes the case itself. Related
+       case_team and case_alerts become orphaned.
+  Impact: Orphaned records in database.
+
+======================================================================
+MEDIUM BUGS (UX / Behavior)
+======================================================================
+
+#49 Invite Code Validation Fires on Every Keystroke (No Debounce)
+  File: src/app/(auth)/signup/page.tsx:303-314
+  Bug: Each keystroke fires a fetch request to /api/team/redeem-code.
+       Typing 8 chars = 8 network requests.
+
+#50 Signup Loading Never Reset on Success
+  File: src/app/(auth)/signup/page.tsx:96
+  Bug: After successful signup, setLoading(false) never called.
+       Button stays in "Creating Account..." state.
+
+#51 Reset Password Timeout Not Cleaned Up on Unmount
+  File: src/app/(auth)/reset-password/page.tsx:74
+  Bug: setTimeout redirect not cleaned up in useEffect return.
+       React warning on unmount.
+
+#52 Onboarding No full_name Validation
+  File: src/app/onboarding/page.tsx:48-112
+  Bug: handleComplete doesn't check if full_name is non-empty.
+       Profile created with empty name.
+
+#53 Client Login Missing Password Toggle
+  File: src/app/client-login/page.tsx
+  Bug: No password visibility toggle. Main login page has one.
+       Inconsistent UX.
+
+#54 Client Login Missing Forgot Password Link
+  File: src/app/client-login/page.tsx
+  Bug: No self-service password recovery for portal clients.
+
+#55 Client Login Fields Not Cleared After Failed Portal Check
+  File: src/app/client-login/page.tsx:45-49
+  Bug: After signOut, email/password fields stay filled. User
+       can click Sign In again with same credentials.
+
+#56 Calendar "Today" Memoized Once and Never Updates
+  File: src/app/(dashboard)/calendar/page.tsx:172
+  Bug: `useMemo(() => new Date(), [])` captures mount time.
+       If tab open past midnight, "today" is wrong.
+
+#57 Calendar Export and Add Dropdowns Share Same data-add-dropdown
+  File: src/app/(dashboard)/calendar/page.tsx:517
+  Bug: Both dropdowns use same attribute. Click-outside handler
+       can't distinguish between them.
+
+#58 Calendar No deleted_at Filter on Cases Query
+  File: src/app/(dashboard)/calendar/page.tsx:221-226
+  Bug: Cases query missing `.is("deleted_at", null)`. Deleted
+       cases appear in hearing scheduling dropdown.
+
+#59 Cases Page No Error Handling for fetchCases
+  File: src/app/(dashboard)/cases/page.tsx:46-77
+  Bug: Supabase query error never checked. Cases silently empty
+       on error with no user feedback.
+
+#60 Case Detail useEffect Dependency on supabase
+  File: src/app/(dashboard)/cases/[id]/page.tsx:160
+  Bug: supabase in dependency array. If createClient returns new
+       reference, effect re-fires on every render.
+
+#61 Case Detail Employee Dropdown Uses Wrong Firm
+  File: src/app/(dashboard)/cases/[id]/page.tsx:117-129
+  Bug: Fetches case's created_by user's firm_id for employee list.
+       Should use current user's firm_id.
+
+#62 Case Detail Profit Share Can Exceed 100%
+  File: src/app/(dashboard)/cases/[id]/page.tsx:554-559
+  Bug: No validation preventing total profit share > 100%.
+
+#63 Case Team PATCH Returns Success for Non-Existent Record
+  File: src/app/api/cases/team/route.ts:112-120
+  Bug: When teamRecord is null, skips auth check but update
+       fails silently. Returns error without proper 404.
+
+#64 Case Team No profit_share_percentage Range Validation
+  File: src/app/api/cases/team/route.ts:79
+  Bug: profit_share_percentage not validated 0-100. Can store 999.
+
+#65 Hearings GET Missing else Branch for Non-Owner Users
+  File: src/app/api/hearings/route.ts:22-32
+  Bug: Non-owner users without case_id param get no hearings.
+       Missing else branch for user-scoped hearings.
+
+#66 Hearings POST Doesn't Check deleted_at on Case
+  File: src/app/api/hearings/route.ts:59
+  Bug: Case verification doesn't check deleted_at. Hearings can
+       be added to soft-deleted cases.
+
+#67 Billing New Page Fetches Clients/Cases Without firm_id
+  File: src/app/(dashboard)/billing/new/page.tsx:49-52
+  Bug: Client and case dropdowns fetch ALL records across firms.
+       Relies entirely on RLS.
+
+#68 Invoice GET Missing deleted_at Filter
+  File: src/app/api/invoices/route.ts:166-188
+  Bug: No `.is("deleted_at", null)` on GET query. Soft-deleted
+       invoices still appear in listings.
+
+#69 Invoice PDF Route Missing deleted_at and Role Check
+  Files: src/app/api/invoices/[id]/pdf/route.ts:21-26
+  Bug: No deleted_at filter. No role-based access — any firm
+       user can generate PDF for any invoice.
+
+#70 Invoice Fallback Number Has Collision Risk
+  File: src/app/api/invoices/route.ts:70-74
+  Bug: Fallback uses last 4 digits of timestamp. Two requests
+       within 10 seconds could produce same number.
+
+#71 Documents Page Different Scoping Than API
+  Files: documents/page.tsx:75-88 vs. api/documents/route.ts:28-34
+  Bug: Client uses uploaded_by, API uses uploaded_by OR case_id.in.
+       Different data visibility.
+
+#72 Documents Page Download Opens in New Tab
+  File: src/app/(dashboard)/documents/page.tsx:217-229
+  Bug: window.open() previews file instead of downloading.
+       No Content-Disposition control.
+
+#73 AI Case Analysis Doesn't Reset Result on Case Change
+  File: src/app/(dashboard)/ai/case-analysis/page.tsx:89-105
+  Bug: Previous analysis remains visible when selecting new case.
+       User may think result applies to new case.
+
+#74 AI Drafting Doesn't Reset Result on Doc Type Change
+  File: src/app/(dashboard)/ai/drafting/page.tsx:68-71
+  Bug: Same as #73 — stale result when switching document type.
+
+#75 AI Chat No Input Length Validation
+  File: src/app/(dashboard)/ai/chat/page.tsx:38-43
+  Bug: No max length check. User can paste huge text blocks
+       causing token overflow or timeouts.
+
+#76 AI Missing API Key Returns Fake AI Response
+  File: src/app/api/ai/chat/route.ts:69-77
+  Bug: Returns 200 with "not configured" message styled as AI
+       response. logAiQuery not called. User confused.
+
+#77 Settings Razorpay window.Razorpay Has No Type Declaration
+  File: src/app/(dashboard)/settings/page.tsx:873
+  Bug: new window.Razorpay() without TypeScript type. Will error
+       in strict mode.
+
+#78 Settings Free Plan Button Disabled With No Action
+  File: src/app/(dashboard)/settings/page.tsx:912-917
+  Bug: Free plan button is disabled with no handler. User can't
+       select the free plan.
+
+#79 Salary Settings Creates Unused Supabase Client
+  File: src/app/(admin)/admin/salary/page.tsx:490
+  Bug: SalarySettingsModal creates supabase client but fetches
+       via API. Client is unused dead code.
+
+#80 Salary HandleGeneratePayslips Runs Sequentially
+  File: src/app/(admin)/admin/salary/page.tsx:158-179
+  Bug: For-loop calls API one at a time. Should parallelize.
+
+#81 Salary Errors Not Shown to User
+  File: src/app/(admin)/admin/salary/page.tsx:171-172
+  Bug: Failed payslip generations logged to console only. User
+       sees "Payslips generated!" even with failures.
+
+#82 Add Employee Payment Type Mismatch With Employees Page
+  Files: add-employee/page.tsx:21-24 vs. employees/page.tsx:286-289
+  Bug: add-employee has "profit_sharing" but not "case_percentage".
+       Employees page has both. Inconsistent.
+
+#83 Super Admin Users Toggle Active Has No Safeguard
+  File: src/app/(super-admin)/super-admin/users/page.tsx:81-84
+  Bug: Can deactivate last admin or super_admin with no check.
+
+#84 Super Admin Users ChangeRole Has No Confirmation
+  File: src/app/(super-admin)/super-admin/users/page.tsx:87-90
+  Bug: Changes role immediately without confirmation. Could break
+       firm access control.
+
+#85 Tasks moveTask No Error Handling
+  File: src/app/(dashboard)/tasks/page.tsx:65-67
+  Bug: Optimistic state update without checking API result.
+       UI desyncs from database on failure.
+
+#86 Tasks deleteTask No Error Handling
+  File: src/app/(dashboard)/tasks/page.tsx:70-73
+  Bug: Same as #85 — delete proceeds without error check.
+
+#87 Tasks Uses window.confirm Instead of Custom Dialog
+  File: src/app/(dashboard)/tasks/page.tsx:71
+  Bug: Browser confirm() instead of ConfirmDialog component.
+       Inconsistent UX.
+
+#88 Expenses deleteExpense Hard-Deletes
+  File: src/app/(dashboard)/expenses/page.tsx:70-73
+  Bug: Hard DELETE instead of soft-delete. Inconsistent with
+       rest of app.
+
+#89 Expenses Redundant Client-Side Filtering
+  File: src/app/(dashboard)/expenses/page.tsx:76-81
+  Bug: All expenses fetched then filtered client-side. Should
+       filter server-side.
+
+#90 Quotations deleteQuotation Has No Permission Check
+  File: src/app/(dashboard)/quotations/page.tsx:52-58
+  Bug: Any user who can view quotations can delete them.
+       No role-based check.
+
+#91 Notifications Save Bypasses API Route
+  File: src/app/(dashboard)/settings/page.tsx:530-546
+  Bug: Direct supabase.from("notification_preferences").upsert()
+       from client. No server-side validation.
+
+#92 Tasks/Expenses/Quotations Bypass API Routes
+  Files: tasks/page.tsx:65-73, expenses/page.tsx:70-73,
+         quotations/page.tsx:52-58
+  Bug: All use direct Supabase client for mutations. No API
+       validation, audit logging, or rate limiting.
+
+======================================================================
+LOW BUGS (Code Quality / Minor)
+======================================================================
+
+#93 Inconsistent firmId Fallback (|| user.id vs. bare)
+#94 Inconsistent Loading States (plain text vs. skeleton)
+#95 Missing updated_at on Various Updates
+#96 console.log Used in Production Code
+#97 Hardcoded Color Classes in Admin/Super Admin Sidebars
+#98 Dynamic Tailwind Classes May Not Compile
+#99 Inconsistent Error Response Formats
+#100 Weak TypeScript `any` Types Throughout
+#101 Missing TypeScript Strict Mode
+#102 log_activity RPC Fire-and-Forget
+#103 Inconsistent Catch Block Handling
+#104 Password Minimum Length Inconsistency (6 vs 8)
+#105 Fragile Manual Cookie Parsing
+#106 Hardcoded Values (30-day expiry, etc.)
+#107 Missing max_length on String Fields
+#108 Phone Default "0000000000" Stored in Database
+#109 API Returns user_id in Response
+#110 select("*") Fetches Unnecessary Columns
+#111 Non-null Assertions on Environment Variables
+#112 Dead Imports (Shield icon in settings)
+#113 Unused Supabase Client in SalarySettingsModal
+#114 Reports Export Buttons Non-Functional
+#115 AI Usage Data Can Go Stale
+#116 Razorpay Script Never Removed on Cancel
+#117 No Error Boundaries Around Async Operations
+#118 Cases Page No Pagination on API
+#119 Calendar Date Parsing Timezone Issues
+#120 Revenue Reports GST Always Split 50/50
+
+======================================================================
+SYSTEMIC ISSUES (Architecture)
+======================================================================
+
+A. Client-Side Supabase Usage Bypasses API Routes
+   Multiple pages query Supabase directly from the browser:
+   - cases/[id]/page.tsx (fetch, delete, update)
+   - clients/[id]/page.tsx (fetch, delete)
+   - documents/page.tsx (delete)
+   - calendar/page.tsx (insert hearings)
+   - settings/page.tsx (notification save)
+   - tasks/page.tsx (move, delete)
+   - expenses/page.tsx (delete)
+   - super-admin/users/page.tsx (toggle, role change)
+   - super-admin/coupons/page.tsx (toggle, delete)
+
+   This bypasses: authorization, firm scoping, validation,
+   audit logging, rate limiting, and CSRF protection.
+
+B. Inconsistent Role Definitions
+   - Client-side: super_admin treated as owner
+   - Server-side: super_admin NOT in owner checks
+   - Impact: Data visibility mismatch between UI and API
+
+C. Inconsistent firmId Fallback
+   - Some files: profile?.firm_id || user.id
+   - Others: profile?.firm_id (no fallback)
+   - Impact: Different data when firm_id is null
+
+D. Inconsistent Soft-Delete vs Hard-Delete
+   - Most modules: soft-delete with deleted_at
+   - time_entries: hard DELETE
+   - expenses: hard DELETE
+   - Impact: Data recovery impossible for some records
+
+E. Missing Error Boundaries
+   - Most async operations catch errors with console.error only
+   - No error state set in UI
+   - Users see stale/empty data with no indication of failure
+
+F. Infinite Re-render Risk
+   - createClient() in useEffect dependency arrays
+   - If not singleton, causes infinite loops
+
+======================================================================
+BUILD STATUS
+======================================================================
+
+Build: PASSED (Next.js 16.2.10 Turbopack)
+TypeScript: Compiled successfully (types not validated)
+
+======================================================================
+PRIORITY FIX ORDER
+======================================================================
+
+Phase 1 (Immediate — Security):
+  #1 Open redirect, #3 Privilege escalation, #4-6 Firm scoping
+  bypasses, #7 AI firm scoping, #12 Rate limiter
+
+Phase 2 (This Week — Data Integrity):
+  #2 Client portal broken, #9 Calendar missing fields,
+  #17 Non-transactional signup, #20 Empty IN clause,
+  #25 Subscription firm scoping, #27 Calendar persistence
+
+Phase 3 (Next Sprint — Functionality):
+  #14 Missing sidebar items, #15 super_admin inconsistency,
+  #19 billing_type lost, #21 AI chat injection, #22 Usage bypass,
+  #29 N+1 queries, #46-48 Missing RBAC on APIs
+
+Phase 4 (Backlog — UX Polish):
+  #49-55 Auth UX issues, #56-58 Calendar UX, #73-74 AI stale
+  results, #85-86 Tasks error handling, #93-120 Low priority
+
+======================================================================
+                         END OF REPORT
+======================================================================

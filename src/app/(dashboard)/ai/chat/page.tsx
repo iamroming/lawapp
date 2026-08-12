@@ -4,8 +4,10 @@ import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageSquare, Send, User, Bot, Loader2 } from "lucide-react";
+import { MessageSquare, Send, User, Bot, Loader2, Lock } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAiUsage } from "@/hooks/use-ai-usage";
+import Link from "next/link";
 
 interface Message {
   role: "user" | "assistant";
@@ -17,12 +19,13 @@ export default function AIChatPage() {
     {
       role: "assistant",
       content:
-        "Hello! I'm LawXP AI, your legal assistant specializing in Indian law. How can I help you today? I can assist with legal research, document drafting, case analysis, and more.",
+        "Hello! I'm CaseFiles AI, your legal assistant specializing in Indian law. How can I help you today? I can assist with legal research, document drafting, case analysis, and more.",
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { usage, isAtLimit, isUnlimited, refreshUsage } = useAiUsage();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -59,6 +62,7 @@ export default function AIChatPage() {
 
       const { data } = await res.json();
       setMessages((prev) => [...prev, data]);
+      refreshUsage();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Chat failed");
       setMessages((prev) => [
@@ -88,7 +92,7 @@ export default function AIChatPage() {
         <div>
           <h1 className="text-2xl font-bold">AI Legal Assistant</h1>
           <p className="text-gray-500">
-            Chat with LawXP AI for legal assistance
+            Chat with CaseFiles AI for legal assistance
           </p>
         </div>
       </div>
@@ -147,18 +151,30 @@ export default function AIChatPage() {
           <div className="border-t p-4">
             <div className="flex gap-2">
               <Input
-                placeholder="Type your legal question..."
+                placeholder={isAtLimit ? "AI limit reached — upgrade to continue" : "Type your legal question..."}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                disabled={loading}
+                disabled={loading || isAtLimit}
                 className="flex-1"
               />
-              <Button onClick={handleSend} disabled={loading || !input.trim()}>
-                <Send className="h-4 w-4" />
+              <Button onClick={handleSend} disabled={loading || !input.trim() || isAtLimit}>
+                {isAtLimit ? <Lock className="h-4 w-4" /> : <Send className="h-4 w-4" />}
               </Button>
             </div>
-            <p className="text-xs text-gray-400 mt-2">
+            {usage && !isUnlimited && (
+              <p className={`text-xs mt-2 ${isAtLimit ? "text-red-600" : "text-gray-400"}`}>
+                {usage.used}/{usage.limit} queries used today
+                {isAtLimit && (
+                  usage.isOwnerOrPartner ? (
+                    <Link href="/subscription" className="ml-2 underline font-medium text-[var(--accent)]">Upgrade</Link>
+                  ) : (
+                    <span className="ml-2">Contact owner to upgrade</span>
+                  )
+                )}
+              </p>
+            )}
+            <p className="text-xs text-gray-400 mt-1">
               AI responses may not be fully accurate. Always verify legal
               information with a qualified advocate.
             </p>

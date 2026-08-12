@@ -19,6 +19,7 @@ import {
   Mail,
 } from "lucide-react";
 import Link from "next/link";
+import { useUser } from "@/hooks/use-user";
 
 interface ClientByMonth {
   month: string;
@@ -54,6 +55,7 @@ const dateRangeOptions = [
 ];
 
 export default function ClientReportPage() {
+  const { user: appUser } = useUser();
   const [stats, setStats] = useState<ClientStats>({
     totalClients: 0,
     activeClients: 0,
@@ -92,13 +94,12 @@ export default function ClientReportPage() {
       const now = new Date();
       const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!appUser) throw new Error("Not authenticated");
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("firm_id, role")
-        .eq("id", user.id)
+        .eq("id", appUser?.uuid)
         .single();
       if (profileError || !profile) throw new Error("Profile not found");
 
@@ -109,7 +110,7 @@ export default function ClientReportPage() {
         .select("id, full_name, email, phone, client_type, created_at, deleted_at");
 
       if (!isOwner) {
-        clientsQuery = clientsQuery.eq("created_by", user.id);
+        clientsQuery = clientsQuery.eq("created_by", appUser?.uuid);
       }
 
       const { data: clients, error: clientsError } = await clientsQuery;
@@ -153,7 +154,7 @@ export default function ClientReportPage() {
         .is("deleted_at", null);
 
       if (!isOwner) {
-        casesQuery = casesQuery.eq("created_by", user.id);
+        casesQuery = casesQuery.eq("created_by", appUser?.uuid);
       }
 
       const { data: casesData } = await casesQuery;
@@ -171,7 +172,7 @@ export default function ClientReportPage() {
         .select("client_id, amount, received_by");
 
       if (!isOwner) {
-        paymentsQuery = paymentsQuery.eq("received_by", user.id);
+        paymentsQuery = paymentsQuery.eq("received_by", appUser?.uuid);
       }
 
       const { data: paymentsData } = await paymentsQuery;

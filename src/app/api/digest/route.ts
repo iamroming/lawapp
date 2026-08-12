@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const today = new Date().toISOString().split("T")[0];
@@ -14,24 +15,24 @@ export async function POST() {
       supabase
         .from("cause_list_entries")
         .select("*, case:cases(case_number, title)")
-        .eq("user_id", user.id)
+        .eq("user_id", user.uuid)
         .eq("hearing_date", today),
       supabase
         .from("tasks")
         .select("id, title, due_date, priority")
-        .eq("assigned_to", user.id)
+        .eq("assigned_to", user.uuid)
         .eq("status", "pending")
         .lte("due_date", tomorrow),
       supabase
         .from("deadline_reminders")
         .select("*, case:cases(case_number, title)")
-        .eq("user_id", user.id)
+        .eq("user_id", user.uuid)
         .eq("reminder_date", today)
         .eq("is_sent", false),
       supabase
         .from("invoices")
         .select("id, invoice_number, amount, tax_amount, due_date, client:clients(full_name)")
-        .eq("issued_by", user.id)
+        .eq("issued_by", user.uuid)
         .in("status", ["sent", "overdue"])
         .lte("due_date", today),
     ]);
@@ -52,7 +53,7 @@ export async function POST() {
       const { data: profile } = await supabase
         .from("profiles")
         .select("email, full_name")
-        .eq("id", user.id)
+        .eq("id", user.uuid)
         .single();
 
       if (profile?.email) {
@@ -84,7 +85,7 @@ export async function POST() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: process.env.EMAIL_FROM || "LawXP <noreply@LawXP.app>",
+            from: process.env.EMAIL_FROM || "CaseFiles <noreply@CaseFiles.app>",
             to: profile.email,
             subject: `Daily Digest - ${today}`,
             html: `<h2>Daily Digest</h2>

@@ -2,9 +2,11 @@
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getFirebaseAuth } from "@/lib/firebase/config";
 import { Modal } from "@/components/ui/modal";
 import { Search, Briefcase, Users, FileText, ArrowRight, Receipt, Calendar, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { firebaseUidToUuid } from "@/lib/firebase/uid";
 
 interface SearchResult {
   id: string;
@@ -53,16 +55,17 @@ export function GlobalSearch() {
       setLoading(true);
       const term = q.toLowerCase();
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const auth = getFirebaseAuth();
+      const user = auth.currentUser;
       if (!user) { setLoading(false); return; }
 
       const { data: profile } = await supabase
         .from("profiles")
         .select("firm_id")
-        .eq("id", user.id)
+        .eq("id", firebaseUidToUuid(user.uid))
         .single();
 
-      const firmId = profile?.firm_id || user.id;
+      const firmId = profile?.firm_id || firebaseUidToUuid(user.uid);
 
       const [casesRes, clientsRes, docsRes, invoicesRes, hearingsRes, tagsRes] = await Promise.all([
         supabase

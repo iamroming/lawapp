@@ -1,11 +1,9 @@
 "use client";
-import React, { Suspense, useState } from "react";
+import React, { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Mail, CheckCircle, Loader2, AlertCircle } from "lucide-react";
+import { Mail, CheckCircle } from "lucide-react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 
 export default function ConfirmEmailPage() {
   return (
@@ -17,30 +15,7 @@ export default function ConfirmEmailPage() {
 
 function ConfirmEmailContent() {
   const searchParams = useSearchParams();
-  const email = searchParams.get("email") || "";
-  const [resending, setResending] = useState(false);
-  const [resent, setResent] = useState(false);
-  const [error, setError] = useState("");
-  const supabase = createClient();
-
-  const handleResend = async () => {
-    if (!email) return;
-    setResending(true);
-    setError("");
-    setResent(false);
-
-    const { error: resendError } = await supabase.auth.resend({
-      type: "signup",
-      email,
-    });
-
-    if (resendError) {
-      setError(resendError.message);
-    } else {
-      setResent(true);
-    }
-    setResending(false);
-  };
+  const emailParam = searchParams.get("email") || "";
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4">
@@ -52,7 +27,7 @@ function ConfirmEmailContent() {
           <CardTitle className="text-2xl">Check Your Email</CardTitle>
           <CardDescription>
             We&apos;ve sent a verification link to
-            {email && <span className="font-medium text-[var(--text-primary)]"> {email}</span>}
+            {emailParam && <span className="font-medium text-[var(--text-primary)]"> {emailParam}</span>}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -65,36 +40,6 @@ function ConfirmEmailContent() {
               </div>
             </div>
           </div>
-
-          {resent && (
-            <div className="p-3 rounded-lg bg-green-50 border border-green-200 flex items-center gap-2 text-sm text-green-700">
-              <CheckCircle className="h-4 w-4" />
-              Verification email resent successfully!
-            </div>
-          )}
-
-          {error && (
-            <div className="p-3 rounded-lg bg-red-50 border border-red-200 flex items-center gap-2 text-sm text-red-700">
-              <AlertCircle className="h-4 w-4" />
-              {error}
-            </div>
-          )}
-
-          <Button
-            onClick={handleResend}
-            variant="outline"
-            className="w-full"
-            disabled={resending || !email}
-          >
-            {resending ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Sending...
-              </>
-            ) : (
-              "Resend Verification Email"
-            )}
-          </Button>
 
           <div className="text-center text-sm text-[var(--text-secondary)] space-y-1">
             <p>

@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { dbWrite } from "@/lib/db-write";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,8 +13,10 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { formatDate } from "@/lib/utils";
 import { uploadToCloudinary, deleteFromCloudinary, getCloudinaryPublicId } from "@/lib/cloudinary";
 import { FileText, Upload, Search, Download, Trash2 } from "lucide-react";
+import { ShareDialog } from "@/components/share-dialog";
 import toast from "react-hot-toast";
 import { PageSkeleton } from "@/components/skeleton";
+import { useUser } from "@/hooks/use-user";
 
 interface Document {
   id: string;
@@ -36,9 +39,11 @@ interface CaseOption {
 }
 
 export default function DocumentsPage() {
+  const { user: appUser } = useUser();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [cases, setCases] = useState<CaseOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -59,17 +64,22 @@ export default function DocumentsPage() {
   }, []);
 
   const fetchData = async () => {
-    const user = (await supabase.auth.getUser()).data.user;
-    if (!user) { setLoading(false); return; }
+    if (!appUser) { setLoading(false); return; }
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("role, firm_id")
-      .eq("id", user.id)
+      .eq("id", appUser?.uuid)
       .single();
 
     const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
-    const firmId = profile?.firm_id || user.id;
+
+    if (isOwner && !profile?.firm_id) {
+      setError("No firm associated with your account. Please contact support.");
+      setLoading(false);
+      return;
+    }
+    const firmId = profile?.firm_id as string;
 
     const docsQuery = supabase
       .from("documents")
@@ -82,8 +92,8 @@ export default function DocumentsPage() {
       docsQuery.eq("firm_id", firmId);
       casesQuery.eq("firm_id", firmId);
     } else {
-      docsQuery.eq("uploaded_by", user.id);
-      casesQuery.or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`);
+      docsQuery.eq("uploaded_by", appUser?.uuid);
+      casesQuery.or(`assigned_to.eq.${appUser?.uuid},created_by.eq.${appUser?.uuid}`);
     }
 
     const [docsRes, casesRes] = await Promise.all([docsQuery, casesQuery]);
@@ -101,10 +111,28 @@ export default function DocumentsPage() {
 
     setUploading(true);
 
+    // Pre-flight storage check
+    try {
+      const checkRes = await fetch("/api/documents/storage-check");
+      const check = await checkRes.json();
+      if (!check.allowed) {
+        toast.error(`Storage limit reached (${check.usedMB} MB of ${check.limit} MB). Upgrade your plan to upload more files.`);
+        setUploading(false);
+        return;
+      }
+      if (check.limit > 0 && (check.used + selectedFile.size) >= check.limit * 1024 * 1024) {
+        toast.error(`This file will exceed your storage limit of ${check.limit} MB. Upgrade your plan.`);
+        setUploading(false);
+        return;
+      }
+    } catch {
+      // If check fails, proceed (API route has its own enforcement)
+    }
+
     // Upload file to Cloudinary
     let cloudinaryUrl: string;
     try {
-      const result = await uploadToCloudinary(selectedFile, "LawXP/documents");
+      const result = await uploadToCloudinary(selectedFile, "CaseFiles/documents");
       cloudinaryUrl = result.secure_url;
     } catch (err: any) {
       toast.error(err.message || "Upload failed");
@@ -132,11 +160,27 @@ export default function DocumentsPage() {
 
       if (!res.ok) {
         const data = await res.json();
+        // Cleanup orphaned Cloudinary file if DB save fails
+        if (cloudinaryUrl) {
+          try {
+            const { deleteFromCloudinary, getCloudinaryPublicId } = await import("@/lib/cloudinary");
+            const publicId = getCloudinaryPublicId(cloudinaryUrl);
+            if (publicId) await deleteFromCloudinary(publicId);
+          } catch {}
+        }
         toast.error(data.error || "Failed to save document");
         setUploading(false);
         return;
       }
     } catch {
+      // Cleanup orphaned Cloudinary file on network error
+      if (cloudinaryUrl) {
+        try {
+          const { deleteFromCloudinary, getCloudinaryPublicId } = await import("@/lib/cloudinary");
+          const publicId = getCloudinaryPublicId(cloudinaryUrl);
+          if (publicId) await deleteFromCloudinary(publicId);
+        } catch {}
+      }
       toast.error("Failed to save document");
       setUploading(false);
       return;
@@ -153,12 +197,23 @@ export default function DocumentsPage() {
   const handleDelete = async (doc: Document) => {
     if (!confirm("Delete this document?")) return;
 
-    const { error } = await supabase
-      .from("documents")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", doc.id);
+    if (!appUser) return;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("firm_id")
+      .eq("id", appUser?.uuid)
+      .single();
+
+    const firmId = profile?.firm_id;
+    if (!firmId) {
+      toast.error("No firm associated with your account");
+      return;
+    }
+
+    const { error } = await dbWrite("documents", "update", { deleted_at: new Date().toISOString() }, { id: doc.id, firm_id: firmId });
     if (error) {
-      toast.error(error.message);
+      toast.error(error);
       return;
     }
 
@@ -224,6 +279,10 @@ export default function DocumentsPage() {
 
       {loading ? (
         <div className="text-center py-12"><PageSkeleton /></div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
       ) : filteredDocs.length === 0 ? (
         <EmptyState
           icon={<FileText className="h-12 w-12" />}
@@ -274,6 +333,7 @@ export default function DocumentsPage() {
                     <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)}>
                       <Download className="h-4 w-4" />
                     </Button>
+                    <ShareDialog type="document" id={doc.id} />
                     <Button variant="ghost" size="icon" onClick={() => handleDelete(doc)}>
                       <Trash2 className="h-4 w-4 text-red-500" />
                     </Button>
@@ -286,14 +346,23 @@ export default function DocumentsPage() {
       )}
 
       {/* Upload Modal */}
-      <Modal open={showModal} onClose={() => setShowModal(false)} title="Upload Document">
+      <Modal open={showModal} onClose={() => { setShowModal(false); setNewDoc({ title: "", description: "", case_id: "", category: "other", is_confidential: false }); setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }} title="Upload Document">
         <form onSubmit={handleUpload} className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">File *</label>
             <input
               ref={fileInputRef}
               type="file"
-              onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif"
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+                if (file && file.size > 50 * 1024 * 1024) {
+                  toast.error("File size must be less than 50MB");
+                  e.target.value = "";
+                  return;
+                }
+                setSelectedFile(file);
+              }}
               className="w-full text-sm text-[var(--text-secondary)] file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-[var(--surface-subtle)] file:text-[var(--text-accent)] hover:file:bg-[var(--surface-accent)]"
               required
             />

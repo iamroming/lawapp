@@ -1,0 +1,861 @@
+======================================================================
+        CASEFILES — ENTIRE APPLICATION MODULE FLOW DOCUMENTATION
+======================================================================
+A law practice management SaaS for Indian lawyers and law firms.
+Stack: Next.js 16, Supabase (PostgreSQL + Auth), Razorpay, Cloudinary
+
+
+======================================================================
+1. AUTHENTICATION & SIGNUP
+======================================================================
+
+User clicks "Sign Up"
+        ↓
+Signup page collects: name, email, password, firm name
+        ↓
+POST /api/auth/signup
+        ↓
+Supabase Auth creates user in auth.users
+        ↓
+Database trigger fires → creates row in profiles table
+        ↓
+Confirmation email sent to user
+        ↓
+User clicks link → email confirmed
+        ↓
+Login page → enters email + password
+        ↓
+Supabase Auth validates credentials → creates session
+        ↓
+Middleware reads session → sets cookies
+        ↓
+Redirect to /dashboard (or /subscription-required if no plan)
+
+
+======================================================================
+2. SUBSCRIPTION & PAYMENTS (RAZORPAY)
+======================================================================
+
+User clicks "Upgrade" on a plan
+        ↓
+Frontend calls POST /api/payments/create-order
+  { planSlug: "professional", billingCycle: "monthly", couponCode: "SAVE30" }
+        ↓
+API calculates final amount (applies coupon discount if any)
+        ↓
+Razorpay order created via Razorpay SDK
+        ↓
+Razorpay checkout.js loaded → payment popup opens
+        ↓
+User pays via UPI / Card / Netbanking
+        ↓
+Razorpay handler fires → calls POST /api/payments/verify
+  { razorpay_order_id, razorpay_payment_id, razorpay_signature, planSlug }
+        ↓
+API verifies signature with Razorpay secret
+        ↓
+If coupon was used:
+  → coupon_codes.current_uses incremented
+  → coupon_uses record created (who used what, when)
+        ↓
+user_subscriptions row created/updated:
+  → plan_id, status: "active", starts_at, expires_at
+  → amount_paid, payment_method: "razorpay"
+  → notes: { plan_slug, billing_cycle }
+        ↓
+Subscription limits now active:
+  → cases, users, storage, AI queries
+        ↓
+Middleware checks subscription on every request
+  → /subscription-required if expired/missing
+  → Inherits via firm_id (employees see owner's subscription)
+
+
+======================================================================
+3. COUPON SYSTEM
+======================================================================
+
+Super Admin creates coupon at /super-admin/coupons
+        ↓
+POST /api/admin/coupons
+  { code: "SAVE30", discount_type: "percent", discount_value: 30,
+    max_uses: 100, max_per_user: 1, billing_cycle: "both" }
+        ↓
+coupon_codes row created
+        ↓
+User enters coupon on /subscription page
+        ↓
+POST /api/coupons/validate
+  → checks: is_active, valid_from/until, max_uses, max_per_user
+  → checks: billing_cycle match, plan match
+        ↓
+API returns: { valid: true, discount_type, discount_value }
+        ↓
+Frontend updates plan prices (strikethrough + discounted)
+        ↓
+User clicks Upgrade → Razorpay for discounted amount
+        ↓
+POST /api/coupons/apply
+  → atomic increment of current_uses
+  → coupon_uses record created
+  → subscription activated
+        ↓
+If free coupon → skips Razorpay, activates directly
+
+
+======================================================================
+4. DASHBOARD (HOME)
+======================================================================
+
+User lands on /dashboard
+        ↓
+GET /api/dashboard
+        ↓
+API queries in parallel:
+  → cases (count by status)
+  → hearings (upcoming 7 days)
+  → clients (total, new this month)
+  → invoices (pending, paid, overdue)
+  → payments (recent)
+  → notifications (unread count)
+        ↓
+Dashboard renders:
+  → Welcome banner with gradient
+  → Stats cards (active cases, pending hearings, revenue, clients)
+  → Quick actions (new case, new client, new invoice)
+  → Upcoming hearings timeline
+  → Financial summary (collected vs outstanding)
+  → Recent cases table
+
+
+======================================================================
+5. CASES MANAGEMENT
+======================================================================
+
+User clicks "Cases" in sidebar
+        ↓
+GET /api/cases
+  → filtered by firm_id (owners see all, employees see assigned)
+        ↓
+Cases list renders:
+  → Search by case number, title, client name
+  → Filter by status, priority, court, type
+  → Sort by date, status, priority
+        ↓
+User clicks "New Case"
+        ↓
+POST /api/cases
+  → auto-generates case_number (CASE-YYYYMMDD-XXXX)
+  → validates: title, client_id, court_name, case_type
+  → sets firm_id, created_by
+  → creates case_tags if tags provided
+        ↓
+Case detail page (/cases/[id])
+  → GET /api/cases/[id]
+  → Shows: case info, client, hearings, documents, team, notes
+  → Tabs: Overview | Hearings | Documents | Team | Notes | Timeline
+        ↓
+User can assign team members
+        ↓
+POST /api/cases/team
+  → verifies case belongs to firm
+  → verifies employee belongs to firm
+  → creates case_team record with role, profit_share
+        ↓
+Subscription limit checked:
+  → GET /api/cases/limit-check
+  → if max_cases reached → "Upgrade your plan" message
+
+
+======================================================================
+6. CLIENTS MANAGEMENT
+======================================================================
+
+User clicks "Clients" in sidebar
+        ↓
+GET /api/clients
+  → filtered by firm_id
+        ↓
+Clients list with search, filter by tags
+        ↓
+POST /api/clients
+  → creates client with: name, email, phone, address
+  → ID proof: aadhaar, pan, passport, voter_id
+  → company info: company_name, gst_number
+  → sets firm_id
+        ↓
+Client detail page
+  → Contact info, ID proofs, company details
+  → Linked cases, invoices, communications
+  → Feedback/ratings (1-5 stars)
+  → Communication history (calls, emails, WhatsApp, meetings)
+        ↓
+POST /api/clients/communications
+  → verifies client belongs to firm
+  → creates communication record
+        ↓
+Conflict check:
+  → GET /api/clients/conflict-check
+  → checks if opposing party is already a client
+
+
+======================================================================
+7. CALENDAR & HEARINGS
+======================================================================
+
+User clicks "Calendar" in sidebar
+        ↓
+GET /api/hearings
+  → queries hearings via cases in user's firm
+  → returns: date, court, judge, purpose, case info
+        ↓
+Calendar renders (AffiniPay-style):
+  → Left sidebar: upcoming hearings list
+  → Main area: monthly calendar grid
+  → Event dots on dates with hearings
+  → Search, filter by court/judge
+  → Month navigation
+        ↓
+User creates hearing:
+        ↓
+POST /api/hearings
+  → validates case belongs to firm
+  → creates hearing with: date, time, court, judge, purpose
+  → triggers reminder creation (7 days, 3 days, 1 day before)
+        ↓
+Export options:
+  → PDF: GET /api/export/calendar-pdf
+  → Excel: GET /api/export/calendar-excel
+  → ICS: GET /api/export/calendar-ics (Google Calendar import)
+
+
+======================================================================
+8. COURT TRACKING (ECOURTS)
+======================================================================
+
+User clicks "Court Tracking" in sidebar
+        ↓
+Tabbed interface: eCourts | Cause List | Research
+        ↓
+--- eCourts Tab ---
+        ↓
+User enters CNR number (e.g., DLHC010001232024)
+        ↓
+POST /api/ecourts
+  → validates CNR format (4 letters + 12 digits)
+  → verifies case belongs to firm
+  → fetches data from eCourts API via getCaseByCNR()
+  → creates ecourts_cases record
+        ↓
+Sync button → POST /api/ecourts/sync
+  → fetches latest data from eCourts for all tracked cases
+  → updates: status, hearing date, stage, judge
+  → creates notifications if changes detected
+  → logs sync in ecourts_sync_log
+        ↓
+--- District Court Tab ---
+        ↓
+GET /api/courts/dc/states → list of states
+GET /api/courts/dc/districts?state=X → list of districts
+GET /api/courts/dc/court-complexes?district=X → courts
+GET /api/courts/dc/case-status?cnr=X → case details
+GET /api/courts/dc/case-by-party?name=X → search by party
+        ↓
+--- High Court Tab ---
+        ↓
+GET /api/courts/hc/case-status → case lookup
+GET /api/courts/hc/cause-list → today's cause list
+GET /api/courts/hc/recent-judgments → recent judgments
+        ↓
+--- Supreme Court Tab ---
+        ↓
+GET /api/courts/sc/recent → recent SC judgments
+
+
+======================================================================
+9. DOCUMENTS MANAGEMENT
+======================================================================
+
+User clicks "Documents" in sidebar
+        ↓
+GET /api/documents
+  → owner/partner: all firm documents
+  → employees: own uploads + assigned case docs
+        ↓
+Document list with categories:
+  → petition, affidavit, evidence, judgment, agreement,
+    correspondence, other
+  → confidential flag
+        ↓
+User uploads document:
+        ↓
+Pre-flight check → GET /api/documents/storage-check
+  → sums file_size of all firm documents
+  → compares against plan limit (e.g., 3 GB for Professional)
+  → if exceeded → "Storage limit reached" error
+        ↓
+File uploaded to Cloudinary (client-side)
+  → uploadToCloudinary(file, "CaseFiles/documents")
+  → returns secure_url
+        ↓
+POST /api/documents
+  → verifies case belongs to firm (if linked)
+  → inserts with: title, file_url, file_name, file_type, file_size
+  → sets firm_id, uploaded_by
+  → if insert fails → deletes orphaned Cloudinary file
+        ↓
+Delete flow:
+  → verifies document belongs to firm
+  → deletes from Cloudinary
+  → soft-deletes from database (deleted_at)
+
+
+======================================================================
+10. BILLING & INVOICES
+======================================================================
+
+User clicks "Billing" in sidebar
+        ↓
+GET /api/invoices
+  → filtered by firm_id
+        ↓
+Billing dashboard:
+  → Total billed, collected, outstanding, overdue
+  → Tabs: Overview | Outstanding | Collections | New Invoice
+        ↓
+Create invoice:
+        ↓
+POST /api/invoices
+  → auto-generates invoice number (INV-YYYYMMDD-XXXX)
+  → calculates: subtotal, GST (CGST+SGST or IGST), discount, total
+  → line items: description, quantity, rate, amount
+  → sets firm_id, created_by
+        ↓
+Invoice PDF:
+  → GET /api/invoices/[id]/pdf
+  → generates PDF with firm logo, bank details, UPI QR
+  → template configurable in settings
+        ↓
+Payment recording:
+        ↓
+POST /api/payments
+  → records: amount, method (cash/bank/upi/cheque/card)
+  → links to invoice
+  → updates invoice status (partially_paid/paid)
+  → sets firm_id
+        ↓
+Outstanding tracking:
+  → GET /api/collections
+  → shows overdue invoices with days outstanding
+  → action types: reminder, final_notice, legal_notice, recovery
+        ↓
+Payment link sharing:
+  → POST /api/payments/razorpay
+  → creates Razorpay payment link for client
+  → client pays online → auto-records payment
+
+
+======================================================================
+11. QUOTATIONS
+======================================================================
+
+User clicks "Quotations" in sidebar
+        ↓
+POST /api/quotations
+  → auto-generates number (Q-YYYYMMDD-XXXX)
+  → line items with description, quantity, rate
+  → tax calculation (GST)
+  → discount amount
+  → total with validity period
+        ↓
+Status flow: draft → sent → accepted/rejected/expired
+        ↓
+Share via WhatsApp, email, or PDF download
+
+
+======================================================================
+12. EXPENSES
+======================================================================
+
+User clicks "Expenses" in sidebar
+        ↓
+POST /api/expenses
+  → category: court_fees, travel, filing, notary, stamp_duty,
+    postal, photocopy, other
+  → amount, description, date
+  → linked to case, client, or invoice
+  → billable flag
+  → receipt URL
+        ↓
+GET /api/expenses/reports
+  → expense breakdown by category
+  → monthly/yearly trends
+  → billable vs non-billable
+
+
+======================================================================
+13. TASKS
+======================================================================
+
+User clicks "Tasks" in sidebar
+        ↓
+POST /api/tasks
+  → title, description, priority (low/medium/high/urgent)
+  → status: todo → in_progress → review → done
+  → due_date, assigned_to
+  → linked to case or client
+        ↓
+Task board view with drag-and-drop
+
+
+======================================================================
+14. AI TOOLS
+======================================================================
+
+User clicks "AI Tools" in sidebar
+        ↓
+GET /api/ai/usage-status
+  → returns: used, limit, remaining, plan, isOwnerOrPartner
+        ↓
+Usage bar shown (green → amber → red)
+        ↓
+At limit → "Upgrade your plan" (owner) or "Contact firm owner" (employee)
+        ↓
+--- AI Case Analysis ---
+        ↓
+User enters case details
+        ↓
+POST /api/ai/analyze
+  → checks AI usage limit for today
+  → sends case text to OpenAI API
+  → AI returns: strengths, weaknesses, precedents, strategy
+  → logs query in ai_usage table
+        ↓
+--- AI Document Drafting ---
+        ↓
+POST /api/ai/draft
+  → checks AI usage limit
+  → sends prompt to OpenAI
+  → AI generates legal draft
+  → logs query
+        ↓
+--- AI Chat ---
+        ↓
+POST /api/ai/chat
+  → checks AI usage limit
+  → sends message to OpenAI
+  → AI responds with legal advice
+  → logs query
+        ↓
+--- AI Summarize ---
+        ↓
+User pastes document text
+        ↓
+POST /api/ai/analyze (with summarize prompt)
+  → AI returns concise summary
+  → logs query
+
+
+======================================================================
+15. REPORTS
+======================================================================
+
+User clicks "Reports" in sidebar
+        ↓
+GET /api/reports
+        ↓
+Report types:
+  → Case Reports: status distribution, resolution rates
+  → Client Reports: activity, engagement
+  → Revenue Reports: collection rates, outstanding
+  → Financial Reports: profit/loss, GST
+  → Performance Reports: team metrics
+  → Team Reports: workload, utilization
+        ↓
+Export options:
+  → PDF: GET /api/export/reports-pdf
+  → Excel: GET /api/export/billing-excel
+
+
+======================================================================
+16. CRM (CONSULTATIONS + INTAKE FORMS)
+======================================================================
+
+User clicks "CRM" in sidebar
+        ↓
+--- Consultations Tab ---
+        ↓
+POST /api/consultations/slots
+  → configure weekly recurring availability
+  → day_of_week, start_time, end_time
+  → consultation_type, fee, duration
+        ↓
+POST /api/consultations
+  → book consultation: client, date, slot, type
+  → payment tracking
+  → meeting link (Zoom/Google Meet)
+        ↓
+--- Intake Forms Tab ---
+        ↓
+POST /api/intake
+  → create form with JSON-based custom fields
+  → field types: text, textarea, select, checkbox, date
+        ↓
+POST /api/intake/submissions
+  → client fills form → submission recorded
+  → status: new → reviewed → converted → archived
+  → client contact captured for follow-up
+
+
+======================================================================
+17. CLIENT PORTAL
+======================================================================
+
+Firm owner invites client:
+        ↓
+POST /api/client-portal
+  → creates client_portal_users row
+  → sends invite email with login link
+        ↓
+Client logs in at /client-login
+        ↓
+Client portal shows:
+  → Dashboard: case summary, upcoming hearings
+  → Cases: view own cases, status, documents
+  → Documents: download case documents
+  → Invoices: view invoices, download PDF
+  → Payments: pay invoices via Razorpay
+  → Messages: communicate with lawyer
+
+
+======================================================================
+18. CALCULATORS
+======================================================================
+
+User clicks "Calculators" in sidebar
+        ↓
+--- Stamp Duty Calculator ---
+  → input: state, property value, document type
+  → output: stamp duty amount
+        ↓
+--- Limitation Period Calculator ---
+  → input: act, section, date of accrual
+  → output: limitation period, last date to file
+        ↓
+--- GST Calculator ---
+  → input: amount, GST rate
+  → output: CGST, SGST, IGST breakdown
+        ↓
+--- Court Fees Calculator ---
+  → input: case type, property value
+  → output: court fee amount
+
+
+======================================================================
+19. ADMIN PANEL (FIRM OWNER)
+======================================================================
+
+Owner clicks "Admin" in sidebar
+        ↓
+--- Employee Management ---
+        ↓
+POST /api/team/invite-code
+  → generates 6-character code (e.g., ABC123)
+  → owner shares code with new employee
+        ↓
+Employee redeems code:
+  → POST /api/team/redeem-code
+  → verifies code valid, not expired
+  → checks employee not already in another firm
+  → creates firm_members row
+  → sets role, firm_id
+  → sends notification to owner
+        ↓
+Owner manages roles:
+  → PATCH /api/team/[id]
+  → role hierarchy: owner > partner > senior > associate > junior
+  → can't demote someone at same or higher level
+        ↓
+Owner removes member:
+  → DELETE /api/team/[id]
+  → role hierarchy check
+  → removes firm_members row
+        ↓
+--- Salary Management ---
+        ↓
+POST /api/salary
+  → payment types: fixed, case_percentage, hybrid
+  → deductions: PF, ESI, TDS
+  → links to cases for percentage-based pay
+        ↓
+GET /api/salary/settings
+  → role-based salary defaults
+  → configurable per role
+        ↓
+--- Performance Tracking ---
+  → cases handled, revenue generated
+  → client feedback scores
+  → time utilization
+
+
+======================================================================
+20. SUPER ADMIN PANEL (PLATFORM)
+======================================================================
+
+Super admin logs in
+        ↓
+Middleware checks super_admins table
+        ↓
+Super admin sidebar: 10 items
+        ↓
+--- Command Center ---
+  → total firms, users, cases, revenue
+  → system health, active subscriptions
+        ↓
+--- All Users ---
+  → view all users across all firms
+  → manage roles, activate/deactivate
+        ↓
+--- All Cases ---
+  → view all cases across all firms
+  → search, filter by status, court
+        ↓
+--- Subscriptions ---
+  → manage subscription plans
+  → view all active subscriptions
+  → override subscriptions
+        ↓
+--- Coupons ---
+        ↓
+POST /api/admin/coupons
+  → create coupon with:
+    → discount_type: percent / fixed / free
+    → plan restriction
+    → billing_cycle: both / monthly / annual
+    → max_uses (total limit)
+    → max_per_user (1 = one-time)
+    → validity dates
+        ↓
+Coupon list with usage stats
+  → toggle active/inactive
+  → view who used it
+  → delete
+        ↓
+--- Revenue Dashboard ---
+  → platform-wide revenue analytics
+  → MRR, ARR, churn rate
+        ↓
+--- Activity Logs ---
+  → audit trail of all actions
+  → who did what, when
+
+
+======================================================================
+21. NOTIFICATIONS & REMINDERS
+======================================================================
+
+Automatic triggers:
+        ↓
+When hearing created:
+  → DB trigger creates scheduled_reminders at:
+    → 7 days before (email)
+    → 3 days before (email + SMS)
+    → 1 day before (email + SMS + WhatsApp)
+        ↓
+When case status changes:
+  → notification created for assigned user
+  → case_alert checked for status change detection
+        ↓
+When invoice overdue:
+  → reminder created
+  → collection workflow triggered
+        ↓
+POST /api/reminders
+  → manual reminders with channels: in_app, email, sms, whatsapp
+        ↓
+GET /api/reminders/cron
+  → processes due reminders
+  → sends via configured channels
+
+
+======================================================================
+22. EXPORT SYSTEM
+======================================================================
+
+Available on: Cases, Clients, Calendar, Billing, Reports
+        ↓
+PDF Export:
+  → GET /api/export/cases-pdf
+  → styled PDF with firm branding
+        ↓
+Excel Export:
+  → GET /api/export/cases-excel
+  → formatted spreadsheet
+        ↓
+Calendar Export:
+  → GET /api/export/calendar-ics
+  → ICS file for Google Calendar / Outlook
+
+
+======================================================================
+23. MESSAGING
+======================================================================
+
+Internal messaging between firm members
+        ↓
+Messages table stores:
+  → sender_id, recipient_id, case_id
+  → content, read_at, created_at
+        ↓
+Real-time via Supabase Realtime subscriptions
+        ↓
+WhatsApp integration:
+  → POST /api/share
+  → sends case details, documents via WhatsApp
+  → logs in whatsapp_logs
+
+
+======================================================================
+24. SETTINGS
+======================================================================
+
+User clicks "Settings" in sidebar
+        ↓
+--- Profile Settings ---
+  → update name, email, phone, avatar
+  → language preference (English/Hindi)
+        ↓
+--- Notification Preferences ---
+  → per-category toggles: hearings, payments, cases, documents
+  → per-channel: email, SMS, WhatsApp, push
+        ↓
+--- Invoice Template Settings ---
+  → show/hide fields: GST, bank details, UPI
+  → custom terms & conditions
+  → firm logo upload
+        ↓
+--- Team Tab (owner only) ---
+  → view all team members
+  → roles, status, last active
+  → usage stats (cases, documents)
+
+
+======================================================================
+25. MULTI-TENANCY & DATA ISOLATION
+======================================================================
+
+Every table has firm_id column
+        ↓
+Middleware on every API request:
+  → reads user session
+  → looks up firm_id from profiles
+  → sets supabase.auth.setClaims({ firm_id })
+        ↓
+Row-Level Security (RLS) policies:
+  → users can only see rows where firm_id matches
+  → owner/partner see all firm data
+  → employees see only their own + assigned data
+        ↓
+API-level checks:
+  → most routes verify firm_id before CRUD
+  → prevents cross-firm data access
+
+
+======================================================================
+26. ROLE-BASED ACCESS CONTROL (RBAC)
+======================================================================
+
+9 roles defined:
+  → owner, partner, senior_associate, associate,
+    junior_associate, paralegal, intern, office_admin, super_admin
+        ↓
+permissions table defines granular rights:
+  → cases.view_all, cases.create, invoices.create,
+    reports.view_financial, team.manage, etc.
+        ↓
+role_permissions maps roles to permissions
+        ↓
+Sidebar items hidden based on role
+        ↓
+API routes check role before allowing action
+        ↓
+Subscription limits inherited via firm_id
+  → owner's subscription covers all employees
+
+
+======================================================================
+27. WHATSAPP INTEGRATION
+======================================================================
+
+Library: lib/whatsapp.ts
+        ↓
+Features:
+  → Hearing reminders via WhatsApp
+  → Case status updates
+  → Payment reminders
+  → Document sharing
+  → Case details sharing (with client)
+        ↓
+Component: whatsapp-share-button.tsx
+  → one-click share on any case/document page
+        ↓
+Logs all messages in whatsapp_logs table
+
+
+======================================================================
+28. HINDI / ENGLISH (i18n)
+======================================================================
+
+Library: lib/i18n-hindi.ts
+        ↓
+Supported translations:
+  → notification titles and messages
+  → document templates (Vakalatnama, Legal Notice, etc.)
+  → UI labels and buttons
+        ↓
+Language switcher component
+  → user selects preference
+  → stored in profile
+  → applied across app
+
+
+======================================================================
+29. RATE LIMITING
+======================================================================
+
+Library: lib/rate-limit.ts
+        ↓
+Database-backed (rate_limits table)
+        ↓
+Configured per route:
+  → API calls: 60/min per user
+  → Auth attempts: 5/min per IP
+  → AI queries: per plan limit per day
+        ↓
+Automatic cleanup of entries older than 1 hour
+
+
+======================================================================
+30. MARKETING SITE
+======================================================================
+
+Public pages (no auth required):
+  → / : Homepage with hero, features, pricing, testimonials
+  → /features : Detailed feature list
+  → /pricing : 4 plans with comparison table
+  → /about : Company info
+  → /help : Help center / FAQ
+  → /terms : Terms of service
+  → /privacy : Privacy policy
+        ↓
+All pages mobile-responsive
+        ↓
+Pricing page has Razorpay checkout integrated
+  → user can subscribe directly from marketing site
+
+
+======================================================================
+                         END OF DOCUMENT
+======================================================================
+Total: 30 modules, ~100+ pages, ~130+ API routes, ~55+ DB tables
+======================================================================

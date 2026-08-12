@@ -5,21 +5,22 @@ export interface PlanLimits {
   max_users: number;
   max_storage_mb: number;
   max_ai_queries: number;
+  max_branches: number;
   plan_name: string;
 }
 
-const FREE_PLAN: PlanLimits = {
+const DEFAULT_PLAN: PlanLimits = {
   max_cases: 3,
   max_users: 1,
-  max_storage_mb: 100,
+  max_storage_mb: 200,
   max_ai_queries: 5,
+  max_branches: 0,
   plan_name: "Free",
 };
 
 export async function getPlanLimits(userId: string): Promise<PlanLimits> {
   const supabase = await createClient();
 
-  // Get user's firm_id
   const { data: profile } = await supabase
     .from("profiles")
     .select("firm_id")
@@ -32,19 +33,20 @@ export async function getPlanLimits(userId: string): Promise<PlanLimits> {
     .from("user_subscriptions")
     .select("plan:subscription_plans(name, max_cases, max_users, max_storage_mb)")
     .eq("user_id", lookupId)
-    .eq("status", "active")
+    .in("status", ["active", "trialing"])
     .single();
 
-  if (!subscription?.plan) return FREE_PLAN;
+  if (!subscription?.plan) return DEFAULT_PLAN;
 
   const plan = Array.isArray(subscription.plan) ? subscription.plan[0] : subscription.plan;
-  if (!plan) return FREE_PLAN;
+  if (!plan) return DEFAULT_PLAN;
 
   return {
-    max_cases: plan.max_cases ?? FREE_PLAN.max_cases,
-    max_users: plan.max_users ?? FREE_PLAN.max_users,
-    max_storage_mb: plan.max_storage_mb ?? FREE_PLAN.max_storage_mb,
-    max_ai_queries: FREE_PLAN.max_ai_queries,
+    max_cases: plan.max_cases ?? DEFAULT_PLAN.max_cases,
+    max_users: plan.max_users ?? DEFAULT_PLAN.max_users,
+    max_storage_mb: plan.max_storage_mb ?? DEFAULT_PLAN.max_storage_mb,
+    max_ai_queries: (plan as any).max_ai_queries || DEFAULT_PLAN.max_ai_queries,
+    max_branches: (plan as any).max_branches ?? DEFAULT_PLAN.max_branches,
     plan_name: plan.name || "Unknown",
   };
 }
@@ -132,7 +134,6 @@ export async function getUsageStats(userId: string) {
   const supabase = await createClient();
   const limits = await getPlanLimits(userId);
 
-  // Get user's firm_id
   const { data: profile } = await supabase
     .from("profiles")
     .select("firm_id")
@@ -141,7 +142,7 @@ export async function getUsageStats(userId: string) {
 
   const firmId = profile?.firm_id;
 
-  const [casesResult, usersResult, storageResult] = await Promise.all([
+  const [casesResult, usersResult, storageResult, branchesResult] = await Promise.all([
     supabase
       .from("cases")
       .select("id", { count: "exact", head: true })
@@ -157,6 +158,11 @@ export async function getUsageStats(userId: string) {
       .select("file_size")
       .eq("firm_id", firmId || userId)
       .is("deleted_at", null),
+    supabase
+      .from("branches")
+      .select("id", { count: "exact", head: true })
+      .eq("firm_id", firmId || userId)
+      .eq("is_active", true),
   ]);
 
   const totalStorageBytes = (storageResult.data || []).reduce(
@@ -181,7 +187,34 @@ export async function getUsageStats(userId: string) {
       limit: limits.max_storage_mb,
       plan: limits.plan_name,
     },
+    branches: {
+      used: branchesResult.count || 0,
+      limit: limits.max_branches,
+      plan: limits.plan_name,
+    },
   };
+}
+
+export async function checkBranchLimit(
+  userId: string,
+  currentBranchCount: number
+): Promise<{ allowed: boolean; limit: number; plan: string; message?: string }> {
+  const limits = await getPlanLimits(userId);
+
+  if (limits.max_branches === -1) {
+    return { allowed: true, limit: -1, plan: limits.plan_name };
+  }
+
+  if (currentBranchCount >= limits.max_branches) {
+    return {
+      allowed: false,
+      limit: limits.max_branches,
+      plan: limits.plan_name,
+      message: `You've reached your ${limits.plan_name} plan limit of ${limits.max_branches} branches. Upgrade your plan to add more branches.`,
+    };
+  }
+
+  return { allowed: true, limit: limits.max_branches, plan: limits.plan_name };
 }
 
 export async function checkAiQueryLimit(
@@ -190,7 +223,6 @@ export async function checkAiQueryLimit(
   const limits = await getPlanLimits(userId);
   const supabase = await createClient();
 
-  // Count AI queries in the last 24 hours
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const { count } = await supabase
     .from("ai_usage")

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 
 // GET — Daily digest: today's hearings, upcoming deadlines, pending tasks
 // Cron: runs daily at 8AM IST
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
     // Verify cron secret
     const authHeader = request.headers.get("authorization");
@@ -46,8 +46,8 @@ export async function GET(request: NextRequest) {
       // 1. Today's hearings
       const { data: todayHearings, error: todayError } = await supabase
         .from("hearings")
-        .select("*, case:cases(id, title, case_number, court, judge_name)")
-        .eq("firm_id", firmId)
+        .select("*, case:cases!hearings_case_id_fkey(id, title, case_number, court, judge_name, firm_id)")
+        .eq("case.firm_id", firmId)
         .gte("hearing_date", todayStr)
         .lt("hearing_date", tomorrowStr)
         .eq("is_completed", false)
@@ -57,8 +57,8 @@ export async function GET(request: NextRequest) {
       // 2. This week's hearings
       const { data: weekHearings, error: weekError } = await supabase
         .from("hearings")
-        .select("*, case:cases(id, title, case_number, court)")
-        .eq("firm_id", firmId)
+        .select("*, case:cases!hearings_case_id_fkey(id, title, case_number, court, firm_id)")
+        .eq("case.firm_id", firmId)
         .gte("hearing_date", tomorrowStr)
         .lte("hearing_date", nextWeekStr)
         .eq("is_completed", false)
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
       let html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: #2563eb; color: white; padding: 20px; text-align: center;">
-            <h1 style="margin: 0;">LawXP Daily Digest</h1>
+            <h1 style="margin: 0;">CaseFiles Daily Digest</h1>
             <p style="margin: 5px 0 0;">${today.toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
           </div>
           <div style="padding: 20px; background: #f9fafb;">
@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
       html += `
           </div>
           <div style="padding: 15px; text-align: center; color: #6b7280; font-size: 12px;">
-            <p>This is your daily digest from LawXP.</p>
+            <p>This is your daily digest from CaseFiles.</p>
           </div>
         </div>
       `;
@@ -182,7 +182,7 @@ export async function GET(request: NextRequest) {
             const resend = new Resend(process.env.RESEND_API_KEY);
 
             await resend.emails.send({
-              from: process.env.EMAIL_FROM || "LawXP <digest@LawXP.in>",
+              from: process.env.EMAIL_FROM || "CaseFiles <digest@CaseFiles.in>",
               to: owner.email,
               subject: `Daily Digest — ${hearingCount} hearing(s), ${taskCount} task(s), ${invoiceCount} overdue payment(s)`,
               html,

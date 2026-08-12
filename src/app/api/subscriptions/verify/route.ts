@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -30,9 +31,7 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -44,7 +43,7 @@ export async function POST(request: NextRequest) {
       status: "active",
       expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     })
-    .eq("user_id", user.id)
+    .eq("user_id", user.uuid)
     .eq("status", "trialing");
 
   if (error) {

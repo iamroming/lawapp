@@ -1,0 +1,190 @@
+======================================================================
+         AI USAGE LIMITING — IMPLEMENTATION PLAN
+======================================================================
+Date: August 6, 2026
+
+======================================================================
+CURRENT STATE
+======================================================================
+
+WHAT EXISTS:
+  ✅ ai_usage table in database (user_id, query_type, created_at)
+  ✅ checkAiQueryLimit() function in subscription-limits.ts
+  ✅ logAiQuery() function in subscription-limits.ts
+  ✅ Plan limits defined:
+     Solo:         50 AI queries/day
+     Professional: 200 AI queries/day
+     Firm:         Unlimited (-1)
+
+WHAT'S MISSING:
+  ❌ AI API routes don't check limits before processing
+  ❌ AI API routes don't log usage after processing
+  ❌ UI doesn't show remaining queries or block when limit reached
+  ❌ No per-feature breakdown (analysis vs drafting vs chat vs summarize)
+
+======================================================================
+THE PLAN — 4 STEPS
+======================================================================
+
+----------------------------------------------------------------------
+STEP 1: Add limit checking to ALL AI API routes
+----------------------------------------------------------------------
+
+Files to update:
+  src/app/api/ai/analyze/route.ts      (Case Analysis)
+  src/app/api/ai/draft/route.ts        (Drafting)
+  src/app/api/ai/chat/route.ts         (AI Chat)
+  src/app/api/ai/research/route.ts     (Legal Research)
+  src/app/api/ai/engagement-letter/route.ts (Engagement Letter)
+
+In each route, ADD at the top of POST handler:
+
+  import { checkAiQueryLimit, logAiQuery } from "@/lib/subscription-limits";
+
+  // Check limit
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const limitCheck = await checkAiQueryLimit(user.id);
+  if (!limitCheck.allowed) {
+    return NextResponse.json({
+      error: limitCheck.message,
+      limitReached: true,
+      limit: limitCheck.limit,
+      used: limitCheck.used,
+      plan: limitCheck.plan,
+    }, { status: 429 });
+  }
+
+  // ... (existing AI processing logic) ...
+
+  // Log usage after successful processing
+  await logAiQuery(user.id, "analyze"); // or "draft", "chat", "research"
+
+----------------------------------------------------------------------
+STEP 2: Add usage display to AI page UI
+----------------------------------------------------------------------
+
+File: src/app/(dashboard)/ai/page.tsx
+
+Add a usage bar at the top of the AI Tools page:
+
+  - Fetch usage on mount: GET /api/ai/usage-status
+  - Show: "AI Queries Today: 12/50 (Solo Plan)"
+  - Show progress bar (green < 60%, yellow 60-90%, red > 90%)
+  - When limit reached: Show upgrade banner
+
+File: src/app/(dashboard)/ai/case-analysis/page.tsx
+File: src/app/(dashboard)/ai/drafting/page.tsx
+File: src/app/(dashboard)/ai/chat/page.tsx
+File: src/app/(dashboard)/ai/summarize/page.tsx
+
+In each page:
+  - Check limit before "Analyze"/"Draft"/"Send" button click
+  - If limit reached, disable button + show "Upgrade for more AI queries"
+  - Show remaining queries next to the button
+
+----------------------------------------------------------------------
+STEP 3: Create usage status API endpoint
+----------------------------------------------------------------------
+
+New file: src/app/api/ai/usage-status/route.ts
+
+  GET /api/ai/usage-status
+  Returns: { used, limit, remaining, plan, resetsAt }
+
+  - Queries ai_usage table for today's count
+  - Gets plan limits from subscription
+  - Returns usage stats for UI display
+
+----------------------------------------------------------------------
+STEP 4: Add per-feature tracking (optional but recommended)
+----------------------------------------------------------------------
+
+Currently ai_usage has query_type column. Use it to track:
+
+  query_type values:
+    "analysis"   — Case Analysis
+    "drafting"   — Document Drafting
+    "chat"       — AI Chat
+    "research"   — Legal Research
+    "summarize"  — Document Summarize
+    "engagement" — Engagement Letter
+
+This allows showing per-feature usage in the UI:
+  "Case Analysis: 8/50 | Drafting: 3/50 | Chat: 1/50"
+
+And future feature: different limits per feature type.
+
+======================================================================
+PLAN LIMITS (Current)
+======================================================================
+
++-------------+--------+-----------+---------+----------+
+| Plan        | Price  | AI/Day    | Storage | Cases    |
++-------------+--------+-----------+---------+----------+
+| Solo        | Rs 299 | 50        | 1 GB    | 20       |
+| Professional| Rs 799 | 200       | 5 GB    | 50       |
+| Firm        | Rs1999 | Unlimited | 15 GB   | 100      |
++-------------+--------+-----------+---------+----------+
+
+Recommended future limits:
+  Solo:         20 AI/day (reduce from 50 to encourage upgrade)
+  Professional: 100 AI/day
+  Firm:         Unlimited
+
+======================================================================
+UI BEHAVIOR
+======================================================================
+
+WHEN UNDER LIMIT:
+  [✅ AI Analysis] — button enabled, normal state
+  "12/50 queries used today"
+
+WHEN AT 80%+:
+  [✅ AI Analysis] — button enabled, yellow warning
+  "40/50 queries used — upgrade for more"
+
+WHEN AT LIMIT:
+  [🔒 Limit Reached] — button disabled, red
+  "Daily limit reached. Upgrade to Professional for 200 queries/day."
+  [Upgrade Now] button → /subscription
+
+WHEN UNSUBSCRIBED:
+  [🔒 Subscribe] — button disabled
+  "AI features require an active subscription."
+  [View Plans] button → /pricing
+
+======================================================================
+FILES TO CREATE/MODIFY
+======================================================================
+
+CREATE:
+  src/app/api/ai/usage-status/route.ts     — Usage status endpoint
+
+MODIFY:
+  src/app/api/ai/analyze/route.ts          — Add limit check + log
+  src/app/api/ai/draft/route.ts            — Add limit check + log
+  src/app/api/ai/chat/route.ts             — Add limit check + log
+  src/app/api/ai/research/route.ts         — Add limit check + log
+  src/app/api/ai/engagement-letter/route.ts — Add limit check + log
+  src/app/(dashboard)/ai/page.tsx          — Add usage bar
+  src/app/(dashboard)/ai/case-analysis/page.tsx — Add limit check on button
+  src/app/(dashboard)/ai/drafting/page.tsx      — Add limit check on button
+  src/app/(dashboard)/ai/chat/page.tsx          — Add limit check on button
+  src/app/(dashboard)/ai/summarize/page.tsx     — Add limit check on button
+
+======================================================================
+ESTIMATED EFFORT
+======================================================================
+
+  Step 1 (API routes):     30 min — add 2 lines to 5 files
+  Step 2 (UI):             45 min — usage bar + button states in 5 pages
+  Step 3 (Usage API):      15 min — new route
+  Step 4 (Per-feature):    10 min — just use existing query_type column
+
+  Total: ~2 hours
+
+======================================================================
+                         END OF PLAN
+======================================================================

@@ -1,11 +1,13 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { dbWrite } from "@/lib/db-write";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Percent, Save, AlertCircle } from "lucide-react";
+import { useUser } from "@/hooks/use-user";
 
 interface ProfitShare {
   role: string;
@@ -23,6 +25,7 @@ const ROLES = [
 ];
 
 export default function ProfitSharingPage() {
+  const { user: appUser } = useUser();
   const [profitShares, setProfitShares] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -33,13 +36,12 @@ export default function ProfitSharingPage() {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!appUser) return;
 
       const { data: profile } = await supabase
         .from("profiles")
         .select("firm_id, role")
-        .eq("id", user.id)
+        .eq("id", appUser?.uuid)
         .single();
 
       const fid = profile?.firm_id;
@@ -77,12 +79,11 @@ export default function ProfitSharingPage() {
     setMessage(null);
 
     for (const [role, percentage] of Object.entries(profitShares)) {
-      const { error } = await supabase
-        .from("firm_profit_sharing")
-        .upsert(
-          { firm_id: firmId, role, profit_percentage: percentage },
-          { onConflict: "firm_id,role" }
-        );
+      const { error } = await dbWrite("firm_profit_sharing", "upsert", {
+        firm_id: firmId,
+        role,
+        profit_percentage: percentage,
+      });
 
       if (error) {
         setMessage({ type: "error", text: `Error saving ${role}: ${error.message}` });

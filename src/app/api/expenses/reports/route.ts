@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
 // GET — expense reports/summary
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
@@ -17,14 +18,14 @@ export async function GET(request: NextRequest) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("firm_id, role")
-      .eq("id", user.id)
+      .eq("id", user.uuid)
       .single();
 
     let query = supabase.from("expenses").select("*, cases(id, title, case_number), clients(id, full_name)");
     if (profile?.firm_id && ["owner", "partner"].includes(profile.role || "")) {
       query = query.eq("firm_id", profile.firm_id);
     } else {
-      query = query.eq("user_id", user.id);
+      query = query.eq("user_id", user.uuid);
     }
 
     if (startDate) query = query.gte("expense_date", startDate);

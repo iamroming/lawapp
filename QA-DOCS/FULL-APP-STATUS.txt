@@ -1,0 +1,63 @@
+CaseFiles — Full App Status Summary
+=====================================
+
+OVERVIEW:
+- Next.js 16.2.10 (Turbopack) + Supabase + TypeScript + Tailwind CSS v4
+- Light theme only (dark theme removed)
+- Plans: Solo ₹299, Professional ₹799, Firm ₹1999, Enterprise ₹4999
+- 208 pages generated, build passes in ~21s
+
+COMPLETED (205+ bugs fixed across 5 rounds):
+
+Round 1 — Admin QA (38 bugs):
+- Open redirect, privilege escalation, firm scoping bypasses
+- Calendar missing fields, AI chat injection, RBAC, sidebar
+
+Round 2 — Super Admin QA (43 bugs):
+- Razorpay 12x, coupon slugs vs UUIDs, wrong roles
+- Document deletion, settings validation, analytics N+1
+- Webhook plan_id, eCourts scoping, bulk ops
+
+Round 3 — Final QA (40 bugs):
+- Employee signup restored, billing crash, case IDOR
+- AI research functional, zombie user prevention
+- Document crash, subscription status
+
+Round 4 — Final QA #2 (50 bugs):
+- Clients API IDOR, super admin RLS bypass via service-role client
+- Privilege escalation blocked, dashboard/billing firm scoping
+- API role checks, input validation
+
+Round 5 — Security Audit (20+ fixes):
+- CRITICAL: Payment amount verification, SSRF on court PDFs
+- CRITICAL: Prompt injection protection, service role isolation
+- CRITICAL: Auth enumeration, missing role checks
+- HIGH: Rate limiting, file type validation, CSRF
+- HIGH: Account lockout, password reset security
+- MEDIUM: Error message sanitization, honeypot, discount clamping
+
+SECURITY STATUS:
+- All 7 CRITICAL vulnerabilities FIXED
+- 10 of 14 HIGH vulnerabilities FIXED
+- 6 of 22 MEDIUM vulnerabilities FIXED
+- Remaining need DB migrations or larger refactors
+
+BUILD STATUS: ✓ Compiles successfully, 208 pages generated
+
+KNOWN ISSUES:
+- 12+ TypeScript errors (hidden by ignoreBuildErrors: true)
+- CSRF_SECRET not defined in .env.local
+- In-memory rate limiter ineffective in serverless
+- Super admin client refactor needed (useSuperAdminClient removed)
+- DB migrations needed: next_invoice_number RPC, coupon_uses unique constraint
+
+QA-DOCS: 24 text files including full security audit report
+
+REMAINING WORK:
+- Fix all TypeScript errors (12+ files)
+- Install npm packages: zod, dompurify
+- Add Redis/Upstash for persistent rate limiting
+- Create RBAC permission matrix
+- Fix super admin client refactor
+- Run DB migrations
+- Add webhook signature verification

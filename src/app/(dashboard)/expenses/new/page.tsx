@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import toast from "react-hot-toast";
 
 const CATEGORIES = [
   { value: "court_fees", label: "Court Fees" },
@@ -22,7 +22,6 @@ const CATEGORIES = [
 
 export default function NewExpensePage() {
   const router = useRouter();
-  const supabase = createClient();
   const [cases, setCases] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [form, setForm] = useState({
@@ -40,33 +39,43 @@ export default function NewExpensePage() {
   useEffect(() => {
     const fetchOptions = async () => {
       const [casesRes, clientsRes] = await Promise.all([
-        supabase.from("cases").select("id, title, case_number"),
-        supabase.from("clients").select("id, full_name"),
+        fetch("/api/cases").then((r) => r.json()),
+        fetch("/api/clients").then((r) => r.json()),
       ]);
-      if (casesRes.data) setCases(casesRes.data);
-      if (clientsRes.data) setClients(clientsRes.data);
+      setCases(Array.isArray(casesRes) ? casesRes : casesRes.cases || []);
+      setClients(Array.isArray(clientsRes) ? clientsRes : clientsRes.clients || []);
     };
     fetchOptions();
-  }, [supabase]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title || !form.amount) return;
     setSaving(true);
 
-    const { error } = await supabase.from("expenses").insert({
-      title: form.title,
-      description: form.description || null,
-      amount: parseFloat(form.amount),
-      category: form.category,
-      case_id: form.case_id || null,
-      client_id: form.client_id || null,
-      is_billable: form.is_billable,
-      expense_date: form.expense_date,
+    const res = await fetch("/api/expenses", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: form.title,
+        description: form.description || null,
+        amount: parseFloat(form.amount),
+        category: form.category,
+        case_id: form.case_id || null,
+        client_id: form.client_id || null,
+        is_billable: form.is_billable,
+        expense_date: form.expense_date,
+      }),
     });
+    const data = await res.json();
 
     setSaving(false);
-    if (!error) router.push("/expenses");
+    if (data.error) {
+      toast.error(data.error || "Failed to create expense");
+      return;
+    }
+    toast.success("Expense created");
+    router.push("/expenses");
   };
 
   return (

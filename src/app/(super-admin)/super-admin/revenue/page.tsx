@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getSuperAdminRevenue, getSuperAdminInvoices } from "@/app/actions/super-admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatsCard } from "@/components/ui/stats-card";
 import { formatCurrency, formatDate, unwrap } from "@/lib/utils";
@@ -11,22 +11,16 @@ export default function SuperAdminRevenuePage() {
   const [payments, setPayments] = useState<PaymentWithDetails[]>([]);
   const [invoices, setInvoices] = useState<InvoiceWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
     const fetchData = async () => {
-      const [payRes, invRes] = await Promise.all([
-        supabase.from("payments").select("*, client:clients(full_name)").order("payment_date", { ascending: false }),
-        supabase.from("invoices").select("*, client:clients(full_name)").order("created_at", { ascending: false }),
+      const [payData, invData] = await Promise.all([
+        getSuperAdminRevenue(),
+        getSuperAdminInvoices(),
       ]);
-      setPayments(
-        (payRes.data || []).map((p) => ({
-          ...p,
-          client: unwrap(p.client),
-        })) as PaymentWithDetails[]
-      );
+      setPayments((payData || []) as PaymentWithDetails[]);
       setInvoices(
-        (invRes.data || []).map((i) => ({
+        (invData || []).map((i: any) => ({
           ...i,
           client: unwrap(i.client),
         })) as InvoiceWithDetails[]
@@ -34,7 +28,7 @@ export default function SuperAdminRevenuePage() {
       setLoading(false);
     };
     fetchData();
-  }, [supabase]);
+  }, []);
 
   const totalRevenue = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
   const pendingInvoices = invoices.filter((i) => i.status === "sent" || i.status === "overdue");

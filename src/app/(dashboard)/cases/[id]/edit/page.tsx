@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { dbWrite } from "@/lib/db-write";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +14,7 @@ import { getAvailableActs, getSectionsForAct } from "@/lib/legal/section-mapping
 import { ArrowLeft, Plus, X } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { useUser } from "@/hooks/use-user";
 
 interface Client {
   id: string;
@@ -38,6 +40,7 @@ interface CaseData {
 }
 
 export default function EditCasePage() {
+  const { user: appUser } = useUser();
   const params = useParams();
   const router = useRouter();
   const [clients, setClients] = useState<Client[]>([]);
@@ -65,9 +68,17 @@ export default function EditCasePage() {
 
   useEffect(() => {
     const fetchData = async () => {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("firm_id")
+        .eq("id", appUser?.uuid || "")
+        .single();
+
       const [caseResult, clientsResult] = await Promise.all([
         supabase.from("cases").select("*").eq("id", params.id).single(),
-        supabase.from("clients").select("id, full_name").order("full_name"),
+        profile?.firm_id
+          ? supabase.from("clients").select("id, full_name").eq("firm_id", profile.firm_id).order("full_name")
+          : supabase.from("clients").select("id, full_name").order("full_name"),
       ]);
 
       if (caseResult.data) {
@@ -120,28 +131,29 @@ export default function EditCasePage() {
       }
     }
 
-    const { error } = await supabase
-      .from("cases")
-      .update({
-        title: formData.title,
-        description: formData.description,
-        case_type: formData.case_type,
-        court: formData.court,
-        judge_name: formData.judge_name,
-        opposing_party: formData.opposing_party,
-        opposing_counsel: formData.opposing_counsel,
-        client_id: formData.client_id || null,
-        priority: formData.priority,
-        filing_date: formData.filing_date || null,
-        total_fee: formData.total_fee ? parseFloat(formData.total_fee) : 0,
-        acts: selectedActs.length > 0 ? selectedActs : null,
-        sections: selectedSections.length > 0 ? selectedSections : null,
-        clauses: clauses.length > 0 ? clauses : null,
-      })
-      .eq("id", params.id);
+    if (!appUser) { toast.error("You must be logged in to continue"); setLoading(false); return; }
+
+    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", appUser?.uuid).single();
+
+    const { error } = await dbWrite("cases", "update", {
+      title: formData.title,
+      description: formData.description,
+      case_type: formData.case_type,
+      court: formData.court,
+      judge_name: formData.judge_name,
+      opposing_party: formData.opposing_party,
+      opposing_counsel: formData.opposing_counsel,
+      client_id: formData.client_id || null,
+      priority: formData.priority,
+      filing_date: formData.filing_date || null,
+      total_fee: formData.total_fee ? parseFloat(formData.total_fee) : 0,
+      acts: selectedActs.length > 0 ? selectedActs : null,
+      sections: selectedSections.length > 0 ? selectedSections : null,
+      clauses: clauses.length > 0 ? clauses : null,
+    }, { id: params.id, firm_id: profile?.firm_id });
 
     if (error) {
-      toast.error(error.message);
+      toast.error(error);
       setLoading(false);
       return;
     }

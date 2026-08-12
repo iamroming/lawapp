@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("role, firm_id")
-      .eq("id", user.id)
+      .eq("id", user.uuid)
       .single();
 
     const isOwnerOrPartner = profile?.role === "owner" || profile?.role === "partner";
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
       : await supabase
           .from("cases")
           .select("id, status, total_fee, amount_received, next_hearing_date, created_at")
-          .or(`created_by.eq.${user.id},assigned_to.eq.${user.id}`)
+          .or(`created_by.eq.${user.uuid},assigned_to.eq.${user.uuid}`)
           .is("deleted_at", null);
 
     // Get clients: owners/partners see all firm clients; others see only their own
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
       : await supabase
           .from("clients")
           .select("id")
-          .eq("created_by", user.id)
+           .eq("created_by", user.uuid)
           .is("deleted_at", null);
 
     // Get user's case IDs for hearing scoping
@@ -60,28 +61,44 @@ export async function GET(request: NextRequest) {
           .limit(10)
       : { data: [] };
 
-    // Get invoices
-    const { data: invoices } = await supabase
-      .from("invoices")
-      .select("id, amount, tax_amount, status, due_date")
-      .eq("issued_by", user.id);
+    // Get invoices: owners/partners see all firm invoices; others see issued
+    const { data: invoices } = isOwnerOrPartner && profile?.firm_id
+      ? await supabase
+          .from("invoices")
+          .select("id, amount, tax_amount, status, due_date")
+          .eq("firm_id", profile.firm_id)
+      : await supabase
+          .from("invoices")
+          .select("id, amount, tax_amount, status, due_date")
+           .eq("issued_by", user.uuid);
 
-    // Get documents
-    const { data: documents } = await supabase
-      .from("documents")
-      .select("id")
-      .eq("uploaded_by", user.id);
+    // Get documents: owners/partners see all firm documents; others see uploaded
+    const { data: documents } = isOwnerOrPartner && profile?.firm_id
+      ? await supabase
+          .from("documents")
+          .select("id")
+          .eq("firm_id", profile.firm_id)
+      : await supabase
+          .from("documents")
+          .select("id")
+           .eq("uploaded_by", user.uuid);
 
-    // Get time entries this month
+    // Get time entries this month: owners/partners see all firm entries; others see own
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
-    const { data: timeEntries } = await supabase
-      .from("time_entries")
-      .select("id, hours, is_billable")
-      .eq("lawyer_id", user.id)
-      .gte("date", startOfMonth.toISOString().split("T")[0]);
+    const { data: timeEntries } = isOwnerOrPartner && profile?.firm_id
+      ? await supabase
+          .from("time_entries")
+          .select("id, hours, is_billable")
+          .eq("firm_id", profile.firm_id)
+          .gte("date", startOfMonth.toISOString().split("T")[0])
+      : await supabase
+          .from("time_entries")
+          .select("id, hours, is_billable")
+           .eq("lawyer_id", user.uuid)
+          .gte("date", startOfMonth.toISOString().split("T")[0]);
 
     // Calculate stats
     const totalCases = cases?.length || 0;

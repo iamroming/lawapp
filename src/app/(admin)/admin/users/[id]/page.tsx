@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,10 +71,22 @@ export default function AdminUserDetailPage() {
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const [firmId, setFirmId] = useState<string | null>(null);
+  const supabase = createServiceRoleClient();
+  const authClient = createClient();
 
   useEffect(() => {
     const fetchUserData = async () => {
+      const { data: { user: authUser } } = await authClient.auth.getUser();
+      if (authUser) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("firm_id")
+          .eq("id", authUser.id)
+          .single();
+        setFirmId(profile?.firm_id || authUser.id);
+      }
+
       const { data: userData } = await supabase
         .from("profiles")
         .select("*")
@@ -119,14 +132,15 @@ export default function AdminUserDetailPage() {
     };
 
     fetchUserData();
-  }, [params.id, supabase]);
+  }, [params.id, authClient, supabase]);
 
   const toggleActive = async () => {
     if (!user) return;
     const { error } = await supabase
       .from("profiles")
       .update({ is_active: !user.is_active })
-      .eq("id", user.id);
+      .eq("id", user.id)
+      .eq("firm_id", firmId);
 
     if (error) {
       toast.error(error.message);
@@ -141,7 +155,8 @@ export default function AdminUserDetailPage() {
     const { error } = await supabase
       .from("profiles")
       .update({ role: newRole })
-      .eq("id", user.id);
+      .eq("id", user.id)
+      .eq("firm_id", firmId);
 
     if (error) {
       toast.error(error.message);

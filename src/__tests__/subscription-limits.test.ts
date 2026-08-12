@@ -67,9 +67,9 @@ describe("checkUserLimit", () => {
 describe("checkStorageLimit", () => {
   it("allows storage when under limit", async () => {
     mockChain.single.mockResolvedValue({ data: null, error: null });
-    const result = await checkStorageLimit("user-1", 50 * 1024 * 1024);
+    const result = await checkStorageLimit("user-1", 49 * 1024 * 1024);
     expect(result.allowed).toBe(true);
-    expect(result.limit).toBe(100);
+    expect(result.limit).toBe(50);
   });
 
   it("blocks storage when over limit", async () => {

@@ -1,12 +1,11 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getSuperAdminClients } from "@/app/actions/super-admin";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Users, Search, Phone, Mail } from "lucide-react";
-import { unwrap } from "@/lib/utils";
 import Link from "next/link";
 import type { Client, Profile } from "@/types/database";
 
@@ -16,14 +15,12 @@ export default function SuperAdminClientsPage() {
   const [clients, setClients] = useState<ClientWithCreator[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const supabase = createClient();
 
   useEffect(() => { fetchClients(); }, []);
 
   const fetchClients = async () => {
-    const { data } = await supabase.from("clients").select("*, creator:profiles(full_name)").order("created_at", { ascending: false });
-    const formatted = (data || []).map((c) => ({ ...c, creator: unwrap(c.creator) }));
-    setClients(formatted);
+    const data = await getSuperAdminClients();
+    setClients((data as ClientWithCreator[]) || []);
     setLoading(false);
   };
 
@@ -48,7 +45,7 @@ export default function SuperAdminClientsPage() {
       {loading ? <div className="text-center py-12 text-[var(--text-secondary)]">Loading...</div> : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c) => (
-            <Link key={c.id} href={`/clients/${c.id}`}>
+            <Link key={c.id} href="#">
               <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify client belongs to user's firm
-    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.id).single();
+    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.uuid).single();
     const { data: clientCheck } = await supabase
       .from("clients")
       .select("id")
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify client belongs to user's firm
-    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.id).single();
+    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.uuid).single();
     const { data: clientCheck } = await supabase
       .from("clients")
       .select("id")
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
       .insert({
         client_id,
         case_id: case_id || null,
-        user_id: user?.id || null,
+        user_id: user?.uuid || null,
         rating,
         feedback_text: feedback_text || null,
         feedback_type: feedback_type || "general",

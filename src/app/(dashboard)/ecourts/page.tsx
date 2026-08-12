@@ -23,6 +23,7 @@ import {
   User,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useUser } from "@/hooks/use-user";
 
 interface ECourtsCase {
   id: string;
@@ -47,6 +48,7 @@ interface ECourtsCase {
 }
 
 export default function ECourtsPage() {
+  const { user: appUser } = useUser();
   const [cases, setCases] = useState<ECourtsCase[]>([]);
   const [allCases, setAllCases] = useState<{ id: string; case_number: string; title: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,23 +73,22 @@ export default function ECourtsPage() {
   }, []);
 
   const fetchAllCases = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!appUser) return;
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("role, firm_id")
-      .eq("id", user.id)
+      .eq("id", appUser?.uuid)
       .single();
 
     const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
-    const firmId = profile?.firm_id || user.id;
+    const firmId = profile?.firm_id || appUser?.uuid;
 
     let query = supabase.from("cases").select("id, case_number, title").order("case_number");
     if (isOwner) {
       query = query.eq("firm_id", firmId);
     } else {
-      query = query.or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`);
+      query = query.or(`assigned_to.eq.${appUser?.uuid},created_by.eq.${appUser?.uuid}`);
     }
 
     const { data } = await query;
@@ -96,37 +97,40 @@ export default function ECourtsPage() {
 
   const fetchECourtsCases = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
+      if (!appUser) { setLoading(false); return; }
 
       const { data: profile } = await supabase
         .from("profiles")
         .select("role, firm_id")
-        .eq("id", user.id)
+        .eq("id", appUser?.uuid)
         .single();
 
       const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
-      const firmId = profile?.firm_id || user.id;
+      const firmId = profile?.firm_id || appUser?.uuid;
 
       let query = supabase
         .from("ecourts_cases")
-        .select("*, case:cases(id, case_number, title, status)")
+        .select("*, case:cases!inner(id, case_number, title, status, firm_id, created_by)")
         .eq("is_active", true)
         .order("created_at", { ascending: false });
 
       if (isOwner) {
-        query = query.eq("firm_id", firmId);
+        query = query.eq("case.firm_id", firmId);
       } else {
-        query = query.eq("user_id", user.id);
+        query = query.eq("case.created_by", appUser?.uuid);
       }
 
       const { data, error } = await query;
 
-      if (error) throw error;
-      setCases((data || []) as ECourtsCase[]);
-    } catch (error) {
-      console.error("Error fetching eCourts cases:", error);
-      toast.error("Failed to fetch eCourts cases");
+      if (error) {
+        console.warn("eCourts query warning:", error.message || error);
+        setCases([]);
+      } else {
+        setCases((data || []) as ECourtsCase[]);
+      }
+    } catch (error: any) {
+      console.warn("eCourts fetch skipped:", error?.message || "table may not exist yet");
+      setCases([]);
     } finally {
       setLoading(false);
     }

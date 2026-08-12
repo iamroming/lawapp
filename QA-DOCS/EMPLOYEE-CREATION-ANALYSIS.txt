@@ -1,0 +1,100 @@
+EMPLOYEE CREATION ANALYSIS - CaseFiles App
+============================================
+
+HOW EMPLOYEES ARE CREATED
+==========================
+
+There are 4 methods:
+
+1. EMAIL INVITE (Settings > Team > Add by Email)
+   - Only works for EXISTING users (user must already have an account)
+   - Owner/Partner enters email + role → API updates invitee's profiles (sets role + firm_id)
+   - No invite acceptance flow — user is immediately added
+
+2. INVITE CODE (Admin > Add Employee or Settings > Team > Generate Code)
+   - Owner generates a code with role, salary, payment details
+   - Code stored in team_invites table (expires in 7 days)
+   - Code displayed/shared with employee
+
+3. CODE REDEMPTION (Employee signup flow)
+   - New user goes to /signup → "I'm a Team Member" → enters code
+   - Creates auth account → onboarding → redeems code
+   - API updates profiles (role + firm_id)
+
+4. OWNER SIGNUP (creates a new firm)
+   - User signs up as "Firm Owner" → gets role='owner', firm_id=self
+
+
+BUGS FOUND
+==========
+
+BUG 1 (CRITICAL): Salary data lost during code redemption
+  File: src/app/api/team/redeem-code/route.ts lines 64-75
+  Issue: team_invites stores payment_type, monthly_salary, pf_enabled, esi_enabled,
+         tds_rate, upi_id — but redeem-code only copies role + firm_id to profiles.
+         All salary configuration is permanently lost.
+
+BUG 2 (CRITICAL): firm_members table never written
+  File: All API routes in src/app/api/team/
+  Issue: firm_members table exists but no route ever inserts into it.
+         Permission system reads from firm_members but falls back to defaults.
+
+BUG 3 (HIGH): Race condition in invite code redemption
+  File: src/app/api/team/redeem-code/route.ts
+  Issue: Code validation and mark-as-used are not atomic.
+         Two concurrent requests with same code could both succeed.
+
+BUG 4 (HIGH): Admin employees delete violates constraint
+  File: src/app/(admin)/admin/employees/page.tsx line 130
+  Issue: Sets role=null, but profiles_role_check requires a valid role.
+         This will fail at database level.
+
+BUG 5 (HIGH): Inconsistent team removal behavior
+  Files: api/team/[id]route.ts vs admin/employees/page.tsx
+  Issue: API route sets role='intern' (stays in firm)
+         Admin page sets role=null, firm_id=null (removed from firm)
+         Two different "remove" operations = confusing behavior.
+
+BUG 6 (MEDIUM): Settings team query missing firm_id filter
+  File: src/app/(dashboard)/settings/page.tsx lines 235-241
+  Issue: Fetches team members without firm_id filter.
+         Relies on RLS to filter, but could show wrong data.
+
+BUG 7 (MEDIUM): Subscription limit check uses wrong user ID
+  File: src/app/api/team/redeem-code/route.ts line 41
+  Issue: checkUserLimit(user.id, ...) uses employee's ID, not firm owner's ID.
+         Should use invite.firm_id to find the right subscription.
+
+BUG 8 (MEDIUM): invite-code route missing rate limiting
+  File: src/app/api/team/invite-code/route.ts
+  Issue: /api/team/invite has 5/hour rate limit, but invite-code has none.
+
+BUG 9 (LOW): Code generation uses Math.random()
+  File: src/app/api/team/invite-code/route.ts lines 5-12
+  Issue: Not cryptographically secure (minor for 8-char expiring codes).
+
+BUG 10 (LOW): handle_new_user trigger creates profile with role='associate'
+  File: complete-schema.sql lines 680-692
+  Issue: Brief window where user has wrong role before signup API upserts.
+
+
+RECOMMENDED PLAN
+================
+
+Option A: Fix bugs + simplify (recommended)
+-------------------------------------------
+1. Fix Bug 1: Copy all salary fields during code redemption
+2. Fix Bug 4: Use role='removed' or similar valid value for deletion
+3. Fix Bug 5: Unify removal behavior (both should do same thing)
+4. Fix Bug 7: Use invite.firm_id for subscription check
+5. Add rate limiting to invite-code route
+6. Leave firm_members table unused for now (dead code, no harm)
+
+Option B: Full refactor (bigger effort)
+---------------------------------------
+1. All fixes from Option A
+2. Implement firm_members table properly
+3. Add invite acceptance/decline flow
+4. Add invite expiry notifications
+5. Add audit logging for all team changes
+6. Unify admin and settings team management into single component

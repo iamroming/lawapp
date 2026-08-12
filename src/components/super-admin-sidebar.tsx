@@ -4,26 +4,23 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard,
   Users,
   Receipt,
   Activity,
   Briefcase,
   FileText,
-  Calendar,
   Settings,
   LogOut,
   Menu,
   X,
   Crown,
   ChevronLeft,
-  Database,
-  Shield,
-  BookOpen,
   IndianRupee,
   Ticket,
+  PenSquare,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { getFirebaseAuth } from "@/lib/firebase/config";
+import { signOut as firebaseSignOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
 const superAdminNav = [
@@ -34,6 +31,7 @@ const superAdminNav = [
   { name: "Subscriptions", href: "/super-admin/subscriptions", icon: Receipt },
   { name: "Coupons", href: "/super-admin/coupons", icon: Ticket },
   { name: "Revenue", href: "/super-admin/revenue", icon: IndianRupee },
+  { name: "Blog", href: "/super-admin/blog", icon: PenSquare },
   { name: "Activity Logs", href: "/super-admin/activity", icon: Activity },
   { name: "Documents", href: "/super-admin/documents", icon: FileText },
   { name: "Platform Settings", href: "/super-admin/settings", icon: Settings },
@@ -43,10 +41,10 @@ export function SuperAdminSidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = createClient();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await firebaseSignOut(getFirebaseAuth());
+    await fetch("/api/auth/session", { method: "DELETE" });
     router.push("/login");
     router.refresh();
   };

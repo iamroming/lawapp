@@ -8,8 +8,12 @@ import { Select } from "@/components/ui/select";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { dbWrite } from "@/lib/db-write";
+import { useUser } from "@/hooks/use-user";
+import toast from "react-hot-toast";
 
 export default function NewTaskPage() {
+  const { user: appUser } = useUser();
   const router = useRouter();
   const supabase = createClient();
   const [cases, setCases] = useState<any[]>([]);
@@ -28,11 +32,23 @@ export default function NewTaskPage() {
 
   useEffect(() => {
     const fetchOptions = async () => {
-      const [casesRes, clientsRes, empRes] = await Promise.all([
-        supabase.from("cases").select("id, title, case_number"),
-        supabase.from("clients").select("id, full_name"),
-        supabase.from("profiles").select("id, full_name, role").neq("role", "super_admin"),
-      ]);
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("firm_id")
+        .eq("id", appUser?.uuid || "")
+        .single();
+
+      const casesQ = profile?.firm_id
+        ? supabase.from("cases").select("id, title, case_number").eq("firm_id", profile.firm_id)
+        : supabase.from("cases").select("id, title, case_number");
+      const clientsQ = profile?.firm_id
+        ? supabase.from("clients").select("id, full_name").eq("firm_id", profile.firm_id)
+        : supabase.from("clients").select("id, full_name");
+      const empQ = profile?.firm_id
+        ? supabase.from("profiles").select("id, full_name, role").eq("firm_id", profile.firm_id).neq("role", "super_admin")
+        : supabase.from("profiles").select("id, full_name, role").neq("role", "super_admin");
+
+      const [casesRes, clientsRes, empRes] = await Promise.all([casesQ, clientsQ, empQ]);
       if (casesRes.data) setCases(casesRes.data);
       if (clientsRes.data) setClients(clientsRes.data);
       if (empRes.data) setEmployees(empRes.data);
@@ -45,7 +61,15 @@ export default function NewTaskPage() {
     if (!form.title) return;
     setSaving(true);
 
-    const { error } = await supabase.from("tasks").insert({
+    if (!appUser) { setSaving(false); return; }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("firm_id")
+      .eq("id", appUser?.uuid)
+      .single();
+
+    const { error } = await dbWrite("tasks", "insert", {
       title: form.title,
       description: form.description || null,
       case_id: form.case_id || null,
@@ -53,10 +77,17 @@ export default function NewTaskPage() {
       assigned_to: form.assigned_to || null,
       priority: form.priority,
       due_date: form.due_date || null,
+      user_id: appUser?.uuid,
+      firm_id: profile?.firm_id || null,
     });
 
     setSaving(false);
-    if (!error) router.push("/tasks");
+    if (error) {
+      toast.error(error || "Failed to create task");
+      return;
+    }
+    toast.success("Task created");
+    router.push("/tasks");
   };
 
   return (

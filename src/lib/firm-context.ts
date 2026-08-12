@@ -51,5 +51,5 @@ export function applyFirmScope(
   // Employees see only what they created or are assigned to
   const ownerField = opts?.ownerField || "created_by";
   const employeeField = opts?.employeeField || "assigned_to";
-  return query.or(`${ownerField}.eq.${ctx.userId},${employeeField}.eq.${ctx.userId}`);
+  return query.or(`${ownerField}.eq.${ctx.userId},${employeeField}.eq.${ctx.userId}`).eq("firm_id", ctx.firmId);
 }

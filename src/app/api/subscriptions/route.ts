@@ -1,16 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
 export const PLANS = {
-  free: {
-    name: "Free",
-    monthly: { price: 0, razorpayPlanId: "" },
-    annual: { price: 0, razorpayPlanId: "" },
-    max_cases: 3,
-    max_users: 1,
-    max_storage_mb: 100,
-    max_ai_queries: 5,
-  },
   solo: {
     name: "Solo",
     monthly: { price: 299, razorpayPlanId: process.env.RAZORPAY_PLAN_SOLO_MONTHLY || "" },
@@ -19,44 +11,83 @@ export const PLANS = {
     max_users: 1,
     max_storage_mb: 1024,
     max_ai_queries: 50,
+    max_branches: 0,
   },
   professional: {
     name: "Professional",
     monthly: { price: 799, razorpayPlanId: process.env.RAZORPAY_PLAN_PROFESSIONAL_MONTHLY || "" },
     annual: { price: 7999, razorpayPlanId: process.env.RAZORPAY_PLAN_PROFESSIONAL_ANNUAL || "" },
-    max_cases: -1,
+    max_cases: 50,
     max_users: 3,
-    max_storage_mb: 5120,
+    max_storage_mb: 3072,
     max_ai_queries: 200,
+    max_branches: 0,
   },
   firm: {
     name: "Firm",
     monthly: { price: 1999, razorpayPlanId: process.env.RAZORPAY_PLAN_FIRM_MONTHLY || "" },
     annual: { price: 19999, razorpayPlanId: process.env.RAZORPAY_PLAN_FIRM_ANNUAL || "" },
-    max_cases: -1,
+    max_cases: 100,
     max_users: 10,
-    max_storage_mb: 20480,
+    max_storage_mb: 7168,
     max_ai_queries: -1,
+    max_branches: 3,
   },
   enterprise: {
     name: "Enterprise",
     monthly: { price: 4999, razorpayPlanId: process.env.RAZORPAY_PLAN_ENTERPRISE_MONTHLY || "" },
     annual: { price: 49999, razorpayPlanId: process.env.RAZORPAY_PLAN_ENTERPRISE_ANNUAL || "" },
-    max_cases: -1,
-    max_users: -1,
-    max_storage_mb: -1,
-    max_ai_queries: -1,
+    max_cases: 500,
+    max_users: 50,
+    max_storage_mb: 20480,
+    max_ai_queries: 150,
+    max_branches: 10,
   },
 } as const;
 
 export type PlanSlug = keyof typeof PLANS;
 export type BillingCycle = "monthly" | "annual";
 
+export async function GET(request: NextRequest) {
+  const supabase = await createClient();
+  const user = await verifySessionFromRequest(request);
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("firm_id")
+    .eq("id", user.uuid)
+    .single();
+
+  let query = supabase
+    .from("user_subscriptions")
+    .select("*, plan:subscription_plans(name, price)")
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+
+  if (profile?.firm_id) {
+    const { data: owner } = await supabase
+      .from("firm_members")
+      .select("user_id")
+      .eq("firm_id", profile.firm_id)
+      .eq("role", "owner")
+      .limit(1)
+      .single();
+    query = query.eq("user_id", owner?.user_id || user.uuid);
+  } else {
+    query = query.eq("user_id", user.uuid);
+  }
+
+  const { data, error } = await query;
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json(data);
+}
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -76,26 +107,17 @@ export async function POST(request: NextRequest) {
   const plan = PLANS[planSlug];
   const billing = plan[billingCycle];
 
-  // Free plan - activate directly without Razorpay
-  if (planSlug === "free" || billing.price === 0) {
-    const { error: dbError } = await supabase.from("user_subscriptions").insert({
-      user_id: user.id,
-      plan_id: null,
-      status: "active",
-      starts_at: new Date().toISOString(),
-      expires_at: null,
-      payment_method: "free",
-      amount_paid: 0,
-      currency: "INR",
-      auto_renew: false,
-      notes: JSON.stringify({ plan_slug: planSlug }),
-    });
+  // Check for existing active subscription
+  const { data: existingSub } = await supabase
+    .from("user_subscriptions")
+    .select("id, status")
+    .eq("user_id", user.uuid)
+    .in("status", ["active", "trialing"])
+    .limit(1)
+    .single();
 
-    if (dbError) {
-      return NextResponse.json({ error: dbError.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ plan: planSlug, status: "active" });
+  if (existingSub) {
+    return NextResponse.json({ error: "You already have an active subscription. Please cancel it first." }, { status: 400 });
   }
 
   const razorpayPlanId = billing.razorpayPlanId;
@@ -129,9 +151,9 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         plan_id: razorpayPlanId,
         customer_notify: 1,
-        total_count: billingCycle === "annual" ? 12 : 6,
+        total_count: 1,
         notes: {
-          user_id: user.id,
+          user_id: user.uuid,
           plan: planSlug,
           billing_cycle: billingCycle,
         },
@@ -145,9 +167,15 @@ export async function POST(request: NextRequest) {
 
     const subscription = await subscriptionResponse.json();
 
+    const { data: planRow } = await supabase
+      .from("subscription_plans")
+      .select("id")
+      .eq("slug", planSlug)
+      .maybeSingle();
+
     const { error: dbError } = await supabase.from("user_subscriptions").insert({
-      user_id: user.id,
-      plan_id: null,
+      user_id: user.uuid,
+      plan_id: planRow?.id || null,
       status: "trialing",
       starts_at: new Date().toISOString(),
       expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),

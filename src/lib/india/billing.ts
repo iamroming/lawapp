@@ -54,7 +54,7 @@ export const INDIAN_STATES: Record<string, string> = {
   "TS": "Telangana",
   "TR": "Tripura",
   "UP": "Uttar Pradesh",
-  "UT": "Uttarakhand",
+  "UK": "Uttarakhand",
   "WB": "West Bengal",
 };
 
@@ -66,7 +66,7 @@ export const STATE_CODES: Record<string, string> = {
   "KL": "32", "LA": "38", "LD": "31", "MP": "23", "MH": "27",
   "MN": "14", "ML": "17", "MZ": "15", "NL": "13", "OD": "21",
   "PY": "34", "PB": "03", "RJ": "08", "SK": "11", "TN": "33",
-  "TS": "36", "TR": "16", "UP": "09", "UT": "05", "WB": "19",
+  "TS": "36", "TR": "16", "UP": "09", "UK": "05", "WB": "19",
 };
 
 // HSN/SAC codes for legal services
@@ -136,10 +136,10 @@ export function calculateTDS(
   panAvailable: boolean = true
 ): { tdsRate: number; tdsAmount: number; netAmount: number } {
   // TDS not applicable if:
-  // 1. Client is individual/HUF and payment < ₹50,000
+  // 1. Client is individual/HUF and payment < ₹30,000
   // 2. No PAN provided (20% or highest rate)
   if (clientType === "individual") {
-    if (amount < 50000) {
+    if (amount < 30000) {
       return { tdsRate: 0, tdsAmount: 0, netAmount: amount };
     }
     const rate = panAvailable ? TDS_RATES.SECTION_194J_PROFESSIONAL : 20;

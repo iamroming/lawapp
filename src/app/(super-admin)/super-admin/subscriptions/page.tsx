@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getSuperAdminSubscriptions, updateSuperAdminSubscriptionStatus } from "@/app/actions/super-admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,30 +32,24 @@ export default function SuperAdminSubscriptionsPage() {
     expires_at: "",
   });
   const [submitting, setSubmitting] = useState(false);
-  const supabase = createClient();
 
   useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
-    const [pRes, sRes] = await Promise.all([
-      supabase.from("subscription_plans").select("*").order("price"),
-      supabase.from("user_subscriptions").select("*, user:profiles(full_name, email), plan:subscription_plans(name, price)").order("created_at", { ascending: false }),
-    ]);
-    setPlans(pRes.data || []);
-    setSubscriptions(
-      (sRes.data || []).map((s) => ({
-        ...s,
-        user: unwrap(s.user),
-        plan: unwrap(s.plan),
-      })) as SubscriptionWithPlan[]
-    );
+    const data = await getSuperAdminSubscriptions();
+    setSubscriptions((data as SubscriptionWithPlan[]) || []);
+    setPlans([]);
     setLoading(false);
   };
 
   const updateStatus = async (id: string, status: string) => {
-    await supabase.from("user_subscriptions").update({ status }).eq("id", id);
-    toast.success("Status updated");
-    fetchData();
+    try {
+      await updateSuperAdminSubscriptionStatus(id, status);
+      toast.success("Status updated");
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update status");
+    }
   };
 
   const handleOverride = async () => {

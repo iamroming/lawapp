@@ -43,7 +43,7 @@ export interface PaymentVerification {
 
 function getAuthHeader(): string {
   const { keyId, keySecret } = getCredentials();
-  return "Basic " + Buffer.from(`${keyId}:${keySecret}`).toString("base64");
+  return "Basic " + btoa(`${keyId}:${keySecret}`);
 }
 
 export async function createOrder(
@@ -83,11 +83,12 @@ export function verifyPayment(
     .update(`${orderId}|${paymentId}`)
     .digest("hex");
 
-  const sigBuffer = Buffer.from(generatedSignature);
-  const signatureBuffer = Buffer.from(signature);
-  if (sigBuffer.length !== signatureBuffer.length) return false;
+  const encoder = new TextEncoder();
+  const sigBytes = encoder.encode(generatedSignature);
+  const signatureBytes = encoder.encode(signature);
+  if (sigBytes.length !== signatureBytes.length) return false;
 
-  return crypto.timingSafeEqual(sigBuffer, signatureBuffer);
+  return crypto.timingSafeEqual(Buffer.from(sigBytes), Buffer.from(signatureBytes));
 }
 
 export async function fetchPayment(paymentId: string): Promise<RazorpayPayment> {

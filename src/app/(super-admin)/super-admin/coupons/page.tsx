@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getSuperAdminCoupons, toggleSuperAdminCouponActive, deleteSuperAdminCoupon, getSuperAdminCouponUses } from "@/app/actions/super-admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatDate, formatCurrency } from "@/lib/utils";
-import { Ticket, Plus, Search, Trash2, Eye, ToggleLeft, ToggleRight, Copy, Gift } from "lucide-react";
+import { Ticket, Plus, Search, Trash2, Eye, ToggleLeft, ToggleRight, Copy, Gift, Calendar, Users, Percent, DollarSign } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface Coupon {
@@ -18,6 +18,8 @@ interface Coupon {
   discount_value: number;
   max_uses: number;
   current_uses: number;
+  max_per_user: number;
+  billing_cycle: string;
   valid_from: string;
   valid_until: string | null;
   is_active: boolean;
@@ -35,6 +37,12 @@ interface CouponUse {
   plan: { name: string } | null;
 }
 
+const DISCOUNT_TYPE_STYLES: Record<string, { selected: string; icon: string }> = {
+  percent: { selected: "border-purple-500 bg-purple-50", icon: "text-purple-600" },
+  fixed: { selected: "border-orange-500 bg-orange-50", icon: "text-orange-600" },
+  free: { selected: "border-green-500 bg-green-50", icon: "text-green-600" },
+};
+
 export default function CouponsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,22 +52,29 @@ export default function CouponsPage() {
   const [couponUses, setCouponUses] = useState<CouponUse[]>([]);
   const [showUses, setShowUses] = useState(false);
   const [creating, setCreating] = useState(false);
-  const supabase = createClient();
+  const [plans, setPlans] = useState<{ id: string; name: string; slug: string }[]>([]);
 
   const [newCoupon, setNewCoupon] = useState({
     code: "",
     discount_type: "percent",
-    discount_value: 20,
+    discount_value: 30,
     plan_id: "",
     max_uses: 100,
+    max_per_user: 1,
+    billing_cycle: "both",
+    valid_from: "",
     valid_until: "",
     description: "",
   });
 
-  useEffect(() => { fetchCoupons(); }, []);
+  useEffect(() => { fetchCoupons(); fetchPlans(); }, []);
+
+  const fetchPlans = async () => {
+    setPlans([]);
+  };
 
   const fetchCoupons = async () => {
-    const { data } = await supabase.from("coupon_codes").select("*, plan:subscription_plans(id, name, slug)").order("created_at", { ascending: false });
+    const data = await getSuperAdminCoupons();
     setCoupons((data as Coupon[]) || []);
     setLoading(false);
   };
@@ -75,6 +90,9 @@ export default function CouponsPage() {
           ...newCoupon,
           plan_id: newCoupon.plan_id || null,
           max_uses: newCoupon.max_uses || -1,
+          max_per_user: newCoupon.max_per_user || -1,
+          billing_cycle: newCoupon.billing_cycle || "both",
+          valid_from: newCoupon.valid_from || null,
           valid_until: newCoupon.valid_until || null,
         }),
       });
@@ -84,7 +102,11 @@ export default function CouponsPage() {
       }
       toast.success("Coupon created!");
       setShowCreate(false);
-      setNewCoupon({ code: "", discount_type: "percent", discount_value: 20, plan_id: "", max_uses: 100, valid_until: "", description: "" });
+      setNewCoupon({
+        code: "", discount_type: "percent", discount_value: 30, plan_id: "",
+        max_uses: 100, max_per_user: 1, billing_cycle: "both",
+        valid_from: "", valid_until: "", description: "",
+      });
       fetchCoupons();
     } catch (e: any) {
       toast.error(e.message || "Failed to create coupon");
@@ -93,21 +115,29 @@ export default function CouponsPage() {
   };
 
   const toggleActive = async (coupon: Coupon) => {
-    await supabase.from("coupon_codes").update({ is_active: !coupon.is_active }).eq("id", coupon.id);
-    toast.success(coupon.is_active ? "Coupon deactivated" : "Coupon activated");
-    fetchCoupons();
+    try {
+      await toggleSuperAdminCouponActive(coupon.id, coupon.is_active);
+      toast.success(coupon.is_active ? "Coupon deactivated" : "Coupon activated");
+      fetchCoupons();
+    } catch {
+      toast.error("Failed to toggle coupon");
+    }
   };
 
   const deleteCoupon = async (id: string) => {
     if (!confirm("Delete this coupon? This cannot be undone.")) return;
-    await supabase.from("coupon_codes").delete().eq("id", id);
-    toast.success("Coupon deleted");
-    fetchCoupons();
+    try {
+      await deleteSuperAdminCoupon(id);
+      toast.success("Coupon deleted");
+      fetchCoupons();
+    } catch {
+      toast.error("Failed to delete coupon");
+    }
   };
 
   const viewUses = async (coupon: Coupon) => {
     setSelectedCoupon(coupon);
-    const { data } = await supabase.from("coupon_uses").select("*, user:profiles(full_name, email), plan:subscription_plans(name)").eq("coupon_id", coupon.id).order("used_at", { ascending: false });
+    const data = await getSuperAdminCouponUses(coupon.id);
     setCouponUses((data as CouponUse[]) || []);
     setShowUses(true);
   };
@@ -118,9 +148,9 @@ export default function CouponsPage() {
   };
 
   const generateCode = (type: string) => {
-    const prefixes = { percent: "SAVE", fixed: "FLAT", free: "FRIEND" };
+    const prefixes: Record<string, string> = { percent: "SAVE", fixed: "FLAT", free: "FRIEND" };
     const suffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-    setNewCoupon((p) => ({ ...p, code: `${prefixes[type as keyof typeof prefixes] || "COUPON"}${suffix}` }));
+    setNewCoupon((p) => ({ ...p, code: `${prefixes[type] || "COUPON"}${suffix}` }));
   };
 
   const filteredCoupons = coupons.filter((c) =>
@@ -193,10 +223,11 @@ export default function CouponsPage() {
                         {coupon.discount_type === "free" && <Badge className="bg-green-100 text-green-700"><Gift className="h-3 w-3 mr-1" />Friend Bypass</Badge>}
                       </div>
                       <p className="text-sm text-[var(--text-secondary)]">{coupon.description || "No description"}</p>
-                      <div className="flex items-center gap-3 text-xs text-[var(--text-tertiary)] mt-1">
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-tertiary)] mt-1">
                         <span>{coupon.plan?.name || "All plans"}</span>
-                        <span>{coupon.current_uses}{coupon.max_uses === -1 ? "" : `/${coupon.max_uses}`} uses</span>
-                        <span>{formatDate(coupon.created_at)}</span>
+                        <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{coupon.billing_cycle || "both"}</span>
+                        <span className="flex items-center gap-1"><Users className="h-3 w-3" />{coupon.current_uses}{coupon.max_uses === -1 ? "" : `/${coupon.max_uses}`}</span>
+                        <span>{coupon.max_per_user === 1 ? "1x per user" : "Unlimited/user"}</span>
                         {coupon.valid_until && <span>Expires {formatDate(coupon.valid_until)}</span>}
                       </div>
                     </div>
@@ -221,53 +252,122 @@ export default function CouponsPage() {
 
       {/* Create Coupon Modal */}
       <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Generate New Coupon">
-        <div className="space-y-4">
+        <div className="space-y-5">
+          {/* Code */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Coupon Code</label>
             <div className="flex gap-2">
-              <Input value={newCoupon.code} onChange={(e) => setNewCoupon((p) => ({ ...p, code: e.target.value.toUpperCase() }))} placeholder="e.g., SAVE20" className="font-mono" />
+              <Input value={newCoupon.code} onChange={(e) => setNewCoupon((p) => ({ ...p, code: e.target.value.toUpperCase().trim().replace(/[^A-Z0-9]/g, "") }))} placeholder="e.g., SAVE30" className="font-mono" />
               <Button variant="outline" onClick={() => generateCode(newCoupon.discount_type)}>Generate</Button>
             </div>
           </div>
+
+          {/* Discount Type */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Discount Type</label>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { value: "percent", label: "Percentage Off", icon: Percent },
+                { value: "fixed", label: "Fixed Amount", icon: DollarSign },
+                { value: "free", label: "Free Access", icon: Gift },
+              ].map((t) => {
+                const isActive = newCoupon.discount_type === t.value;
+                const styles = DISCOUNT_TYPE_STYLES[t.value] || { selected: "border-gray-500 bg-gray-50", icon: "text-gray-600" };
+                return (
+                  <button
+                    key={t.value}
+                    onClick={() => setNewCoupon((p) => ({ ...p, discount_type: t.value, code: "", discount_value: t.value === "free" ? 0 : t.value === "percent" ? 30 : 500 }))}
+                    className={`p-3 rounded-lg border-2 text-center transition-all ${
+                      isActive
+                        ? styles.selected
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <t.icon className={`h-5 w-5 mx-auto mb-1 ${isActive ? styles.icon : "text-gray-400"}`} />
+                    <span className="text-xs font-medium">{t.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Discount Value */}
+          {newCoupon.discount_type !== "free" && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                {newCoupon.discount_type === "percent" ? "Percentage (%)" : "Amount (₹)"}
+              </label>
+              <Input
+                type="number"
+                value={newCoupon.discount_value}
+                onChange={(e) => setNewCoupon((p) => ({ ...p, discount_value: Number(e.target.value) }))}
+                min={1}
+                max={newCoupon.discount_type === "percent" ? 99 : undefined}
+              />
+            </div>
+          )}
+
+          {/* Plan + Billing */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Discount Type</label>
-              <select value={newCoupon.discount_type} onChange={(e) => setNewCoupon((p) => ({ ...p, discount_type: e.target.value }))} className="w-full h-10 rounded-md border border-[var(--border)] px-3 text-sm">
-                <option value="percent">Percentage Off</option>
-                <option value="fixed">Fixed Amount Off</option>
-                <option value="free">Free Access (Friend Bypass)</option>
+              <label className="text-sm font-medium">Applies to Plan</label>
+              <select value={newCoupon.plan_id} onChange={(e) => setNewCoupon((p) => ({ ...p, plan_id: e.target.value }))} className="w-full h-10 rounded-md border border-[var(--border)] px-3 text-sm">
+                <option value="">All Plans</option>
+                {plans.map((plan) => (
+                  <option key={plan.id} value={plan.id}>{plan.name}</option>
+                ))}
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">{newCoupon.discount_type === "percent" ? "Percentage" : newCoupon.discount_type === "fixed" ? "Amount (₹)" : "Value"}</label>
-              <Input type="number" value={newCoupon.discount_value} onChange={(e) => setNewCoupon((p) => ({ ...p, discount_value: Number(e.target.value) }))} disabled={newCoupon.discount_type === "free"} />
+              <label className="text-sm font-medium">Billing Cycle</label>
+              <select value={newCoupon.billing_cycle} onChange={(e) => setNewCoupon((p) => ({ ...p, billing_cycle: e.target.value }))} className="w-full h-10 rounded-md border border-[var(--border)] px-3 text-sm">
+                <option value="both">Both (Monthly + Annual)</option>
+                <option value="monthly">Monthly Only</option>
+                <option value="annual">Annual Only</option>
+              </select>
             </div>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Applies to Plan</label>
-            <select value={newCoupon.plan_id} onChange={(e) => setNewCoupon((p) => ({ ...p, plan_id: e.target.value }))} className="w-full h-10 rounded-md border border-[var(--border)] px-3 text-sm">
-              <option value="">All Plans</option>
-              <option value="free">Free Plan</option>
-              <option value="solo">Solo Plan</option>
-              <option value="professional">Professional Plan</option>
-              <option value="firm">Firm Plan</option>
-              <option value="enterprise">Enterprise Plan</option>
-            </select>
-          </div>
+
+          {/* Usage Limits */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Max Uses (-1 = unlimited)</label>
-              <Input type="number" value={newCoupon.max_uses} onChange={(e) => setNewCoupon((p) => ({ ...p, max_uses: Number(e.target.value) }))} />
+              <label className="text-sm font-medium">Total Usage Limit</label>
+              <Input
+                type="number"
+                value={newCoupon.max_uses}
+                onChange={(e) => setNewCoupon((p) => ({ ...p, max_uses: Number(e.target.value) }))}
+                placeholder="-1 = unlimited"
+              />
+              <p className="text-xs text-[var(--text-tertiary)]">-1 for unlimited, or set a number like 100</p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Max Uses Per User</label>
+              <select value={newCoupon.max_per_user} onChange={(e) => setNewCoupon((p) => ({ ...p, max_per_user: Number(e.target.value) }))} className="w-full h-10 rounded-md border border-[var(--border)] px-3 text-sm">
+                <option value={1}>1 time (one-time use)</option>
+                <option value={-1}>Unlimited (can reuse)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Validity */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Valid From</label>
+              <Input type="date" value={newCoupon.valid_from} onChange={(e) => setNewCoupon((p) => ({ ...p, valid_from: e.target.value }))} />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Valid Until</label>
               <Input type="date" value={newCoupon.valid_until} onChange={(e) => setNewCoupon((p) => ({ ...p, valid_until: e.target.value }))} />
+              <p className="text-xs text-[var(--text-tertiary)]">Leave empty for no expiry</p>
             </div>
           </div>
+
+          {/* Description */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Description</label>
-            <Input value={newCoupon.description} onChange={(e) => setNewCoupon((p) => ({ ...p, description: e.target.value }))} placeholder="e.g., 20% off for new users" />
+            <Input value={newCoupon.description} onChange={(e) => setNewCoupon((p) => ({ ...p, description: e.target.value }))} placeholder="e.g., 30% off for first 100 users" />
           </div>
+
           <Button onClick={handleCreate} disabled={creating} className="w-full">
             {creating ? "Creating..." : "Create Coupon"}
           </Button>

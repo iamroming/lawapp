@@ -7,6 +7,7 @@ import { Scale, Menu, X, ChevronDown } from "lucide-react";
 const navLinks = [
   { href: "/features", label: "Features" },
   { href: "/pricing", label: "Pricing" },
+  { href: "/blog", label: "Blog" },
   { href: "/about", label: "About" },
   { href: "/help", label: "Help" },
 ];
@@ -15,6 +16,7 @@ const footerCompany = [
   { href: "/about", label: "About Us" },
   { href: "/features", label: "Features" },
   { href: "/pricing", label: "Pricing" },
+  { href: "/blog", label: "Blog" },
   { href: "/help", label: "Help Center" },
 ];
 
@@ -38,7 +40,7 @@ export default function MarketingLayout({
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
             <Scale className="h-7 w-7 text-indigo-600" />
-            <span>LawXP</span>
+            <span>CaseFiles</span>
           </Link>
 
           {/* Desktop nav */}
@@ -123,7 +125,7 @@ export default function MarketingLayout({
             <div className="space-y-4">
               <Link href="/" className="flex items-center gap-2 font-bold text-lg">
                 <Scale className="h-6 w-6 text-indigo-600" />
-                <span>LawXP</span>
+                <span>CaseFiles</span>
               </Link>
               <p className="text-sm text-gray-500 leading-relaxed">
                 Modern practice management software built for Indian lawyers.
@@ -175,7 +177,7 @@ export default function MarketingLayout({
                 Contact
               </h3>
               <ul className="mt-4 space-y-2 text-sm text-gray-500">
-                <li>support@LawXP.in</li>
+                <li>support@CaseFiles.in</li>
                 <li>+91 98765 43210</li>
                 <li>Mumbai, Maharashtra, India</li>
               </ul>
@@ -200,7 +202,7 @@ export default function MarketingLayout({
           </div>
 
           <div className="mt-10 border-t border-gray-200 pt-6 text-center text-sm text-gray-500">
-            &copy; {new Date().getFullYear()} LawXP. All rights reserved. Made with care for Indian legal professionals.
+            &copy; {new Date().getFullYear()} CaseFiles. All rights reserved. Made with care for Indian legal professionals.
           </div>
         </div>
       </footer>

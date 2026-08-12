@@ -5,8 +5,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { Key, Copy, Check, AlertCircle, Loader2 } from "lucide-react";
+import { Key, Copy, Check, AlertCircle, Loader2, Users } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { useUser } from "@/hooks/use-user";
 
 const ROLES = [
   { value: "partner", label: "Partner" },
@@ -30,6 +31,7 @@ const ALLOTMENT_STATUS = [
 ];
 
 export default function AddEmployeePage() {
+  const { user: appUser } = useUser();
   const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -40,27 +42,62 @@ export default function AddEmployeePage() {
   const [monthlySalary, setMonthlySalary] = useState<number>(0);
   const [percentageRate, setPercentageRate] = useState<number>(0);
   const [upiId, setUpiId] = useState("");
+  const [selectedBranches, setSelectedBranches] = useState<string[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
   const [roleDefaults, setRoleDefaults] = useState<Record<string, any>>({});
   const [loadingDefaults, setLoadingDefaults] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [userLimit, setUserLimit] = useState<{ used: number; max: number; plan: string; atLimit: boolean } | null>(null);
 
   const supabase = createClient();
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!appUser) return;
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role")
-        .eq("id", user.id)
+        .select("role, firm_id")
+        .eq("id", appUser?.uuid)
         .single();
 
       setIsOwner(profile?.role === "owner" || profile?.role === "partner");
+
+      // Fetch user limit info
+      const firmId = profile?.firm_id || appUser?.uuid;
+      const { count: memberCount } = await supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("firm_id", firmId)
+        .eq("is_active", true);
+
+      const { data: subData } = await supabase
+        .from("user_subscriptions")
+        .select("plan:subscription_plans(name, max_users)")
+        .eq("user_id", firmId)
+        .in("status", ["active", "trialing"])
+        .limit(1)
+        .single();
+
+      const plan = subData?.plan ? (Array.isArray(subData.plan) ? subData.plan[0] : subData.plan) : null;
+      const maxUsers = plan?.max_users ?? 1;
+      const used = memberCount || 0;
+      setUserLimit({
+        used,
+        max: maxUsers,
+        plan: plan?.name || "Free",
+        atLimit: maxUsers !== -1 && used >= maxUsers,
+      });
+
+      // Fetch branches
+      const branchRes = await fetch("/api/branches");
+      const branchData = await branchRes.json();
+      if (Array.isArray(branchData)) {
+        setBranches(branchData);
+      }
 
       // Fetch role salary defaults
       try {
@@ -77,7 +114,7 @@ export default function AddEmployeePage() {
       setLoading(false);
     };
     init();
-  }, [supabase]);
+  }, [appUser, supabase]);
 
   const isValidEmail = (val: string) => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(val);
 
@@ -122,11 +159,16 @@ export default function AddEmployeePage() {
           pf_enabled: defaults.pf_enabled || false,
           esi_enabled: defaults.esi_enabled || false,
           tds_rate: defaults.tds_rate || 0,
+          branch_id: selectedBranches.length > 0 ? selectedBranches[0] : null,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setMessage({ type: "error", text: data.error || "Failed to generate code" });
+        if (data.upgradeRequired) {
+          setMessage({ type: "error", text: data.error || "User limit reached" });
+        } else {
+          setMessage({ type: "error", text: data.error || "Failed to generate code" });
+        }
       } else {
         setGeneratedCode(data.code);
         setMessage({ type: "success", text: `Invite code generated for ${email}!` });
@@ -167,6 +209,41 @@ export default function AddEmployeePage() {
         <h1 className="text-2xl font-bold">Add Employee</h1>
         <p className="text-[var(--text-secondary)]">Enter employee details to generate an invite code</p>
       </div>
+
+      {/* User limit banner */}
+      {userLimit && (
+        <div className={`p-4 rounded-lg border ${
+          userLimit.atLimit
+            ? "bg-red-50 border-red-200"
+            : userLimit.max !== -1 && userLimit.used >= userLimit.max * 0.8
+            ? "bg-amber-50 border-amber-200"
+            : "bg-[var(--surface-subtle)] border-[var(--border)]"
+        }`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Users className="h-5 w-5 text-[var(--text-secondary)]" />
+              <div>
+                <p className="text-sm font-medium">
+                  Team: {userLimit.used} / {userLimit.max === -1 ? "Unlimited" : userLimit.max}
+                </p>
+                <p className="text-xs text-[var(--text-secondary)]">
+                  {userLimit.plan} plan
+                </p>
+              </div>
+            </div>
+            {userLimit.atLimit && (
+              <a href="/subscription-required" className="text-sm font-semibold text-indigo-600 hover:text-indigo-500 whitespace-nowrap">
+                Upgrade Plan
+              </a>
+            )}
+          </div>
+          {userLimit.atLimit && (
+            <p className="text-xs text-red-600 mt-2">
+              You&apos;ve reached your plan limit. Upgrade to add more team members.
+            </p>
+          )}
+        </div>
+      )}
 
       <Card>
         <CardContent className="pt-6 space-y-4">
@@ -279,9 +356,35 @@ export default function AddEmployeePage() {
             <p className="text-xs text-[var(--text-secondary)] mt-1">Optional — Used for salary payments via UPI</p>
           </div>
 
-          <Button onClick={handleGenerate} disabled={saving} className="w-full">
+          {branches.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium mb-1">Assign to Branches</label>
+              <div className="space-y-2 mt-1">
+                {branches.map((branch) => (
+                  <label key={branch.id} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={selectedBranches.includes(branch.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedBranches((prev) => [...prev, branch.id]);
+                        } else {
+                          setSelectedBranches((prev) => prev.filter((id) => id !== branch.id));
+                        }
+                      }}
+                      className="rounded"
+                    />
+                    {branch.name}
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-[var(--text-secondary)] mt-1">Optional — Employee will be assigned to selected branches</p>
+            </div>
+          )}
+
+          <Button onClick={handleGenerate} disabled={saving || userLimit?.atLimit} className="w-full">
             <Key className="h-4 w-4 mr-2" />
-            {saving ? "Generating..." : "Generate Invite Code"}
+            {saving ? "Generating..." : userLimit?.atLimit ? "Plan Limit Reached" : "Generate Invite Code"}
           </Button>
 
           {generatedCode && (

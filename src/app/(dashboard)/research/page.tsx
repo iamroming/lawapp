@@ -198,7 +198,7 @@ export default function ResearchPage() {
         }
       }
     } catch (e: any) {
-      console.warn("Cause list not available:", e.message);
+      // Court service may be unavailable, show empty state
     }
     setLoadingCauseList(false);
   }, []);

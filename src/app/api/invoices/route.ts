@@ -1,13 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 import { calculateGST, calculateTDS, getCurrentFinancialYear, getCurrentQuarter } from "@/lib/india/billing";
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("firm_id, state, role")
+      .eq("id", user.uuid)
+      .single();
+
+    const allowedRoles = ["owner", "partner", "senior_associate", "super_admin"];
+    if (!allowedRoles.includes(profile?.role || "")) {
+      return NextResponse.json({ error: "Forbidden: insufficient permissions to create invoices" }, { status: 403 });
     }
 
     const body = await request.json();
@@ -26,21 +38,25 @@ export async function POST(request: NextRequest) {
       billing_type = "fixed", // fixed, hourly, appearance, retainer
     } = body;
 
-    if (!client_id || !amount || amount <= 0) {
+    if (!client_id || amount === undefined || amount === null) {
       return NextResponse.json({ error: "Invalid client_id or amount" }, { status: 400 });
     }
 
-    // Get client details and verify firm ownership
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("firm_id, state")
-      .eq("id", user.id)
-      .single();
+    const parsedAmount = Number(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      return NextResponse.json({ error: "Amount must be a valid positive number" }, { status: 400 });
+    }
 
+    if (client_id && typeof client_id !== "string") {
+      return NextResponse.json({ error: "client_id must be a string" }, { status: 400 });
+    }
+
+    // Get client details and verify firm ownership
     const { data: client } = await supabase
       .from("clients")
       .select("id, full_name, state, gst_number, firm_id")
       .eq("id", client_id)
+      .eq("firm_id", profile?.firm_id || "")
       .single();
 
     if (!client) {
@@ -51,34 +67,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Client not found" }, { status: 404 });
     }
 
+    if (case_id) {
+      const { data: caseRecord } = await supabase
+        .from("cases")
+        .select("id")
+        .eq("id", case_id)
+        .eq("firm_id", profile?.firm_id || "")
+        .single();
+      if (!caseRecord) {
+        return NextResponse.json({ error: "Case not found in your firm" }, { status: 404 });
+      }
+    }
+
     const supplyState = client_state || client.state || "DL";
     const receiverState = lawyer_state || profile?.state || "DL";
 
     // Calculate GST
-    const gst = calculateGST(amount, supplyState, receiverState, gst_rate);
+    const gst = calculateGST(parsedAmount, supplyState, receiverState, gst_rate);
 
     // Calculate TDS
-    const tds = calculateTDS(amount, client_type as "individual" | "company" | "government", !!pan_number);
+    const tds = calculateTDS(parsedAmount, client_type as "individual" | "company" | "government", !!pan_number);
 
-    // Generate invoice number using firm-scoped count with row-level lock to prevent race condition
+    // Generate invoice number using atomic RPC to prevent race condition
     const fy = getCurrentFinancialYear();
-    const { data: lastInvoice } = await supabase
-      .from("invoices")
-      .select("invoice_number")
-      .eq("firm_id", profile?.firm_id || "")
-      .like("invoice_number", `INV/${fy}/%`)
-      .order("invoice_number", { ascending: false })
-      .limit(1)
-      .single();
+    let invoiceNumber: string;
 
-    let nextNum = 1;
-    if (lastInvoice?.invoice_number) {
-      const parts = lastInvoice.invoice_number.split("/");
-      const lastNum = parseInt(parts[2] || "0", 10);
-      nextNum = lastNum + 1;
+    const { data: nextNum, error: numError } = await supabase
+      .rpc("next_invoice_number", { p_firm_id: profile?.firm_id || "", p_fy: fy });
+
+    if (numError || !nextNum) {
+      // Fallback: use timestamp-based number
+      invoiceNumber = `INV/${fy}/${Date.now().toString().slice(-4)}`;
+    } else {
+      invoiceNumber = `INV/${fy}/${String(nextNum).padStart(4, "0")}`;
     }
-
-    const invoiceNumber = `INV/${fy}/${nextNum.toString().padStart(4, "0")}`;
 
     // Create invoice
     const { data: invoice, error } = await supabase
@@ -87,9 +109,9 @@ export async function POST(request: NextRequest) {
         invoice_number: invoiceNumber,
         case_id,
         client_id,
-        issued_by: user.id,
+        issued_by: user.uuid,
         firm_id: profile?.firm_id || null,
-        amount,
+        amount: parsedAmount,
         tax_amount: gst.totalTax,
         gst_rate,
         cgst: gst.cgst,
@@ -102,6 +124,7 @@ export async function POST(request: NextRequest) {
         description,
         status: "draft",
         due_date: due_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+        billing_type,
       })
       .select()
       .single();
@@ -111,7 +134,7 @@ export async function POST(request: NextRequest) {
     }
 
     await supabase.rpc("log_activity", {
-      p_user_id: user.id,
+      p_user_id: user.uuid,
       p_action: "created",
       p_entity_type: "invoice",
       p_entity_id: invoice.id,
@@ -155,14 +178,14 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: profile } = await supabase.from("profiles").select("firm_id, role").eq("id", user.id).single();
+    const { data: profile } = await supabase.from("profiles").select("firm_id, role").eq("id", user.uuid).single();
     const firmId = profile?.firm_id;
-    const isOwner = ["owner", "partner"].includes(profile?.role || "");
+    const isOwner = ["owner", "partner", "super_admin"].includes(profile?.role || "");
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
@@ -176,7 +199,7 @@ export async function GET(request: NextRequest) {
     if (isOwner && firmId) {
       query = query.eq("firm_id", firmId);
     } else {
-      query = query.eq("issued_by", user.id);
+      query = query.eq("issued_by", user.uuid);
     }
 
     if (status) {

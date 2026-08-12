@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 import { createOrder } from "@/lib/payments/razorpay";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -28,7 +27,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.id).single();
+    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.uuid).single();
     const firmId = profile?.firm_id;
 
     const { data: invoiceCheck } = await supabase

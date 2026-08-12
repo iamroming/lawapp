@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
-async function checkSuperAdmin(supabase: any) {
-  const { data: { user } } = await supabase.auth.getUser();
+async function checkSuperAdmin(request: NextRequest, supabase: any) {
+  const user = await verifySessionFromRequest(request);
   if (!user) return { error: "Unauthorized", status: 401 };
-  const { data } = await supabase.from("super_admins").select("id").eq("id", user.id).single();
+  const { data } = await supabase.from("super_admins").select("id").eq("id", user.uuid).single();
   if (!data) return { error: "Forbidden", status: 403 };
   return { user };
 }
@@ -14,7 +15,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createClient();
-  const auth = await checkSuperAdmin(supabase);
+  const auth = await checkSuperAdmin(request, supabase);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const { id } = await params;

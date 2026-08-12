@@ -1,0 +1,249 @@
+======================================================================
+       FINAL QA BUG REPORT — CASEFILES APP (ROUND 4)
+======================================================================
+Date: August 7, 2026
+Tested As: New User (Complete Fresh Experience)
+Build: PASSED (Next.js 16.2.10, 208 pages)
+Previously Fixed: 121 bugs (3 rounds)
+New Bugs Found: 85
+
+======================================================================
+CRITICAL BUGS (Security / Data Leak / Crash)
+======================================================================
+
+#1 Clients API Cross-Tenant Data Access (IDOR)
+  File: src/app/api/clients/[id]/route.ts:14-19,59-66,92-99
+  Bug: GET/PUT/DELETE by id without firm_id filter. Owner of Firm A
+       can read/update/delete any client from Firm B.
+  Impact: Complete cross-tenant data breach on clients.
+
+#2 Super Admin Cross-Firm Queries Blocked by RLS
+  File: All super-admin/* pages
+  Bug: firm-isolation RLS policies restrict rows to user's firm_id.
+       Super admin only sees their own firm's data, not platform-wide.
+  Impact: Super admin dashboard is non-functional.
+
+#3 Super Admin Can Escalate Privileges
+  File: src/app/(super-admin)/super-admin/users/[id]/page.tsx:140
+  Bug: Role Select includes "super_admin" option. Any super admin can
+       promote any user to super admin.
+  Impact: Privilege escalation. Compromised account creates more admins.
+
+#4 Super Admin Can Deactivate Other Super Admins
+  File: src/app/(super-admin)/super-admin/users/[id]/page.tsx:62-67
+  Bug: No guard against deactivating super admins.
+  Impact: Super admin can lock out all other super admins.
+
+#5 Case Delete Cascading Missing firm_id
+  File: src/app/(dashboard)/cases/[id]/page.tsx:239-242
+  Bug: Four cascading soft-deletes have no .eq("firm_id", ...) filter.
+  Impact: If RLS is misconfigured, any user can delete any firm's data.
+
+#6 Dashboard Ecourts/Alerts Broken firm_id Scoping
+  File: src/app/(dashboard)/dashboard/page.tsx:200-203,256
+  Bug: Supabase .eq() doesn't support dot notation on joined tables.
+       Filters like "case.firm_id" are silently ignored.
+  Impact: Ecourts count and alerts show data from ALL firms.
+
+#7 Billing Pages Module-Level Supabase Client
+  Files: billing/new/page.tsx:12, billing/outstanding/page.tsx:19
+  Bug: createClient() at module scope in "use client" components.
+       Auth state goes stale across requests.
+  Impact: Stale auth can show wrong data or cause auth failures.
+
+#8 Billing Clients/Cases No firm_id Scoping
+  Files: billing/new/page.tsx:50-53, billing/outstanding/page.tsx:63-66
+  Bug: Clients and cases fetched without firm_id filter.
+  Impact: Dropdowns show ALL clients/cases across ALL firms.
+
+======================================================================
+HIGH BUGS (Functional / Data Integrity)
+======================================================================
+
+#9 Cases API No Role Check on PUT/DELETE
+    File: src/app/api/cases/[id]/route.ts:59,83
+    Bug: Any user can update or delete any case in the firm.
+    Impact: Employees can modify cases they aren't assigned to.
+
+#10 Cases API PUT No client_id Firm Validation
+    File: src/app/api/cases/[id]/route.ts:43-51
+    Bug: New client_id not validated for firm ownership on update.
+    Impact: Case can be reassigned to another firm's client.
+
+#11 Invoices API case_id Not Validated for Firm
+    File: src/app/api/invoices/route.ts:87
+    Bug: case_id inserted without verifying firm ownership.
+    Impact: Cross-tenant invoice-to-case linkage.
+
+#12 Invoices API amount Not Validated as Number
+    File: src/app/api/invoices/route.ts:29
+    Bug: String amounts pass validation ("100" <= 0 is false).
+    Impact: Financial calculations corrupted.
+
+#13 Expenses API case_id/client_id No Firm Validation
+    File: src/app/api/expenses/route.ts:89-103,140-137
+    Bug: case_id and client_id inserted without firm ownership check.
+    Impact: Cross-tenant foreign key injection.
+
+#14 Subscriptions API GET Queries Wrong Column
+    File: src/app/api/subscriptions/route.ts:64
+    Bug: eq("user_id", profile.firm_id) filters by firm_id value
+         instead of firm owner's user_id.
+    Impact: Returns wrong user's subscription data.
+
+#15 Payments verify planSlug Not Validated
+    File: src/app/api/payments/verify/route.ts:63
+    Bug: Any string accepted as planSlug. No validation against PLANS.
+    Impact: Attacker can claim enterprise plan without paying.
+
+#16 Payments verify billingCycle Not Validated
+    File: src/app/api/payments/verify/route.ts:69
+    Bug: Any string accepted. "annual" gives 12 months for monthly price.
+    Impact: Billing cycle manipulation possible.
+
+#17 AI Research Topic Filter Broken
+    File: src/app/api/ai/research/route.ts:43
+    Bug: act/section params destructured but never passed to function.
+    Impact: Topic dropdown has zero effect on results.
+
+#18 AI Drafting Imports Server Code to Client
+    File: src/app/(dashboard)/ai/drafting/page.tsx:22-23
+    Bug: Imports from @/lib/ai/drafting which imports AI_API_KEY.
+    Impact: Server secret bundled into client JS.
+
+#19 AI Summarize Uses Wrong Endpoint
+    File: src/app/(dashboard)/ai/summarize/page.tsx:39
+    Bug: Calls /api/ai/analyze instead of /api/ai/summarize.
+    Impact: Wrong AI prompt, usage tracked under wrong category.
+
+#20 Case Create No Null Guard on User
+    File: src/app/(dashboard)/cases/new/page.tsx:172-174
+    Bug: If user is null, firm_id is undefined in insert.
+    Impact: Case created with no firm association.
+
+#21 Client Create No Null Guard on User
+    File: src/app/(dashboard)/clients/new/page.tsx:86-88
+    Bug: Same pattern — user null = undefined firm_id.
+    Impact: Client created with no firm association.
+
+#22 Case Delete No Error Handling on Cascading
+    File: src/app/(dashboard)/cases/[id]/page.tsx:239-242
+    Bug: Four cascading updates with no error capture.
+    Impact: Partial deletion leaves orphaned records silently.
+
+#23 Subscription Free Plan Dead Code
+    File: src/app/api/subscriptions/route.ts:113
+    Bug: planSlug === "free" unreachable (not in PLANS).
+    Impact: Free plan activation path non-functional.
+
+#24 Expenses Hard DELETE Instead of Soft Delete
+    File: src/app/api/expenses/route.ts:169
+    Bug: Uses .delete() while all other routes use deleted_at.
+    Impact: Permanent data loss, inconsistent with rest of app.
+
+======================================================================
+MEDIUM BUGS (UX / Behavior / Data)
+======================================================================
+
+#25 Reset Password minLength=6 Contradicts JS minLength=8
+#26 Confirm Email No Input Field When Accessed Directly
+#27 Signup API No try-catch on request.json()
+#28 Signup Loading State Never Reset on Success
+#29 Login Loading State Never Reset on Success
+#30 Google Login 5s Timeout Can Re-enable Mid-Redirect
+#31 Signup Debounce Not Cleared on Unmount
+#32 Reset Password setTimeout Not Cleared on Unmount
+#33 Onboarding Invite Code No Debounce (Fires Per Keystroke)
+#34 Cases/ Clients New Form advance_amount Accepts Negative
+#35 Billing Outstanding 90+ Days Bucket Never Rendered
+#36 Dashboard Ecourts Query Dot Notation Ignored
+#37 Dashboard Alerts Query Dot Notation Ignored
+#38 Calendar Rules/Events No firm_id (localStorage Only)
+#39 Calendar Rules/Events No Auth Check Before Insert
+#40 Subscription getStatusColor Shadows Import
+#41 Settings window.Razorpay TypeScript Error
+#42 Settings/Subscription Razorpay Script Never Cleaned
+#43 Documents Modal Close Doesn't Reset Form State
+#44 Settings Save Preferences No Loading State
+#45 Document Templates No Validation Before Preview
+#46 Subscription Negative Savings Percentage Possible
+#47 AI Hub Research Tab Not Imported/Rendered
+#48 AI Hub Tab Content Unmounts on Switch (State Loss)
+#49 AI Hub Duplicate Usage Fetches on Load
+#50 Super Admin Users N+1 (5 Queries Per User)
+#51 Super Admin Command Center Fetches All Payments
+#52 Super Admin Revenue No Bounds on Queries
+#53 Super Admin 6 Pages No Pagination
+#54 Super Admin Layout No try-catch on Auth Check
+#55 Super Admin Command Center No try-catch on Fetch
+#56 Super Admin Users No Error Handling on Stats
+#57 Super Admin Subscriptions updateStatus Ignores Error
+#58 Super Admin Coupons toggleActive/delete Ignores Error
+#59 Super Admin Settings fetchSettings Ignores Error
+#60 Super Admin Settings Non-Atomic Save
+#61 Super Admin Subscriptions Duplicate user_ids in Bulk
+#62 Super Admin Documents file_url No Null Check
+#63 Super Admin Users Save Button Is No-Op
+#64 Super Admin Cases No Empty State on Filter
+#65 Super Admin Clients Link Goes to Wrong Route
+#66 Super Admin Documents Misleading Delete Text
+#67 Case Detail No firm_id on Cascading Deletes
+#68 API Subscriptions Non-Atomic Check-Then-Insert
+#69 API Payments verify Non-Atomic Check-Then-Insert
+#70 API Documents No Validation on File Metadata
+#71 API Chat No Per-Message Content Length Validation
+#72 API Cases DELETE Doesn't Verify Case Exists
+
+======================================================================
+LOW BUGS (Code Quality / Minor)
+======================================================================
+
+#73 Module-Level Supabase Client in 7+ Pages
+#74 Dashboard Unused Imports
+#75 Dashboard Naive Tomorrow Calculation
+#76 Client Detail escapeHtml + dangerouslySetInnerHTML
+#77 GST Validation Only Checks Length
+#78 Storage Usage User-Scoped Not Firm-Scoped
+#79 generateCaseNumber() Collision Risk
+#80 Password Policy No Lowercase Requirement
+#81 No autocomplete Attributes on Auth Forms
+#82 Password Toggle Buttons No aria-label
+#83 No CSRF Protection on Auth Forms
+#84 confirm-email "Sign Up Again" May Create Duplicates
+
+======================================================================
+SUMMARY
+======================================================================
+
+| Round | Source | Critical | High | Medium | Low | Total |
+|-------|--------|----------|------|--------|-----|-------|
+| 1 | Admin QA | 12 | 18 | 8 | 0 | 38 |
+| 2 | Super Admin QA | 5 | 6 | 20 | 12 | 43 |
+| 3 | Final QA #1 | 10 | 15 | 15 | 0 | 40 |
+| 4 | Final QA #2 | 8 | 16 | 48 | 12 | 84 |
+| **TOTAL** | | **35** | **55** | **91** | **24** | **205** |
+
+======================================================================
+TOP 10 URGENT FIXES
+======================================================================
+
+1. Clients API IDOR (#1) — any owner can read/update/delete any firm's clients
+2. Super admin RLS bypass needed (#2) — super admin can't see platform data
+3. Super admin privilege escalation (#3) — can promote anyone to super admin
+4. Dashboard broken firm scoping (#6) — ecourts/alerts show all firms' data
+5. Billing pages stale auth (#7) — module-level supabase client
+6. Billing no firm scoping (#8) — dropdowns show all firms' data
+7. Cases API no role checks (#9) — any user can update/delete any case
+8. Invoices cross-tenant case_id (#11) — can link to other firm's cases
+9. Subscriptions wrong column (#14) — GET queries by firm_id not user_id
+10. AI research topic filter broken (#17) — dropdown has no effect
+
+======================================================================
+BUILD STATUS: PASSED
+======================================================================
+✓ Compiled successfully in 23.1s
+✓ 208 pages generated
+
+======================================================================
+                         END OF REPORT
+======================================================================

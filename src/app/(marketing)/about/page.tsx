@@ -51,7 +51,7 @@ export default function AboutPage() {
       <section className="bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-20 sm:py-28">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-            About LawXP
+            About CaseFiles
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600">
             We&apos;re building the operating system for Indian law firms — modern software
@@ -66,7 +66,7 @@ export default function AboutPage() {
           <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">Our Story</h2>
           <div className="mt-6 space-y-4 text-gray-600 leading-relaxed">
             <p>
-              LawXP was born from a simple frustration: Indian lawyers were using a patchwork
+              CaseFiles was born from a simple frustration: Indian lawyers were using a patchwork
               of generic tools — spreadsheets, WhatsApp groups, email chains — to manage
               their practices. Nothing was purpose-built for the unique demands of the
               Indian legal system.
@@ -78,9 +78,9 @@ export default function AboutPage() {
               modern technology to an underserved market.
             </p>
             <p>
-              In 2023, they launched LawXP from Mumbai with a simple mission: give Indian
+              In 2023, they launched CaseFiles from Mumbai with a simple mission: give Indian
               lawyers the tools they deserve. Today, over 1,000 lawyers across 15 states
-              trust LawXP to manage their practices, and we&apos;re just getting started.
+              trust CaseFiles to manage their practices, and we&apos;re just getting started.
             </p>
           </div>
         </div>
@@ -177,7 +177,7 @@ export default function AboutPage() {
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <a
-              href="mailto:hello@LawXP.in"
+              href="mailto:hello@CaseFiles.in"
               className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
             >
               Email Us

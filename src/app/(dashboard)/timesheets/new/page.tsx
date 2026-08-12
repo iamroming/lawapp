@@ -8,8 +8,12 @@ import { Select } from "@/components/ui/select";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { dbWrite } from "@/lib/db-write";
+import { useUser } from "@/hooks/use-user";
+import toast from "react-hot-toast";
 
 export default function NewTimesheetPage() {
+  const { user: appUser } = useUser();
   const router = useRouter();
   const supabase = createClient();
   const [cases, setCases] = useState<any[]>([]);
@@ -23,9 +27,19 @@ export default function NewTimesheetPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    supabase.from("cases").select("id, title, case_number").then(({ data }) => {
+    const fetchCases = async () => {
+      if (!appUser) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("firm_id")
+        .eq("id", appUser?.uuid)
+        .single();
+      const query = supabase.from("cases").select("id, title, case_number");
+      if (profile?.firm_id) query.eq("firm_id", profile.firm_id);
+      const { data } = await query;
       if (data) setCases(data);
-    });
+    };
+    fetchCases();
   }, [supabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,16 +47,31 @@ export default function NewTimesheetPage() {
     if (!form.hours) return;
     setSaving(true);
 
-    const { error } = await supabase.from("timesheets").insert({
+    if (!appUser) { setSaving(false); return; }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("firm_id")
+      .eq("id", appUser?.uuid)
+      .single();
+
+    const { error } = await dbWrite("timesheets", "insert", {
       case_id: form.case_id || null,
       description: form.description || null,
       hours: parseFloat(form.hours),
       is_billable: form.is_billable,
       worked_date: form.worked_date,
+      user_id: appUser?.uuid,
+      firm_id: profile?.firm_id || null,
     });
 
     setSaving(false);
-    if (!error) router.push("/timesheets");
+    if (error) {
+      toast.error(error || "Failed to save timesheet");
+      return;
+    }
+    toast.success("Time entry saved");
+    router.push("/timesheets");
   };
 
   const caseOptions = [{ value: "", label: "No case" }, ...cases.map((c) => ({ value: c.id, label: `${c.case_number} - ${c.title}` }))];

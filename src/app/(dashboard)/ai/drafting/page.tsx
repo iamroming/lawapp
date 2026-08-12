@@ -14,13 +14,16 @@ import {
   Plus,
   Trash2,
   Sparkles,
+  Lock,
 } from "lucide-react";
 import {
   LEGAL_DOCUMENT_TYPES,
   INDIAN_JURISDICTIONS,
-} from "@/lib/ai/drafting";
+} from "@/lib/ai/drafting-constants";
 import { downloadLegalDocPDF } from "@/lib/ai/legal-doc-pdf";
 import toast from "react-hot-toast";
+import { useAiUsage } from "@/hooks/use-ai-usage";
+import Link from "next/link";
 
 interface PartyField {
   label: string;
@@ -60,6 +63,7 @@ export default function AIDraftingPage() {
     title: string;
     content: string;
   } | null>(null);
+  const { usage, isAtLimit, isUnlimited, refreshUsage } = useAiUsage();
 
   const handleDocTypeChange = (value: string) => {
     setDocumentType(value);
@@ -119,6 +123,7 @@ export default function AIDraftingPage() {
       const { data } = await res.json();
       setResult(data);
       toast.success("Document drafted successfully!");
+      refreshUsage();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Draft failed");
     } finally {
@@ -278,16 +283,30 @@ export default function AIDraftingPage() {
 
               <Button
                 onClick={handleGenerate}
-                disabled={loading}
+                disabled={loading || isAtLimit}
                 className="w-full"
               >
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : isAtLimit ? (
+                  <Lock className="h-4 w-4 mr-2" />
                 ) : (
                   <Sparkles className="h-4 w-4 mr-2" />
                 )}
-                Generate Document
+                {isAtLimit ? "Limit Reached" : "Generate Document"}
               </Button>
+              {usage && !isUnlimited && (
+                <p className={`text-xs mt-1 ${isAtLimit ? "text-red-600" : "text-[var(--text-secondary)]"}`}>
+                  {usage.used}/{usage.limit} queries used today
+                  {isAtLimit && (
+                    usage.isOwnerOrPartner ? (
+                      <Link href="/subscription" className="ml-2 underline font-medium">Upgrade</Link>
+                    ) : (
+                      <span className="ml-2">Contact owner to upgrade</span>
+                    )
+                  )}
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>

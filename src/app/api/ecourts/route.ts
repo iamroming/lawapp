@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 import { getCaseByCNR } from "@/lib/ecourts/api";
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -23,15 +24,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid CNR format. Must be 4 letters + 12 digits (e.g., DLHC010001232024)" }, { status: 400 });
     }
 
-    // Verify case ownership
+    // Verify case belongs to user's firm
+    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.uuid).single();
+    const firmId = profile?.firm_id || user.uuid;
     const { data: caseData } = await supabase
       .from("cases")
-      .select("id, created_by, assigned_to")
+      .select("id")
       .eq("id", case_id)
+      .eq("firm_id", firmId)
       .single();
 
-    if (!caseData || (caseData.created_by !== user.id && caseData.assigned_to !== user.id)) {
-      return NextResponse.json({ error: "Case not found or access denied" }, { status: 404 });
+    if (!caseData) {
+      return NextResponse.json({ error: "Case not found in your firm" }, { status: 404 });
     }
 
     // Check if CNR already tracked
@@ -72,6 +76,7 @@ export async function POST(request: NextRequest) {
         court_type,
         state,
         district,
+        firm_id: profile?.firm_id || null,
         last_synced_at: caseStatus ? new Date().toISOString() : null,
         last_status: caseStatus?.status || null,
         last_hearing_date: caseStatus?.last_hearing_date || null,
@@ -105,7 +110,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -113,7 +118,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const caseId = searchParams.get("case_id");
 
-    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.id).single();
+    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.uuid).single();
     const firmId = profile?.firm_id;
 
     let query = supabase
@@ -131,6 +136,8 @@ export async function GET(request: NextRequest) {
       } else {
         return NextResponse.json({ data: [] });
       }
+    } else {
+      return NextResponse.json({ data: [] });
     }
 
     const { data, error } = await query.order("created_at", { ascending: false });

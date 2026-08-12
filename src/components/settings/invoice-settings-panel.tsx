@@ -6,8 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Toggle } from "@/components/ui/toggle";
 import { createClient } from "@/lib/supabase/client";
+import { dbWrite } from "@/lib/db-write";
+import { getFirebaseAuth } from "@/lib/firebase/config";
 import { Building, Receipt, Settings } from "lucide-react";
 import toast from "react-hot-toast";
+import { firebaseUidToUuid } from "@/lib/firebase/uid";
 
 export interface InvoiceSettings {
   show_firm_name: boolean;
@@ -52,9 +55,10 @@ export function InvoiceSettingsPanel() {
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const auth = getFirebaseAuth();
+      const user = auth.currentUser;
       if (!user) return;
-      const { data } = await supabase.from("profiles").select("bank_name, bank_account, bank_ifsc, upi_id, invoice_settings").eq("id", user.id).single();
+      const { data } = await supabase.from("profiles").select("bank_name, bank_account, bank_ifsc, upi_id, invoice_settings").eq("id", firebaseUidToUuid(user.uid)).single();
       if (data) {
         if (data.bank_name) setBankName(data.bank_name);
         if (data.bank_account) setBankAccount(data.bank_account);
@@ -72,15 +76,16 @@ export function InvoiceSettingsPanel() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const auth = getFirebaseAuth();
+      const user = auth.currentUser;
       if (!user) return;
-      const { error } = await supabase.from("profiles").update({
+      const { error } = await dbWrite("profiles", "update", {
         bank_name: bankName || null,
         bank_account: bankAccount || null,
         bank_ifsc: bankIfsc || null,
         upi_id: upiId || null,
         invoice_settings: settings,
-      }).eq("id", user.id);
+      }, { id: firebaseUidToUuid(user.uid) });
       if (error) toast.error(error.message);
       else toast.success("Invoice settings saved!");
     } catch {

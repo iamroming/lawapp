@@ -1,4 +1,4 @@
-# LawXP - Legal Practice Management System
+# CaseFiles - Legal Practice Management System
 
 A comprehensive legal practice management application built with Next.js, Supabase, and modern web technologies.
 
@@ -42,7 +42,7 @@ A comprehensive legal practice management application built with Next.js, Supaba
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd LawXP
+cd CaseFiles
 ```
 
 2. Install dependencies:
@@ -120,7 +120,7 @@ See [docs/API.md](docs/API.md) for complete API documentation.
 ## Project Structure
 
 ```
-LawXP/
+CaseFiles/
 ├── src/
 │   ├── app/
 │   │   ├── (admin)/          # Admin routes

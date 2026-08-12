@@ -1,5 +1,5 @@
 {
-  "name": "LawXP",
+  "name": "CaseFiles",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -17,20 +17,32 @@
   "dependencies": {
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.6",
+    "@tiptap/extension-image": "^3.30.0",
+    "@tiptap/extension-link": "^3.30.0",
+    "@tiptap/extension-placeholder": "^3.30.0",
+    "@tiptap/extension-text-align": "^3.30.0",
+    "@tiptap/extension-underline": "^3.30.0",
+    "@tiptap/pm": "^3.30.0",
+    "@tiptap/react": "^3.30.0",
+    "@tiptap/starter-kit": "^3.30.0",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.10.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
+    "firebase": "^12.17.1",
+    "firebase-admin": "^14.2.0",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.24.0",
     "next": "16.2.10",
     "next-intl": "^4.13.2",
     "openai": "^6.47.0",
+    "razorpay": "^2.9.8",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-hot-toast": "^2.6.0",
     "resend": "^6.18.1",
     "tailwind-merge": "^3.6.0",
+    "xlsx": "^0.18.5",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -47,5 +59,8 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "jose": "5.10.0"
   }
 }

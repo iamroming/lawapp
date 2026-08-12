@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileSearch, Loader2, Copy, CheckCircle, AlertCircle, Lightbulb } from "lucide-react";
+import { FileSearch, Loader2, Copy, CheckCircle, AlertCircle, Lightbulb, Lock } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAiUsage } from "@/hooks/use-ai-usage";
+import Link from "next/link";
 
 interface SummaryResult {
   title: string;
@@ -24,6 +26,7 @@ export default function AISummarizePage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SummaryResult | null>(null);
   const [copied, setCopied] = useState(false);
+  const { usage, isAtLimit, isUnlimited, refreshUsage } = useAiUsage();
 
   const handleSummarize = async () => {
     if (!documentText.trim() || documentText.trim().length < 20) {
@@ -33,6 +36,10 @@ export default function AISummarizePage() {
 
     setLoading(true);
     try {
+      // NOTE: Ideally this should call a dedicated /api/ai/summarize endpoint.
+      // The analyze endpoint is reused here because the document_analysis case_type
+      // triggers summarization logic in analyzeCase(). A proper /api/ai/summarize
+      // route should be created to handle this independently.
       const res = await fetch("/api/ai/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -60,6 +67,7 @@ export default function AISummarizePage() {
         strategies: data.suggestedStrategies?.map((s: { title: string }) => s.title) || [],
       });
       toast.success("Document analyzed successfully!");
+      refreshUsage();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Analysis failed");
     } finally {
@@ -100,14 +108,28 @@ export default function AISummarizePage() {
             value={documentText}
             onChange={(e) => setDocumentText(e.target.value)}
           />
-          <Button onClick={handleSummarize} disabled={loading}>
+          <Button onClick={handleSummarize} disabled={loading || isAtLimit}>
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : isAtLimit ? (
+              <Lock className="h-4 w-4 mr-2" />
             ) : (
               <FileSearch className="h-4 w-4 mr-2" />
             )}
-            Analyze Document
+            {isAtLimit ? "Limit Reached" : "Analyze Document"}
           </Button>
+          {usage && !isUnlimited && (
+            <p className={`text-xs mt-1 ${isAtLimit ? "text-red-600" : "text-[var(--text-secondary)]"}`}>
+              {usage.used}/{usage.limit} queries used today
+              {isAtLimit && (
+                usage.isOwnerOrPartner ? (
+                  <Link href="/subscription" className="ml-2 underline font-medium">Upgrade</Link>
+                ) : (
+                  <span className="ml-2">Contact owner to upgrade</span>
+                )
+              )}
+            </p>
+          )}
         </CardContent>
       </Card>
 

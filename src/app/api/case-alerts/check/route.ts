@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 import { getCaseByCNR } from "@/lib/ecourts/api";
 import { sendWhatsAppMessage, formatCaseUpdate } from "@/lib/whatsapp";
 
@@ -13,18 +14,21 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get("authorization");
     const isCronCall = authHeader === `Bearer ${process.env.CRON_SECRET}`;
 
+    let firmId: string | null = null;
+
     if (!isCronCall) {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await verifySessionFromRequest(request);
       if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+      const { data: profile } = await supabase.from("profiles").select("firm_id, role").eq("id", user.uuid).single();
       if (!profile || !["owner", "partner"].includes(profile.role)) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
+      firmId = profile.firm_id || user.uuid;
     }
 
     // Fetch all active alerts with ecourts case info
-    const { data: alerts, error: alertsError } = await supabase
+    let alertQuery = supabase
       .from("case_alerts")
       .select(`
         id,
@@ -35,10 +39,17 @@ export async function POST(request: NextRequest) {
         last_known_status,
         last_known_hearing_date,
         last_known_stage,
-        cases(id, title, case_number, court_name, assigned_to, created_by, client_id),
+        cases!inner(id, title, case_number, court_name, assigned_to, created_by, client_id, firm_id),
         ecourts_cases(id, cnr_number, court_name, court_type)
       `)
       .eq("is_active", true);
+
+    // Scope to firm when called by a user (not cron)
+    if (firmId) {
+      alertQuery = alertQuery.eq("cases.firm_id", firmId);
+    }
+
+    const { data: alerts, error: alertsError } = await alertQuery;
 
     if (alertsError) throw alertsError;
     if (!alerts?.length) {
@@ -175,13 +186,13 @@ export async function POST(request: NextRequest) {
                   const resend = new Resend(process.env.RESEND_API_KEY);
 
                   await resend.emails.send({
-                    from: process.env.EMAIL_FROM || "LawXP <alerts@LawXP.in>",
+                    from: process.env.EMAIL_FROM || "CaseFiles <alerts@CaseFiles.in>",
                     to: emailProfile.email,
                     subject: `Case Alert: ${caseInfo?.case_number || "Unknown"} — ${change.type.replace(/_/g, " ")}`,
                     html: `
                       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                         <div style="background: #2563eb; color: white; padding: 20px; text-align: center;">
-                          <h1 style="margin: 0;">LawXP Case Alert</h1>
+                          <h1 style="margin: 0;">CaseFiles Case Alert</h1>
                         </div>
                         <div style="padding: 20px; background: #f9fafb;">
                           <h2>${change.summary}</h2>
@@ -193,7 +204,7 @@ export async function POST(request: NextRequest) {
                           </div>
                         </div>
                         <div style="padding: 15px; text-align: center; color: #6b7280; font-size: 12px;">
-                          <p>This is an automated alert from LawXP.</p>
+                          <p>This is an automated alert from CaseFiles.</p>
                         </div>
                       </div>
                     `,

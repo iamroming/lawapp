@@ -3,12 +3,15 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getFirebaseAuth } from "@/lib/firebase/config";
+import { signInWithEmailAndPassword, signOut as firebaseSignOut } from "firebase/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Scale, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { firebaseUidToUuid } from "@/lib/firebase/uid";
 
 export default function ClientLoginPage() {
   const [email, setEmail] = useState("");
@@ -17,41 +20,50 @@ export default function ClientLoginPage() {
   const [error, setError] = useState("");
   const router = useRouter();
   const supabase = createClient();
+  const auth = getFirebaseAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { user } = await signInWithEmailAndPassword(auth, email, password);
 
-    if (authError) {
-      setError(authError.message);
+      const { data: portalUser } = await supabase
+        .from("client_portal_users")
+        .select("*")
+        .eq("user_id", firebaseUidToUuid(user.uid))
+        .eq("is_active", true)
+        .single();
+
+      if (!portalUser) {
+        setError("Access denied. This portal is for clients only.");
+        await firebaseSignOut(auth);
+        setLoading(false);
+        return;
+      }
+
+      const idToken = await user.getIdToken();
+      const sessionRes = await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+
+      if (!sessionRes.ok) {
+        setError("Failed to create session");
+        setLoading(false);
+        return;
+      }
+
+      toast.success("Welcome to Client Portal!");
+      router.push("/client/dashboard");
+      router.refresh();
+    } catch {
+      setError("Invalid email or password");
       setLoading(false);
-      return;
     }
-
-    // Check if user is a client
-    const { data: portalUser } = await supabase
-      .from("client_portal_users")
-      .select("*")
-      .eq("user_id", data.user.id)
-      .eq("is_active", true)
-      .single();
-
-    if (!portalUser) {
-      setError("Access denied. This portal is for clients only.");
-      await supabase.auth.signOut();
-      setLoading(false);
-      return;
-    }
-
-    toast.success("Welcome to Client Portal!");
-    router.push("/client/dashboard");
-    router.refresh();
   };
 
   return (
@@ -60,7 +72,7 @@ export default function ClientLoginPage() {
         <div className="text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Scale className="h-10 w-10 text-[var(--text-accent)]" />
-            <span className="font-bold text-2xl">LawXP</span>
+            <span className="font-bold text-2xl">CaseFiles</span>
           </div>
           <h2 className="text-3xl font-bold text-[var(--text-primary)]">Client Portal</h2>
           <p className="mt-2 text-sm text-[var(--text-secondary)]">

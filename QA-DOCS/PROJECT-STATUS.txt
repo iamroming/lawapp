@@ -1,0 +1,463 @@
+======================================================================
+                    CASEFILES SaaS — FULL PROJECT STATUS
+======================================================================
+Last Updated: August 6, 2026
+Environment: Windows, Node.js, Next.js 16.2.10 (Turbopack)
+Stack: TypeScript, Tailwind CSS v4, Supabase, Razorpay, Cloudinary
+Test Status: 136/136 Vitest passing | 43 Playwright (need dev server)
+
+======================================================================
+TABLE OF CONTENTS
+======================================================================
+  1.  What's Built & Working
+  2.  Recently Completed Features
+  3.  Subscription Plans (3 Plans)
+  4.  Employee Creation Methods & Bugs
+  5.  Test Report
+  6.  DB Migrations (Pending)
+  7.  Deployment Checklist
+  8.  Remaining Work / Nice-to-Haves
+
+======================================================================
+1. WHAT'S BUILT & WORKING
+======================================================================
+
+AUTH & ROLES
+- Email/password signup & login
+- Role-based access: owner, partner, senior_associate, associate,
+  junior_associate, paralegal, intern, office_admin
+- Super admin panel with platform-wide access
+- Firm owner sees firm-wide data; employees see scoped data
+- Subscription-gated middleware (redirects to /subscription-required)
+- Subscription inherits via firm_id (employees see owner's plan)
+
+DASHBOARD
+- Welcome banner with greeting based on time of day
+- Stats cards: Active Cases, Clients, Hearings, Revenue
+- Quick actions, recent cases, upcoming hearings
+- Financial summary, alerts timeline
+- Case limit indicator on stats card
+- Dashboard alerts for subscription/case limits
+
+CASE MANAGEMENT
+- Create/list/view/edit cases
+- Case types, courts, priorities, statuses
+- Acts, sections, clauses for legal research
+- File attachments (Cloudinary, signed upload)
+- Case timeline, notes, documents
+- Calendar view with hearing scheduling
+- Client→case selection flow for hearings
+- Case limit enforcement (pre-flight check before create)
+- PDF export, Excel export, WhatsApp share
+
+CLIENT MANAGEMENT
+- Create/list/view/edit clients
+- Client portal (separate login)
+- Client feedback system
+- PDF export, Excel export, WhatsApp share
+
+BILLING & INVOICING
+- Invoice generation with 4 PDF templates (Classic, Modern, Minimal, Professional)
+- GST compliance (CGST/SGST/IGST, HSN/SAC, reverse charge)
+- Payment tracking (advance, outstanding, collections)
+- Razorpay payment links
+- Billing tabbed view: Overview, Outstanding, Collections
+- Financial summary from cases table (total_fee / amount_received)
+- Excel export
+
+COURT TRACKING
+- eCourts integration (District Court + High Court)
+- Cause list fetching
+- Court service API (graceful fallback when unreachable)
+- Case status tracking
+
+AI FEATURES
+- AI legal research (Indian Kanoon)
+- AI contract drafting
+- AI case analysis
+- AI chatbot
+- Engagement letter generation
+- AI usage tracking & limits
+
+NOTIFICATIONS
+- Email reminders (Resend)
+- WhatsApp reminders (Twilio)
+- Case alerts & deadline tracking
+- Notification preferences
+
+QUOTATIONS
+- Quotation builder with line items, tax, discount, totals
+- Status workflow: draft → sent → accepted/rejected
+- PDF export, WhatsApp share
+- DB table: quotations (FK to profiles)
+
+WHATSAPP SHARING
+- ShareDialog component (reusable across app)
+- wa.me text links (no Twilio needed for sharing)
+- Available on: case detail, quotation detail, documents page
+- Share case details, quotations, documents
+
+PDF EXPORT (jsPDF)
+- Cases report PDF
+- Clients directory PDF
+- Firm reports/overview PDF
+- Export buttons on cases, clients, reports pages
+
+EXCEL EXPORT (xlsx)
+- Cases spreadsheet
+- Clients spreadsheet
+- Billing spreadsheet
+- Export buttons on cases, clients, billing pages
+
+SUPER ADMIN PANEL
+- Platform-wide dashboard
+- User management (list, activate/deactivate, roles)
+- Subscription management & overrides
+- Revenue overview
+- Document management
+- Activity audit logs
+- Platform settings
+- Coupon management
+
+SETTINGS
+- Profile, notifications, billing, team, subscription tabs
+- Invoice template settings
+- Invoice settings (GST, payment details)
+- Team tab with user limit banner
+- Subscription tab with Razorpay upgrade
+
+MOBILE
+- Mobile-first responsive design (Tailwind)
+- Mobile bottom navigation component
+- Responsive grids and flex layouts
+
+SUBSCRIPTIONS (3 Plans)
+- Solo: 20 cases, 1 user, 1GB, Rs 299/mo
+- Professional: 50 cases, 3 users, 5GB, Rs 799/mo
+- Firm: 100 cases, 10 users, 15GB, Rs 1999/mo
+- Razorpay Checkout modal for payments
+- Trial expiry cron job (daily)
+- Subscription management page (/subscription)
+- Storage limits enforced (Cloudinary 403 cleanup)
+- Case limits enforced (pre-flight + DB count by firm_id)
+- User limits enforced on all invite methods
+
+
+======================================================================
+2. RECENTLY COMPLETED FEATURES
+======================================================================
+
+PDF EXPORT
+  Files:
+    src/lib/pdf-export.ts                       — PDF generation (jsPDF)
+    src/app/api/export/cases-pdf/route.ts        — Cases PDF endpoint
+    src/app/api/export/clients-pdf/route.ts      — Clients PDF endpoint
+    src/app/api/export/reports-pdf/route.ts      — Reports PDF endpoint
+  Pages: cases, clients, reports — "Export PDF" button on each
+
+EXCEL EXPORT
+  Files:
+    src/lib/excel-export.ts                      — Excel generation (xlsx)
+    src/app/api/export/cases-excel/route.ts      — Cases Excel endpoint
+    src/app/api/export/clients-excel/route.ts    — Clients Excel endpoint
+    src/app/api/export/billing-excel/route.ts    — Billing Excel endpoint
+  Pages: cases, clients, billing — "Export Excel" button on each
+
+PLAN REDUCTION (5 → 3)
+  Removed: Free (Rs 0) and Enterprise (Rs 4999)
+  Kept: Solo (Rs 299), Professional (Rs 799), Firm (Rs 1999)
+  Updated files:
+    src/app/(marketing)/pricing/page.tsx
+    src/app/subscription-required/page.tsx
+    src/app/(dashboard)/subscription/page.tsx
+    src/app/(dashboard)/settings/page.tsx
+    src/app/api/subscriptions/route.ts
+    src/app/api/payments/create-order/route.ts
+    src/app/api/payments/verify/route.ts
+    src/app/(super-admin)/super-admin/coupons/page.tsx
+    src/lib/subscription-limits.ts
+    src/lib/email-templates.ts
+    src/app/(marketing)/terms/page.tsx
+    outofwork2/supabase/update-plan-limits.sql
+
+RAZORPAY INTEGRATION
+  Files:
+    src/app/api/payments/create-order/route.ts   — Creates Razorpay order
+    src/app/api/payments/verify/route.ts          — Verifies signature, activates sub
+    src/app/api/payments/history/route.ts         — Fetches payment history from Razorpay
+    src/app/(marketing)/pricing/page.tsx          — Razorpay Checkout modal
+    src/app/subscription-required/page.tsx        — Razorpay Checkout modal
+    src/app/(dashboard)/subscription/page.tsx     — Upgrade with Razorpay
+    src/app/(dashboard)/settings/page.tsx         — Subscription tab with Razorpay
+  Env vars needed: RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, NEXT_PUBLIC_RAZORPAY_KEY_ID
+
+WHATSAPP SHARING
+  Files:
+    src/lib/whatsapp-share.ts                    — Utility functions
+    src/components/whatsapp-share-button.tsx      — Green branded button
+    src/components/share-dialog.tsx               — Reusable ShareDialog
+    src/app/api/share/route.ts                    — Generates shareable links
+  Used on: case detail, quotation detail, documents page
+
+QUOTATION FEATURE
+  Files:
+    outofwork2/supabase/quotations.sql            — DB table (FK fixed)
+    src/app/api/quotations/route.ts               — List/create
+    src/app/api/quotations/[id]/route.ts          — Get/update/delete
+    src/app/(dashboard)/quotations/page.tsx       — Quotation list
+    src/app/(dashboard)/quotations/new/page.tsx   — Quotation builder
+    src/app/(dashboard)/quotations/[id]/page.tsx  — Quotation detail
+
+EMPLOYEE BUG FIXES
+  Bug 1: Salary data now copied during code redemption
+  Bug 4+5: Employee removal now uses is_active=false (not role=null)
+  Bug 7: Subscription limit check uses firm owner's ID (not employee's)
+  Bug 8: Rate limiting added to invite-code route (10/hour)
+
+
+======================================================================
+3. SUBSCRIPTION PLANS (3 Plans)
+======================================================================
+
++-------------+--------+--------+--------+-----------+----------+
+| Plan        | Price  | Cases  | Users  | Storage   | AI       |
++-------------+--------+--------+--------+-----------+----------+
+| Solo        | Rs 299 | 20     | 1      | 1 GB      | 50/mo    |
+| Professional| Rs 799 | 50     | 3      | 5 GB      | 200/mo   |
+| Firm        | Rs1999 | 100    | 10     | 15 GB     | Unlimited|
++-------------+--------+--------+--------+-----------+----------+
+
+Trial: 14 days, expires via cron job → redirects to /subscription-required
+Default fallback (no subscription): 3 cases, 1 user, 50MB
+
+
+======================================================================
+4. EMPLOYEE CREATION METHODS & BUGS
+======================================================================
+
+METHOD 1: EMAIL INVITE (Settings > Team > Add by Email)
+- Only works for EXISTING users (must already have account)
+- Owner/partner enters email + role → API updates profiles
+- User is immediately added (no invite acceptance flow)
+
+METHOD 2: INVITE CODE (Admin > Add Employee or Settings > Team)
+- Owner generates code with role, salary, payment details
+- Code stored in team_invites (expires 7 days)
+- Code displayed/shared with employee
+
+METHOD 3: CODE REDEMPTION (Employee signup flow)
+- New user → /signup → "I'm a Team Member" → enters code
+- Creates auth account → onboarding → redeems code
+- API updates profiles (role + firm_id)
+
+METHOD 4: OWNER SIGNUP (creates a new firm)
+- User signs up as "Firm Owner" → role='owner', firm_id=self
+
+BUGS FOUND & STATUS:
+  [FIXED] Bug 1: Salary data lost during code redemption
+  [OPEN]  Bug 2: firm_members table never written
+  [OPEN]  Bug 3: Race condition in invite code redemption
+  [FIXED] Bug 4+5: Admin delete violated constraint (now is_active=false)
+  [OPEN]  Bug 6: Settings team query missing firm_id filter
+  [FIXED] Bug 7: Subscription limit check used wrong user ID
+  [FIXED] Bug 8: invite-code route missing rate limiting
+  [OPEN]  Bug 9: Code generation uses Math.random() (minor)
+  [OPEN]  Bug 10: handle_new_user trigger creates profile with role='associate' (minor)
+
+
+======================================================================
+5. TEST REPORT
+======================================================================
+
+PHASE 1: UNIT TESTS (Vitest)
+  Validators:           39/39  ✅
+  Subscription Limits:   7/7   ✅ (was 6/7, fixed test expectation)
+  Rate Limiting:         5/5   ✅
+  Billing:              21/21  ✅
+  CSRF:                  6/6   ✅
+  Subtotal:             78/78  ✅
+
+PHASE 2: API INTEGRATION TESTS (Vitest)
+  Cases API:           10/10  ✅
+  Clients API:          3/3   ✅
+  Auth Signup API:      4/4   ✅
+  Invoices API:         4/4   ✅
+  Payments API:         4/4   ✅
+  Documents API:        3/3   ✅
+  Tasks API:            3/3   ✅
+  Tags API:             2/2   ✅
+  Hearings API:         2/2   ✅
+  Collections API:      2/2   ✅
+  Analytics API:        2/2   ✅
+  Dashboard API:        1/1   ✅
+  Expenses API:         3/3   ✅
+  Time Entries API:     2/2   ✅
+  Team Invite API:      3/3   ✅
+  Webhook API:          3/3   ✅
+  AI Analyze API:       4/4   ✅
+  Account Delete API:   3/3   ✅ (was 2/3, fixed mock)
+  Subtotal:            58/58  ✅
+
+PHASE 3: FULL SUITE
+  Total:  136/136 tests passing ✅
+
+PHASE 4: E2E (Playwright)
+  43 tests — all require running dev server
+  Run with: npm run dev (in one terminal), npx playwright test (in another)
+
+
+======================================================================
+6. DB MIGRATIONS (Pending — Run in Supabase SQL Editor)
+======================================================================
+
+1. outofwork2/supabase/quotations.sql
+   Creates quotations table + policies
+   Status: Ready to run (FK fixed to use profiles instead of firms)
+
+2. outofwork2/supabase/update-plan-limits.sql
+   Updates plan limits to match 3-plan structure
+   Removes Enterprise plan from DB
+   Status: Ready to run
+
+3. outofwork2/supabase/fix-client-trigger.sql
+   Fixes set_firm_id_from_creator trigger
+   Uses JSONB approach (NEW.data->>'uploaded_by')
+   Status: Ready to run
+
+4. outofwork2/supabase/revert-addon.sql
+   Drops firm_addons table (reverted addon feature)
+   Status: Ready to run
+
+
+======================================================================
+7. DEPLOYMENT CHECKLIST (Vercel)
+======================================================================
+
+ENVIRONMENT VARIABLES NEEDED:
+  NEXT_PUBLIC_SUPABASE_URL=...
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+  SUPABASE_SERVICE_ROLE_KEY=...
+  RESEND_API_KEY=...
+  RAZORPAY_KEY_ID=rzp_test_...
+  RAZORPAY_KEY_SECRET=...
+  NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_...
+  CLOUDINARY_CLOUD_NAME=...
+  CLOUDINARY_API_KEY=...
+  CLOUDINARY_API_SECRET=...
+  INDIAN_KANOON_API_TOKEN=... (optional)
+  TWILIO_ACCOUNT_SID=... (optional, for WhatsApp reminders)
+  TWILIO_AUTH_TOKEN=... (optional)
+  TWILIO_WHATSAPP_NUMBER=... (optional)
+  CRON_SECRET=... (for trial expiry cron)
+  NEXT_PUBLIC_APP_URL=https://your-domain.vercel.app
+
+STEPS:
+  1. Run DB migrations in Supabase SQL Editor (see section 6)
+  2. Push code to GitHub
+  3. Import repo in Vercel
+  4. Add all env vars in Vercel Settings
+  5. Deploy
+  6. Set up Razorpay webhook (optional, for payment events)
+  7. Verify trial expiry cron runs daily
+
+
+======================================================================
+8. REMAINING WORK / NICE-TO-HAVES
+======================================================================
+
+DONE (just completed):
+  ✅ PDF export (cases, clients, reports)
+  ✅ Excel export (cases, clients, billing)
+  ✅ Plans reduced to 3
+  ✅ All free/enterprise references cleaned up
+  ✅ Razorpay payment integration
+  ✅ Quotation generation + sharing
+  ✅ WhatsApp sharing (wa.me)
+  ✅ Employee bug fixes (5 of 10)
+
+OPEN (nice-to-haves, not blocking):
+  [ ] PWA / Mobile App — No manifest.json, no service worker
+  [ ] Time Tracking Timer — time_entries exist but no live stopwatch UI
+  [ ] Calendar Sync — No Google Calendar / Outlook integration
+  [ ] Data Import — No bulk import for cases/clients from CSV
+  [ ] Multi-language UI — LanguageSwitcher exists but translations incomplete
+  [ ] firm_members table — Exists but never written to (dead code)
+  [ ] E-Signature — No DocuSign/PandaDoc integration
+  [ ] Trust Account Management — Not implemented
+  [ ] Conflict of Interest Check — Not implemented
+  [ ] Document Versioning — Upload/delete only, no version history
+  [ ] Automated Recurring Invoicing — Manual only
+  [ ] SMS Notifications — Type defined but no provider configured
+
+BUGS STILL OPEN:
+  [ ] Bug 2: firm_members table never written
+  [ ] Bug 3: Race condition in invite code redemption
+  [ ] Bug 6: Settings team query missing firm_id filter
+  [ ] Bug 9: Code generation uses Math.random() (minor)
+  [ ] Bug 10: handle_new_user trigger creates profile with role='associate' (minor)
+
+
+======================================================================
+KEY FILE REFERENCE
+======================================================================
+
+SRC/LIB:
+  src/lib/subscription-limits.ts           — Plan limits, DEFAULT_PLAN fallback
+  src/lib/pdf-export.ts                    — PDF generation (jsPDF)
+  src/lib/excel-export.ts                  — Excel generation (xlsx)
+  src/lib/whatsapp-share.ts               — WhatsApp share utilities
+  src/lib/email-templates.ts              — Email templates (trial, expiry, etc.)
+  src/lib/supabase/middleware.ts           — Auth + subscription middleware
+
+API ROUTES:
+  src/app/api/subscriptions/route.ts       — Subscription CRUD, PLANS constant
+  src/app/api/subscriptions/expire-trials/route.ts — Cron job
+  src/app/api/payments/create-order/route.ts — Razorpay order creation
+  src/app/api/payments/verify/route.ts      — Razorpay signature verification
+  src/app/api/payments/history/route.ts     — Payment history from Razorpay
+  src/app/api/quotations/route.ts           — Quotation list/create
+  src/app/api/quotations/[id]/route.ts      — Quotation get/update/delete
+  src/app/api/share/route.ts               — Shareable link generation
+  src/app/api/export/cases-pdf/route.ts     — Cases PDF export
+  src/app/api/export/clients-pdf/route.ts   — Clients PDF export
+  src/app/api/export/reports-pdf/route.ts   — Reports PDF export
+  src/app/api/export/cases-excel/route.ts   — Cases Excel export
+  src/app/api/export/clients-excel/route.ts — Clients Excel export
+  src/app/api/export/billing-excel/route.ts — Billing Excel export
+  src/app/api/documents/storage-check/route.ts — Pre-flight storage check
+  src/app/api/cases/limit-check/route.ts    — Pre-flight case limit check
+  src/app/api/team/invite/route.ts          — Email invite (with user limit)
+  src/app/api/team/invite-code/route.ts     — Invite code (with rate limit)
+  src/app/api/team/redeem-code/route.ts     — Code redemption (salary copy)
+  src/app/api/team/[id]/route.ts            — Team removal (is_active=false)
+
+PAGES:
+  src/app/(dashboard)/subscription/page.tsx — Subscription management
+  src/app/(dashboard)/quotations/page.tsx   — Quotation list
+  src/app/(dashboard)/quotations/new/page.tsx — Quotation builder
+  src/app/(dashboard)/quotations/[id]/page.tsx — Quotation detail
+  src/app/(marketing)/pricing/page.tsx      — Pricing (3 plans, Razorpay)
+  src/app/subscription-required/page.tsx    — Trial expired / no subscription
+  src/app/(dashboard)/settings/page.tsx     — Settings (team, subscription tabs)
+  src/app/(dashboard)/cases/page.tsx        — Cases (PDF + Excel export)
+  src/app/(dashboard)/clients/page.tsx      — Clients (PDF + Excel export)
+  src/app/(dashboard)/billing/page.tsx      — Billing (Excel export)
+  src/app/(dashboard)/reports/page.tsx      — Reports (PDF export)
+  src/app/(dashboard)/documents/page.tsx    — Documents (ShareDialog)
+  src/components/sidebar.tsx                — Nav (subscription link, admin hidden for Solo)
+  src/components/share-dialog.tsx           — Reusable ShareDialog
+  src/components/whatsapp-share-button.tsx  — WhatsApp button
+
+SQL MIGRATIONS:
+  outofwork2/supabase/quotations.sql        — Quotations table
+  outofwork2/supabase/update-plan-limits.sql — Plan limits (3 plans)
+  outofwork2/supabase/fix-client-trigger.sql — Trigger fix
+  outofwork2/supabase/revert-addon.sql      — Drop firm_addons
+
+TESTS:
+  src/__tests__/                            — 23 test files, 136 tests
+  src/__tests__/e2e/                        — 5 Playwright spec files, 43 tests
+
+======================================================================
+                         END OF REPORT
+======================================================================

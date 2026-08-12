@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { formatDate, formatCurrency } from "@/lib/utils"
+import { useUser } from "@/hooks/use-user";
 
 interface CaseDetail {
   id: string
@@ -52,6 +53,7 @@ interface Payment {
 }
 
 export default function ClientCaseDetailPage() {
+  const { user: appUser } = useUser();
   const params = useParams()
   const router = useRouter()
   const id = params.id as string
@@ -65,14 +67,13 @@ export default function ClientCaseDetailPage() {
   useEffect(() => {
     async function loadCase() {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
+        if (!appUser) return
 
         const { data: caseInfo } = await supabase
           .from("cases")
           .select("*")
           .eq("id", id)
-          .eq("client_id", user.id)
+          .eq("client_id", appUser?.uuid)
           .single()
 
         if (!caseInfo) {

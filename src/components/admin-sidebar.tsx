@@ -20,7 +20,8 @@ import {
   IndianRupee,
   Sliders,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { getFirebaseAuth } from "@/lib/firebase/config";
+import { signOut as firebaseSignOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
 const adminNav = [
@@ -36,10 +37,10 @@ export function AdminSidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = createClient();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await firebaseSignOut(getFirebaseAuth());
+    await fetch("/api/auth/session", { method: "DELETE" });
     router.push("/login");
     router.refresh();
   };

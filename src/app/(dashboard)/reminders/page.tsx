@@ -22,6 +22,7 @@ import {
   Send,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useUser } from "@/hooks/use-user";
 
 interface ScheduledReminder {
   id: string;
@@ -37,6 +38,7 @@ interface ScheduledReminder {
 }
 
 export default function RemindersPage() {
+  const { user: appUser } = useUser();
   const [reminders, setReminders] = useState<ScheduledReminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -74,17 +76,16 @@ export default function RemindersPage() {
   };
 
   const fetchCasesAndClients = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!appUser) return;
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("role, firm_id")
-      .eq("id", user.id)
+      .eq("id", appUser?.uuid)
       .single();
 
     const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
-    const firmId = profile?.firm_id || user.id;
+    const firmId = profile?.firm_id || appUser?.uuid;
 
     const casesQuery = supabase.from("cases").select("id, case_number, title").is("deleted_at", null);
     const clientsQuery = supabase.from("clients").select("id, full_name, phone").is("deleted_at", null);
@@ -93,8 +94,8 @@ export default function RemindersPage() {
       casesQuery.eq("firm_id", firmId);
       clientsQuery.eq("firm_id", firmId);
     } else {
-      casesQuery.or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`);
-      clientsQuery.eq("created_by", user.id);
+      casesQuery.or(`assigned_to.eq.${appUser?.uuid},created_by.eq.${appUser?.uuid}`);
+      clientsQuery.eq("created_by", appUser?.uuid);
     }
 
     const [casesRes, clientsRes] = await Promise.all([casesQuery, clientsQuery]);

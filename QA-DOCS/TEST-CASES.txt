@@ -1,0 +1,774 @@
+======================================================================
+          TEST CASES — CASEFILES LAW PRACTICE MANAGEMENT APP
+======================================================================
+Total: 200 test cases across 20 modules
+
+======================================================================
+1. AUTHENTICATION & SIGNUP
+======================================================================
+
+TC-AUTH-001: New user signup with valid data
+  Input: name, email, password (8+ chars, uppercase, number)
+  Expected: Account created, confirmation email sent
+  API: POST /api/auth/signup
+
+TC-AUTH-002: Signup with existing email
+  Input: email already registered
+  Expected: Error "Email already in use"
+  API: POST /api/auth/signup
+
+TC-AUTH-003: Signup with weak password
+  Input: password "123456"
+  Expected: Error "Password must be 8+ chars with uppercase and number"
+  API: POST /api/auth/signup
+
+TC-AUTH-004: Login with valid credentials
+  Input: registered email + correct password
+  Expected: Session created, redirect to /dashboard
+  API: Supabase Auth
+
+TC-AUTH-005: Login with wrong password
+  Input: registered email + wrong password
+  Expected: Error "Invalid credentials"
+
+TC-AUTH-006: Password reset flow
+  Input: registered email on /reset-password
+  Expected: Reset email sent, link works, password updated
+
+TC-AUTH-007: Access protected route without session
+  Input: No auth cookie
+  Expected: Redirect to /login
+
+TC-AUTH-008: Access dashboard with expired subscription
+  Input: Valid session, no active subscription
+  Expected: Redirect to /subscription-required
+
+TC-AUTH-009: Account deletion
+  Input: Delete account request
+  Expected: User removed from auth.users, profile deleted
+
+TC-AUTH-010: Rate limiting on signup
+  Input: 10 signup attempts in 1 minute from same IP
+  Expected: Rate limit error after 5 attempts
+
+======================================================================
+2. SUBSCRIPTION & PAYMENTS
+======================================================================
+
+TC-SUB-001: View subscription plans
+  Input: Visit /subscription
+  Expected: 4 plans shown (Solo, Professional, Firm, Enterprise)
+
+TC-SUB-002: Toggle billing cycle
+  Input: Click Monthly/Annual toggle
+  Expected: Prices update (annual shows 17% savings)
+
+TC-SUB-003: Create Razorpay order
+  Input: Click "Upgrade" on Professional plan
+  Expected: POST /api/payments/create-order returns orderId + amount
+
+TC-SUB-004: Complete payment successfully
+  Input: Razorpay checkout → pay → verify
+  Expected: Subscription activated, status "active"
+
+TC-SUB-005: Payment verification with invalid signature
+  Input: Tampered razorpay_signature
+  Expected: Error "Payment verification failed"
+
+TC-SUB-006: Check subscription limits
+  Input: User on Solo plan tries to create 21st case
+  Expected: "Case limit reached. Upgrade your plan."
+
+TC-SUB-007: Employee sees owner's subscription
+  Input: Employee logs in
+  Expected: Sees owner's plan limits, not their own
+
+TC-SUB-008: Subscription expiry
+  Input: Subscription past expires_at date
+  Expected: Redirect to /subscription-required
+
+TC-SUB-009: Upgrade plan mid-cycle
+  Input: Solo → Professional
+  Expected: Prorated charge, new limits apply immediately
+
+TC-SUB-010: Storage limit check
+  Input: Upload file when storage at 99%
+  Expected: Warning at 80%, blocked at 100%
+
+======================================================================
+3. COUPON SYSTEM
+======================================================================
+
+TC-COUPON-001: Validate valid coupon
+  Input: POST /api/coupons/validate { code: "SAVE30" }
+  Expected: { valid: true, discount_type: "percent", discount_value: 30 }
+
+TC-COUPON-002: Validate expired coupon
+  Input: Coupon with valid_until in past
+  Expected: { valid: false, error: "Coupon has expired" }
+
+TC-COUPON-003: Validate coupon at max uses
+  Input: Coupon with current_uses >= max_uses
+  Expected: { valid: false, error: "Usage limit reached" }
+
+TC-COUPON-004: Validate coupon already used by user
+  Input: User tries coupon they already used (max_per_user=1)
+  Expected: { valid: false, error: "You have already used this coupon" }
+
+TC-COUPON-005: Validate billing cycle restriction
+  Input: Monthly-only coupon, user on annual billing
+  Expected: { valid: false, error: "Only valid for monthly billing" }
+
+TC-COUPON-006: Validate plan restriction
+  Input: Solo-only coupon, user on Professional plan
+  Expected: { valid: false, error: "Only valid for Solo plan" }
+
+TC-COUPON-007: Apply 30% discount coupon
+  Input: SAVE30 on Professional ₹799
+  Expected: Razorpay order for ₹559
+
+TC-COUPON-008: Apply fixed ₹500 discount
+  Input: FLAT500 on Solo ₹299
+  Expected: Price capped at ₹0 (free)
+
+TC-COUPON-009: Apply free access coupon
+  Input: FRIEND2026 (free, max_uses=1)
+  Expected: Subscription activated, no Razorpay
+
+TC-COUPON-010: Second user tries single-use coupon
+  Input: User B tries code User A already used
+  Expected: "You have already used this coupon"
+
+TC-COUPON-011: Super admin creates coupon
+  Input: POST /api/admin/coupons with all fields
+  Expected: Coupon created in coupon_codes table
+
+TC-COUPON-012: Coupon discount shows on plan cards
+  Input: Apply coupon on /subscription page
+  Expected: Prices show strikethrough + discounted price
+
+TC-COUPON-013: Remove applied coupon
+  Input: Click X on applied coupon badge
+  Expected: Original prices restored
+
+TC-COUPON-014: Coupon re-validates on billing toggle
+  Input: Apply monthly-only coupon, switch to annual
+  Expected: Coupon removed, error shown
+
+TC-COUPON-015: Create coupon with max_per_user=1
+  Input: Super admin creates single-use-per-user coupon
+  Expected: Each user can use it exactly once
+
+======================================================================
+4. CASES MANAGEMENT
+======================================================================
+
+TC-CASE-001: Create new case
+  Input: POST /api/cases with title, client_id, court_name
+  Expected: Case created with auto-generated case_number
+
+TC-CASE-002: List cases (owner view)
+  Input: Owner fetches cases
+  Expected: All firm cases returned
+
+TC-CASE-003: List cases (employee view)
+  Input: Employee fetches cases
+  Expected: Only assigned + created cases returned
+
+TC-CASE-004: Case limit check
+  Input: Solo plan (20 cases), create 21st
+  Expected: Error "Case limit reached"
+
+TC-CASE-005: Update case status
+  Input: PATCH /api/cases/[id] { status: "won" }
+  Expected: Status updated, notification sent
+
+TC-CASE-006: Assign team member
+  Input: POST /api/cases/team { case_id, employee_id }
+  Expected: Team member added, notification sent
+
+TC-CASE-007: Remove team member
+  Input: DELETE /api/cases/team?id=X
+  Expected: Team member removed
+
+TC-CASE-008: Cross-firm case access denied
+  Input: User A tries to access User B's case
+  Expected: 404 "Case not found"
+
+TC-CASE-009: Search cases
+  Input: Search by case number or title
+  Expected: Matching cases returned
+
+TC-CASE-010: Delete case (soft delete)
+  Input: DELETE /api/cases/[id]
+  Expected: deleted_at set, case hidden from list
+
+======================================================================
+5. CLIENTS MANAGEMENT
+======================================================================
+
+TC-CLIENT-001: Create new client
+  Input: POST /api/clients with name, email, phone
+  Expected: Client created with firm_id
+
+TC-CLIENT-002: Client conflict check
+  Input: Check if opposing party is existing client
+  Expected: Conflict warning if match found
+
+TC-CLIENT-003: Add client communication
+  Input: POST /api/clients/communications
+  Expected: Communication record created
+
+TC-CLIENT-004: Client feedback
+  Input: POST /api/clients/feedback with rating 1-5
+  Expected: Feedback saved
+
+TC-CLIENT-005: Cross-firm client access denied
+  Input: User A tries to access User B's client
+  Expected: 404 "Client not found"
+
+TC-CLIENT-006: Client tags
+  Input: Assign tag to client
+  Expected: Tag visible on client card
+
+TC-CLIENT-007: Client search
+  Input: Search by name or email
+  Expected: Matching clients returned
+
+TC-CLIENT-008: Edit client
+  Input: PUT /api/clients/[id]
+  Expected: Client updated
+
+TC-CLIENT-009: Client portal access
+  Input: POST /api/client-portal to invite client
+  Expected: Portal user created, invite sent
+
+TC-CLIENT-010: Client portal login
+  Input: Client logs in at /client-login
+  Expected: Client sees own cases, invoices, documents
+
+======================================================================
+6. CALENDAR & HEARINGS
+======================================================================
+
+TC-CAL-001: Create hearing
+  Input: POST /api/hearings with case_id, date, court
+  Expected: Hearing created, reminders scheduled
+
+TC-CAL-002: View upcoming hearings
+  Input: GET /api/hearings
+  Expected: Hearings for firm cases returned
+
+TC-CAL-003: Calendar export PDF
+  Input: GET /api/export/calendar-pdf
+  Expected: PDF file downloaded
+
+TC-CAL-004: Calendar export Excel
+  Input: GET /api/export/calendar-excel
+  Expected: Excel file downloaded
+
+TC-CAL-005: Calendar export ICS
+  Input: GET /api/export/calendar-ics
+  Expected: ICS file for Google Calendar
+
+TC-CAL-006: Auto-reminder at 7 days
+  Input: Hearing 7 days away
+  Expected: Email reminder sent
+
+TC-CAL-007: Auto-reminder at 1 day
+  Input: Hearing tomorrow
+  Expected: Email + SMS + WhatsApp sent
+
+TC-CAL-008: Filter hearings by court
+  Input: Filter by "Delhi High Court"
+  Expected: Only Delhi HC hearings shown
+
+TC-CAL-009: Search hearings
+  Input: Search by judge name
+  Expected: Matching hearings returned
+
+TC-CAL-010: Hearing outcome recording
+  Input: Update hearing with outcome
+  Expected: Outcome saved, case status updated
+
+======================================================================
+7. DOCUMENTS MANAGEMENT
+======================================================================
+
+TC-DOC-001: Upload document
+  Input: POST /api/documents with file_url, title
+  Expected: Document record created with firm_id
+
+TC-DOC-002: Storage limit check
+  Input: Upload when at 95% storage
+  Expected: Warning message shown
+
+TC-DOC-003: Storage limit exceeded
+  Input: Upload when at 100% storage
+  Expected: Error "Storage limit reached"
+
+TC-DOC-004: Download document
+  Input: GET /api/documents/[id]/download
+  Expected: File URL returned
+
+TC-DOC-005: Delete document
+  Input: DELETE /api/documents/[id]
+  Expected: Soft deleted + Cloudinary file removed
+
+TC-DOC-006: Document categories
+  Input: Upload with category "petition"
+  Expected: Document categorized correctly
+
+TC-DOC-007: Confidential document
+  Input: Upload with is_confidential: true
+  Expected: Only owners/partners can see it
+
+TC-DOC-008: Cross-firm document access denied
+  Input: User A tries to delete User B's document
+  Expected: 404 "File not found in your firm"
+
+TC-DOC-009: Document search
+  Input: Search by title or file name
+  Expected: Matching documents returned
+
+TC-DOC-010: Orphaned file cleanup
+  Input: DB insert fails after Cloudinary upload
+  Expected: Cloudinary file automatically deleted
+
+======================================================================
+8. BILLING & INVOICES
+======================================================================
+
+TC-BILL-001: Create invoice
+  Input: POST /api/invoices with line items
+  Expected: Invoice created with auto-number
+
+TC-BILL-002: Invoice PDF generation
+  Input: GET /api/invoices/[id]/pdf
+  Expected: PDF with firm branding downloaded
+
+TC-BILL-003: Record payment
+  Input: POST /api/payments with amount, method
+  Expected: Payment recorded, invoice status updated
+
+TC-BILL-004: Outstanding tracking
+  Input: GET /api/collections
+  Expected: Overdue invoices with days outstanding
+
+TC-BILL-005: GST calculation
+  Input: Invoice with CGST + SGST
+  Expected: Correct tax amounts calculated
+
+TC-BILL-006: IGST for inter-state
+  Input: Invoice with place of supply != state
+  Expected: IGST applied instead of CGST+SGST
+
+TC-BILL-007: Invoice number uniqueness
+  Input: Create 2 invoices simultaneously
+  Expected: Both get unique numbers (no duplicates)
+
+TC-BILL-008: Payment reminder
+  Input: GET /api/invoices/reminders
+  Expected: Overdue invoices with reminder status
+
+TC-BILL-009: Quotation creation
+  Input: POST /api/quotations
+  Expected: Quotation with line items and tax
+
+TC-BILL-010: Quotation to invoice conversion
+  Input: Accept quotation
+  Expected: Invoice generated from quotation
+
+======================================================================
+9. EXPENSES
+======================================================================
+
+TC-EXP-001: Add expense
+  Input: POST /api/expenses with category, amount
+  Expected: Expense record created
+
+TC-EXP-002: Billable expense
+  Input: Mark expense as billable
+  Expected: Shows in billable expenses report
+
+TC-EXP-003: Link expense to case
+  Input: Link expense to case_id
+  Expected: Expense appears in case detail
+
+TC-EXP-004: Expense report
+  Input: GET /api/expenses/reports
+  Expected: Breakdown by category and month
+
+TC-EXP-005: Receipt upload
+  Input: Add receipt_url to expense
+  Expected: Receipt downloadable
+
+======================================================================
+10. AI TOOLS
+======================================================================
+
+TC-AI-001: Check AI usage status
+  Input: GET /api/ai/usage-status
+  Expected: { used: 5, limit: 50, remaining: 45 }
+
+TC-AI-002: AI case analysis
+  Input: POST /api/ai/analyze with case text
+  Expected: Strengths, weaknesses, precedents returned
+
+TC-AI-003: AI limit reached
+  Input: Try AI when daily limit reached
+  Expected: "Daily limit reached. Upgrade for more."
+
+TC-AI-004: AI employee limit message
+  Input: Employee hits AI limit
+  Expected: "Contact the firm owner to upgrade."
+
+TC-AI-005: AI document drafting
+  Input: POST /api/ai/draft with prompt
+  Expected: Legal draft generated
+
+TC-AI-006: AI chat
+  Input: POST /api/ai/chat with message
+  Expected: AI response with legal advice
+
+TC-AI-007: AI usage logging
+  Input: Any AI query
+  Expected: Record created in ai_usage table
+
+TC-AI-008: AI unlimited plan
+  Input: Firm plan user uses AI
+  Expected: No limit check, unlimited queries
+
+TC-AI-009: AI per-plan limits
+  Input: Free plan user uses AI
+  Expected: Limited to 5 queries/day
+
+TC-AI-010: AI usage resets daily
+  Input: Check usage next day
+  Expected: Counter reset to 0
+
+======================================================================
+11. COURT TRACKING
+======================================================================
+
+TC-COURT-001: Track CNR number
+  Input: POST /api/ecourts with valid CNR
+  Expected: Case data fetched from eCourts API
+
+TC-COURT-002: Invalid CNR format
+  Input: CNR with wrong format
+  Expected: "Invalid CNR format"
+
+TC-COURT-003: Sync eCourts data
+  Input: POST /api/ecourts/sync
+  Expected: All tracked cases updated
+
+TC-COURT-004: District court case lookup
+  Input: GET /api/courts/dc/case-status
+  Expected: Case details returned
+
+TC-COURT-005: High court cause list
+  Input: GET /api/courts/hc/cause-list
+  Expected: Today's cause list returned
+
+TC-COURT-006: Supreme Court judgments
+  Input: GET /api/courts/sc/recent
+  Expected: Recent judgments returned
+
+TC-COURT-007: Case status change notification
+  Input: eCourts sync detects status change
+  Expected: Notification sent to assigned user
+
+TC-COURT-008: Search by party name
+  Input: GET /api/courts/dc/case-by-party?name=X
+  Expected: Cases matching party name
+
+TC-COURT-009: Cause list sync
+  Input: POST /api/cause-list/sync
+  Expected: Today's cause list saved
+
+TC-COURT-010: Legal research search
+  Input: GET /api/courts/judgments/search?q=X
+  Expected: Relevant judgments returned
+
+======================================================================
+12. TASKS
+======================================================================
+
+TC-TASK-001: Create task
+  Input: POST /api/tasks with title, priority
+  Expected: Task created with status "todo"
+
+TC-TASK-002: Update task status
+  Input: PATCH /api/tasks with status "in_progress"
+  Expected: Status updated
+
+TC-TASK-003: Assign task
+  Input: Assign to team member
+  Expected: Task assigned, notification sent
+
+TC-TASK-004: Task due date
+  Input: Set due_date in past
+  Expected: Task marked as overdue
+
+TC-TASK-005: Link task to case
+  Input: Link task to case_id
+  Expected: Task appears in case detail
+
+======================================================================
+13. REPORTS
+======================================================================
+
+TC-RPT-001: Case reports
+  Input: GET /api/reports?type=cases
+  Expected: Case statistics and distribution
+
+TC-RPT-002: Revenue reports
+  Input: GET /api/reports?type=revenue
+  Expected: Revenue data with collection rates
+
+TC-RPT-003: Export reports PDF
+  Input: GET /api/export/reports-pdf
+  Expected: PDF report downloaded
+
+TC-RPT-004: Export reports Excel
+  Input: GET /api/export/billing-excel
+  Expected: Excel report downloaded
+
+TC-RPT-005: Client reports
+  Input: GET /api/reports?type=clients
+  Expected: Client activity data
+
+======================================================================
+14. CRM
+======================================================================
+
+TC-CRM-001: Create consultation slot
+  Input: POST /api/consultations/slots
+  Expected: Recurring slot created
+
+TC-CRM-002: Book consultation
+  Input: POST /api/consultations
+  Expected: Consultation booked
+
+TC-CRM-003: Create intake form
+  Input: POST /api/intake with custom fields
+  Expected: Form created with JSON fields
+
+TC-CRM-004: Submit intake form
+  Input: POST /api/intake/submissions
+  Expected: Submission recorded with status "new"
+
+TC-CRM-005: Convert intake submission
+  Input: Update status to "converted"
+  Expected: Client created from submission
+
+======================================================================
+15. CALCULATORS
+======================================================================
+
+TC-CALC-001: Stamp duty calculation
+  Input: State + property value
+  Expected: Correct stamp duty amount
+
+TC-CALC-002: Limitation period
+  Input: Act + section + date
+  Expected: Last date to file calculated
+
+TC-CALC-003: GST calculation
+  Input: Amount + rate
+  Expected: CGST/SGST/IGST breakdown
+
+TC-CALC-004: Court fees
+  Input: Case type + value
+  Expected: Court fee amount
+
+======================================================================
+16. ADMIN PANEL (FIRM OWNER)
+======================================================================
+
+TC-ADMIN-001: Generate invite code
+  Input: POST /api/team/invite-code
+  Expected: 6-character code generated
+
+TC-ADMIN-002: Redeem invite code
+  Input: POST /api/team/redeem-code
+  Expected: Employee added to firm
+
+TC-ADMIN-003: Role hierarchy enforcement
+  Input: Partner tries to invite another partner
+  Expected: "Cannot invite at same or higher level"
+
+TC-ADMIN-004: Remove team member
+  Input: DELETE /api/team/[id]
+  Expected: Member removed from firm
+
+TC-ADMIN-005: Salary calculation
+  Input: POST /api/salary/calculate
+  Expected: Salary with deductions calculated
+
+TC-ADMIN-006: Salary settings
+  Input: POST /api/salary/settings
+  Expected: PF/ESI/TDS rates saved
+
+TC-ADMIN-007: Employee usage limits
+  Input: Employee hits case/storage/AI limit
+  Expected: "Contact firm owner to upgrade"
+
+TC-ADMIN-008: Owner sees all firm data
+  Input: Owner views cases, documents, invoices
+  Expected: All firm data visible
+
+TC-ADMIN-009: Employee sees own data only
+  Input: Employee views cases
+  Expected: Only assigned + created cases
+
+TC-ADMIN-010: Subscription inherited
+  Input: Employee logs in
+  Expected: Owner's subscription limits apply
+
+======================================================================
+17. SUPER ADMIN PANEL
+======================================================================
+
+TC-SUPER-001: View all firms
+  Input: Super admin dashboard
+  Expected: All firms listed with stats
+
+TC-SUPER-002: Manage subscriptions
+  Input: View all subscriptions
+  Expected: All active subscriptions shown
+
+TC-SUPER-003: Create coupon
+  Input: POST /api/admin/coupons
+  Expected: Coupon created
+
+TC-SUPER-004: Toggle coupon active
+  Input: Update is_active
+  Expected: Coupon status toggled
+
+TC-SUPER-005: View coupon usage
+  Input: GET /api/admin/coupons/[id]/uses
+  Expected: Usage list with user details
+
+TC-SUPER-006: Revenue dashboard
+  Input: View revenue page
+  Expected: MRR, ARR, churn rate shown
+
+TC-SUPER-007: Activity logs
+  Input: View activity page
+  Expected: All platform activity logged
+
+TC-SUPER-008: Platform settings
+  Input: Update platform_settings
+  Expected: Settings saved
+
+TC-SUPER-009: Override subscription
+  Input: Override user's subscription
+  Expected: Subscription updated
+
+TC-SUPER-010: View all cases
+  Input: View all cases page
+  Expected: All cases across all firms
+
+======================================================================
+18. NOTIFICATIONS
+======================================================================
+
+TC-NOTIF-001: In-app notification
+  Input: Event triggers notification
+  Expected: Notification bell shows badge
+
+TC-NOTIF-002: Notification preferences
+  Input: Toggle off email notifications
+  Expected: No emails sent
+
+TC-NOTIF-003: Daily digest
+  Input: GET /api/daily-digest
+  Expected: Summary email sent
+
+TC-NOTIF-004: Hearing reminder
+  Input: Hearing in 3 days
+  Expected: Reminder notification sent
+
+TC-NOTIF-005: Payment reminder
+  Input: Invoice overdue
+  Expected: Payment reminder sent
+
+======================================================================
+19. EXPORTS
+======================================================================
+
+TC-EXPORT-001: Cases PDF
+  Input: GET /api/export/cases-pdf
+  Expected: PDF with all cases
+
+TC-EXPORT-002: Cases Excel
+  Input: GET /api/export/cases-excel
+  Expected: Excel with all cases
+
+TC-EXPORT-003: Clients PDF
+  Input: GET /api/export/clients-pdf
+  Expected: PDF with all clients
+
+TC-EXPORT-004: Calendar ICS
+  Input: GET /api/export/calendar-ics
+  Expected: ICS file importable to calendar apps
+
+TC-EXPORT-005: Billing Excel
+  Input: GET /api/export/billing-excel
+  Expected: Excel with invoice data
+
+======================================================================
+20. SECURITY & DATA ISOLATION
+======================================================================
+
+TC-SEC-001: Cross-firm case access
+  Input: User A tries GET /api/cases/[B's case id]
+  Expected: 404 Not Found
+
+TC-SEC-002: Cross-firm client access
+  Input: User A tries GET /api/clients/[B's client id]
+  Expected: 404 Not Found
+
+TC-SEC-003: Cross-firm document access
+  Input: User A tries DELETE /api/documents/[B's doc id]
+  Expected: 404 Not Found
+
+TC-SEC-004: Employee can't invite higher role
+  Input: Associate tries to invite partner
+  Expected: 403 Forbidden
+
+TC-SEC-005: Non-owner can't manage team
+  Input: Employee tries DELETE /api/team/[id]
+  Expected: 403 Forbidden
+
+TC-SEC-006: Subscription limits enforced
+  Input: Free plan tries to create 4th case
+  Expected: "Case limit reached"
+
+TC-SEC-007: AI limits enforced
+  Input: Free plan tries 6th AI query
+  Expected: "Daily limit reached"
+
+TC-SEC-008: Storage limits enforced
+  Input: Solo plan tries to upload beyond 1GB
+  Expected: "Storage limit reached"
+
+TC-SEC-009: Payment signature verification
+  Input: Tampered Razorpay signature
+  Expected: 400 "Payment verification failed"
+
+TC-SEC-010: CSRF protection
+  Input: POST without CSRF token (if implemented)
+  Expected: 403 Forbidden
+
+======================================================================
+                         END OF TEST CASES
+======================================================================
+Total: 200 test cases
+Categories: Auth(10) | Subs(10) | Coupons(15) | Cases(10) | Clients(10)
+           Calendar(10) | Docs(10) | Billing(10) | Expenses(5) | AI(10)
+           Courts(10) | Tasks(5) | Reports(5) | CRM(5) | Calc(4)
+           Admin(10) | Super(10) | Notif(5) | Export(5) | Security(10)
+======================================================================

@@ -12,6 +12,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { formatDateTime } from "@/lib/utils";
 import toast from "react-hot-toast";
+import { useUser } from "@/hooks/use-user";
 
 const typeIcons: Record<string, React.ReactNode> = {
   hearing_reminder: <Clock className="h-5 w-5 text-blue-500" />,
@@ -34,6 +35,7 @@ const typeColors: Record<string, string> = {
 };
 
 export default function NotificationsPage() {
+  const { user: appUser } = useUser();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -41,9 +43,8 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     const fetchNotifications = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const data = await getNotifications(user.id);
+      if (appUser) {
+        const data = await getNotifications(appUser?.uuid);
         setNotifications(data);
       }
       setLoading(false);
@@ -61,9 +62,8 @@ export default function NotificationsPage() {
   };
 
   const handleMarkAllAsRead = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await markAllAsRead(user.id);
+    if (appUser) {
+      await markAllAsRead(appUser?.uuid);
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       toast.success("All marked as read");
     }

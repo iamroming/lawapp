@@ -106,14 +106,17 @@ export async function deleteCase(id: string) {
 }
 
 // Hearing queries
-export async function getHearings(caseId?: string) {
+export async function getHearings(caseId?: string, userId?: string) {
   const supabase = createClient();
   let query = supabase
     .from("hearings")
-    .select("*, case:cases(id, case_number, title, status)")
+    .select("*, case:cases(id, case_number, title, status, created_by, assigned_to)")
     .is("deleted_at", null)
     .order("hearing_date", { ascending: false });
   if (caseId) query = query.eq("case_id", caseId);
+  if (userId) {
+    query = query.or(`case.created_by.eq.${userId},case.assigned_to.eq.${userId}`);
+  }
   const { data, error } = await query;
   const hearings = (data || []).map((h: any) => ({ ...h, case: flattenRelation(h.case) }));
   return { data: hearings as Hearing[], error };
@@ -127,6 +130,7 @@ export async function getUpcomingHearings(userId: string, limit = 10) {
     .is("deleted_at", null)
     .is("is_completed", false)
     .gte("hearing_date", new Date().toISOString())
+    .or(`case.created_by.eq.${userId},case.assigned_to.eq.${userId}`)
     .order("hearing_date")
     .limit(limit);
   const hearings = (data || []).map((h: any) => ({ ...h, case: flattenRelation(h.case) }));
@@ -134,14 +138,17 @@ export async function getUpcomingHearings(userId: string, limit = 10) {
 }
 
 // Document queries
-export async function getDocuments(caseId?: string) {
+export async function getDocuments(caseId?: string, userId?: string) {
   const supabase = createClient();
   let query = supabase
     .from("documents")
-    .select("*, case:cases(id, case_number, title), uploader:profiles(full_name)")
+    .select("*, case:cases(id, case_number, title, created_by, assigned_to), uploader:profiles(full_name)")
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (caseId) query = query.eq("case_id", caseId);
+  if (userId) {
+    query = query.or(`uploaded_by.eq.${userId},case.created_by.eq.${userId},case.assigned_to.eq.${userId}`);
+  }
   const { data, error } = await query;
   const docs = (data || []).map((d: any) => ({
     ...d,
@@ -204,8 +211,9 @@ export async function logAudit(params: {
   entityName?: string;
   oldValues?: Record<string, unknown>;
   newValues?: Record<string, unknown>;
+  supabaseClient?: any;
 }) {
-  const supabase = createClient();
+  const supabase = params.supabaseClient || createServerClient();
   await supabase.from("audit_logs").insert({
     user_id: params.userId,
     action: params.action,

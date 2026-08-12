@@ -1,46 +1,62 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getFirebaseAuth } from "@/lib/firebase/config";
+import { updatePassword, onAuthStateChanged } from "firebase/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Scale, Lock, CheckCircle } from "lucide-react";
+import { Scale, Lock, CheckCircle, Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
+import { firebaseUidToUuid } from "@/lib/firebase/uid";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [validToken, setValidToken] = useState<boolean | null>(null);
   const router = useRouter();
   const supabase = createClient();
+  const auth = getFirebaseAuth();
 
   useEffect(() => {
-    // Supabase sends the access_token in the URL hash fragment
-    // We need to check if we have a valid session from the reset link
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+    let mounted = true;
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!mounted) return;
+      if (user) {
         setValidToken(true);
-      } else {
-        // Check URL for hash params (access_token, type=recovery)
-        const hash = window.location.hash;
-        if (hash.includes("access_token")) {
-          // The session will be set by Supabase's auth callback
-          // Wait a moment for it to process
-          setTimeout(async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            setValidToken(!!session);
-          }, 1000);
-        } else {
-          setValidToken(false);
-        }
       }
+    });
+
+    if (auth.currentUser) {
+      setValidToken(true);
+    }
+
+    const timer = setTimeout(() => {
+      if (mounted) {
+        setValidToken((prev) => (prev === null ? false : prev));
+      }
+    }, 3000);
+
+    return () => {
+      mounted = false;
+      unsubscribe();
+      clearTimeout(timer);
     };
-    checkSession();
-  }, [supabase]);
+  }, [auth]);
+
+  const redirectTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+    };
+  }, []);
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,8 +64,16 @@ export default function ResetPasswordPage() {
       toast.error("Please fill in all fields");
       return;
     }
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 characters");
+      return;
+    }
+    if (!/[A-Z]/.test(password)) {
+      toast.error("Password must contain at least one uppercase letter");
+      return;
+    }
+    if (!/[0-9]/.test(password)) {
+      toast.error("Password must contain at least one number");
       return;
     }
     if (password !== confirmPassword) {
@@ -58,14 +82,25 @@ export default function ResetPasswordPage() {
     }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password });
-      if (error) {
-        toast.error(error.message);
-      } else {
-        setSuccess(true);
-        toast.success("Password updated successfully!");
-        setTimeout(() => router.push("/dashboard"), 2000);
+      const user = auth.currentUser;
+      if (!user) {
+        toast.error("No authenticated user found");
+        setLoading(false);
+        return;
       }
+
+      await updatePassword(user, password);
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", firebaseUidToUuid(user.uid))
+        .single();
+
+      setSuccess(true);
+      toast.success("Password updated successfully!");
+      const destination = profile?.role === "super_admin" ? "/super-admin" : "/dashboard";
+      redirectTimerRef.current = setTimeout(() => router.push(destination), 2000);
     } catch {
       toast.error("An unexpected error occurred");
     }
@@ -131,14 +166,21 @@ export default function ResetPasswordPage() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
                 <Input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Enter new password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 pr-10"
                   required
-                  minLength={6}
+                  minLength={8}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
             </div>
             <div className="space-y-2">
@@ -146,14 +188,21 @@ export default function ResetPasswordPage() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
                 <Input
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   placeholder="Confirm new password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 pr-10"
                   required
-                  minLength={6}
+                  minLength={8}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
             </div>
             <Button type="submit" className="w-full" disabled={loading}>

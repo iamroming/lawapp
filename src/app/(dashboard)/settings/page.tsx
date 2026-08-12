@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { dbWrite } from "@/lib/db-write";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ import { ROLE_DISPLAY_NAMES, ROLE_HIERARCHY } from "@/types/database";
 import { usePermissions } from "@/hooks/use-permissions";
 import { PERMISSIONS } from "@/lib/permissions";
 import toast from "react-hot-toast";
+import { useUser } from "@/hooks/use-user";
 
 type SettingsTab = "profile" | "notifications" | "billing" | "team" | "subscription" | "templates" | "invoice-settings";
 
@@ -150,6 +152,7 @@ function CouponInput() {
 }
 
 export default function SettingsPage() {
+  const { user: appUser } = useUser();
   const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const { hasPermission, userRole } = usePermissions();
@@ -166,12 +169,11 @@ export default function SettingsPage() {
 
   const fetchNotificationPreferences = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!appUser) return;
       const { data } = await supabase
         .from("notification_preferences")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", appUser?.uuid)
         .single();
       if (data) {
         setNotifications({
@@ -193,6 +195,7 @@ export default function SettingsPage() {
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberRole, setNewMemberRole] = useState("associate");
   const [inviteCodeRole, setInviteCodeRole] = useState("associate");
+  const [inviteCodeEmail, setInviteCodeEmail] = useState("");
   const [generatedCode, setGeneratedCode] = useState("");
   const [generatingCode, setGeneratingCode] = useState(false);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
@@ -200,6 +203,7 @@ export default function SettingsPage() {
   const [usage, setUsage] = useState<UsageStats>({ cases: 0, storage: 0, teamMembers: 0 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [userLimitError, setUserLimitError] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -209,15 +213,11 @@ export default function SettingsPage() {
   const fetchSettings = async () => {
     setLoading(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (user) {
+      if (appUser) {
         const { data: profileData } = await supabase
           .from("profiles")
           .select("*")
-          .eq("id", user.id)
+          .eq("id", appUser?.uuid)
           .single();
 
         if (profileData) {
@@ -230,11 +230,14 @@ export default function SettingsPage() {
           });
         }
 
-        // Fetch team members
+        const firmId = profileData?.firm_id || appUser?.uuid;
+
+        // Fetch team members (same firm only)
         const { data: teamData } = await supabase
           .from("profiles")
           .select("id, full_name, email, role")
-          .neq("id", user.id)
+          .eq("firm_id", firmId)
+          .neq("id", appUser?.uuid)
           .order("full_name");
 
         setTeamMembers((teamData as TeamMember[]) || []);
@@ -248,11 +251,12 @@ export default function SettingsPage() {
 
         setPlans((plansData as SubscriptionPlan[]) || []);
 
-        // Fetch user's current subscription
+        // Fetch subscription (use firm owner's ID, not employee's)
+        const subscriptionOwnerId = profileData?.firm_id || appUser?.uuid;
         const { data: subData } = await supabase
           .from("user_subscriptions")
           .select("*, plan:subscription_plans(*)")
-          .eq("user_id", user.id)
+          .eq("user_id", subscriptionOwnerId)
           .in("status", ["active", "trialing"])
           .order("created_at", { ascending: false })
           .limit(1)
@@ -264,11 +268,11 @@ export default function SettingsPage() {
           setCurrentSubscription(sub);
         }
 
-        // Fetch usage stats
+        // Fetch usage stats (firm-scoped)
         const [casesRes, docsRes, membersRes] = await Promise.all([
-          supabase.from("cases").select("id", { count: "exact", head: true }).eq("created_by", user.id).is("deleted_at", null),
-          supabase.from("documents").select("file_size").eq("uploaded_by", user.id).is("deleted_at", null),
-          supabase.from("profiles").select("id", { count: "exact", head: true }).eq("is_active", true),
+          supabase.from("cases").select("id", { count: "exact", head: true }).eq("firm_id", firmId).is("deleted_at", null),
+          supabase.from("documents").select("file_size").eq("firm_id", firmId).is("deleted_at", null),
+          supabase.from("profiles").select("id", { count: "exact", head: true }).eq("firm_id", firmId).eq("is_active", true),
         ]);
 
         const totalStorageBytes = (docsRes.data || []).reduce((sum: number, d: any) => sum + (d.file_size || 0), 0);
@@ -288,38 +292,32 @@ export default function SettingsPage() {
   const handleSaveBilling = async () => {
     setSaving(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!appUser) { toast.error("You must be logged in to continue"); return; }
 
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          firm_name: billing.firmName,
-          gstin: billing.gstin || null,
-          address: billing.address || null,
-          state: billing.state || null,
-        })
-        .eq("id", user.id);
+      const { error } = await dbWrite("profiles", "update", {
+        firm_name: billing.firmName,
+        gstin: billing.gstin || null,
+        address: billing.address || null,
+        state: billing.state || null,
+      }, { id: appUser?.uuid });
 
       if (error) {
         // If columns don't exist, just save firm_name
-        const { error: fallbackError } = await supabase
-          .from("profiles")
-          .update({ firm_name: billing.firmName })
-          .eq("id", user.id);
+        const { error: fallbackError } = await dbWrite("profiles", "update", { firm_name: billing.firmName }, { id: appUser?.uuid });
         if (fallbackError) {
           console.error("Error saving billing:", fallbackError);
-          toast.error("Failed to save");
+          toast.error("Failed to save billing details");
         } else {
-          toast.success("Saved!");
+          toast.success("Billing details saved (partial)!");
           fetchSettings();
         }
       } else {
         toast.success("Billing details saved!");
         fetchSettings();
       }
+    } catch (error) {
+      console.error("Unexpected error saving billing:", error);
+      toast.error("An unexpected error occurred while saving billing details");
     } finally {
       setSaving(false);
     }
@@ -335,10 +333,21 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: newMemberEmail, role: newMemberRole }),
       });
-      if (!res.ok) throw new Error("Failed to send invitation");
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.upgradeRequired) {
+          setUserLimitError(data.error);
+          toast.error(data.error);
+        } else {
+          throw new Error(data.error || "Failed to send invitation");
+        }
+        return;
+      }
       toast.success(`Invitation sent to ${newMemberEmail}`);
       setNewMemberEmail("");
       setNewMemberRole("associate");
+      setUserLimitError(null);
+      fetchSettings();
     } catch {
       toast.error("Failed to send invitation. Make sure the email is registered.");
     }
@@ -356,18 +365,31 @@ export default function SettingsPage() {
   };
 
   const handleGenerateCode = async () => {
+    if (!inviteCodeEmail.trim()) {
+      toast.error("Email is required for invite code");
+      return;
+    }
     setGeneratingCode(true);
     setGeneratedCode("");
     try {
       const res = await fetch("/api/team/invite-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role_id: inviteCodeRole, expiresInDays: 7 }),
+        body: JSON.stringify({ role_id: inviteCodeRole, email: inviteCodeEmail.trim(), expiresInDays: 7 }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) {
+        if (data.upgradeRequired) {
+          setUserLimitError(data.error);
+          toast.error(data.error);
+        } else {
+          throw new Error(data.error);
+        }
+        return;
+      }
       setGeneratedCode(data.code);
       toast.success("Invite code generated!");
+      setUserLimitError(null);
     } catch {
       toast.error("Failed to generate invite code");
     } finally {
@@ -377,7 +399,7 @@ export default function SettingsPage() {
 
   const tabs = [
     { id: "profile" as const, label: "Profile", icon: User },
-  { id: "notifications" as const, label: "Notifications", icon: Bell },
+    { id: "notifications" as const, label: "Notifications", icon: Bell },
   { id: "billing" as const, label: "Billing", icon: Receipt },
   { id: "templates" as const, label: "Invoice Template", icon: FileText },
   { id: "invoice-settings" as const, label: "Invoice Settings", icon: Settings },
@@ -498,16 +520,15 @@ export default function SettingsPage() {
                   />
                 </div>
                 <Button onClick={async () => {
-                  const { data: { user } } = await supabase.auth.getUser();
-                  if (!user) return;
-                  const { error } = await supabase.from("notification_preferences").upsert({
-                    user_id: user.id,
+                  if (!appUser) return;
+                  const { error } = await dbWrite("notification_preferences", "upsert", {
+                    user_id: appUser?.uuid,
                     email: notifications.emailNotifications,
                     hearing_reminders: notifications.hearingReminders,
                     payment_alerts: notifications.paymentAlerts,
                     case_updates: notifications.caseUpdates,
                     updated_at: new Date().toISOString(),
-                  }, { onConflict: "user_id" });
+                  });
                   if (error) {
                     toast.error("Failed to save preferences");
                   } else {
@@ -572,6 +593,61 @@ export default function SettingsPage() {
                 <CardTitle>Team Management</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* User limit info */}
+                {currentSubscription?.plan && currentSubscription.plan.max_users > 0 && (() => {
+                  const isOwnerOrPartner = userRole === "owner" || userRole === "partner";
+                  const atLimit = teamMembers.length + 1 >= currentSubscription.plan.max_users;
+                  const nearLimit = teamMembers.length + 1 >= currentSubscription.plan.max_users * 0.8;
+                  return (
+                    <div className={`p-4 rounded-lg border ${
+                      atLimit ? "bg-red-50 border-red-200" : nearLimit ? "bg-amber-50 border-amber-200" : "bg-[var(--surface-subtle)] border-[var(--border)]"
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">
+                            Team Members: {teamMembers.length + 1} / {currentSubscription.plan.max_users === -1 ? "Unlimited" : currentSubscription.plan.max_users}
+                          </p>
+                          <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                            {currentSubscription.plan.name} plan — {currentSubscription.plan.max_users === -1 ? "No limit on team members" : `Includes ${currentSubscription.plan.max_users} user(s) total`}
+                          </p>
+                        </div>
+                        {atLimit && currentSubscription.plan.max_users !== -1 && (
+                          isOwnerOrPartner ? (
+                            <a href="/subscription" className="text-sm font-semibold text-indigo-600 hover:text-indigo-500 whitespace-nowrap">
+                              Upgrade Plan
+                            </a>
+                          ) : (
+                            <span className="text-sm text-[var(--text-secondary)] whitespace-nowrap">
+                              Contact owner to upgrade
+                            </span>
+                          )
+                        )}
+                      </div>
+                      {atLimit && currentSubscription.plan.max_users !== -1 && !isOwnerOrPartner && (
+                        <p className="text-xs text-amber-700 mt-2">
+                          Your firm has reached the user limit. Contact the firm owner to upgrade the plan.
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {userLimitError && (
+                  <div className="p-4 rounded-lg bg-red-50 border border-red-200">
+                    <p className="text-sm font-medium text-red-800">{userLimitError}</p>
+                    {(userRole === "owner" || userRole === "partner") ? (
+                      <p className="text-xs text-red-600 mt-1">
+                        Upgrade your plan to add more team members.{" "}
+                        <a href="/subscription" className="font-semibold underline">View plans</a>
+                      </p>
+                    ) : (
+                      <p className="text-xs text-red-600 mt-1">
+                        Contact the firm owner to upgrade the plan and add more team members.
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {hasPermission(PERMISSIONS.TEAM.INVITE) && (
                   <>
                     {/* Generate Invite Code */}
@@ -581,6 +657,13 @@ export default function SettingsPage() {
                         Generate Invite Code
                       </h4>
                       <div className="flex flex-col sm:flex-row gap-3">
+                        <Input
+                          type="email"
+                          placeholder="Invitee email"
+                          value={inviteCodeEmail}
+                          onChange={(e) => setInviteCodeEmail(e.target.value)}
+                          className="flex-1"
+                        />
                         <Select
                           options={TEAM_ROLE_OPTIONS}
                           value={inviteCodeRole}
@@ -684,57 +767,58 @@ export default function SettingsPage() {
 
           {/* Subscription Tab */}
           {activeTab === "subscription" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Subscription & Billing</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Current Plan */}
-                {currentSubscription?.plan ? (
-                  <div className="p-4 border-2 border-blue-500 rounded-lg bg-[var(--surface-subtle)]">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold text-lg">{currentSubscription.plan.name} Plan</h3>
-                        <p className="text-[var(--text-secondary)]">{currentSubscription.plan.description}</p>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Subscription & Billing</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Current Plan */}
+                  {currentSubscription?.plan ? (
+                    <div className="p-4 border-2 border-blue-500 rounded-lg bg-[var(--surface-subtle)]">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-semibold text-lg">{currentSubscription.plan.name} Plan</h3>
+                          <p className="text-[var(--text-secondary)]">{currentSubscription.plan.description}</p>
+                        </div>
+                        <Badge>{currentSubscription.status === "trialing" ? "Trial" : "Current Plan"}</Badge>
                       </div>
-                      <Badge>{currentSubscription.status === "trialing" ? "Trial" : "Current Plan"}</Badge>
-                    </div>
-                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <p className="text-[var(--text-secondary)]">Cases</p>
-                        <p className="font-medium">{currentSubscription.plan.max_cases === -1 ? "Unlimited" : currentSubscription.plan.max_cases}</p>
+                      <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <p className="text-[var(--text-secondary)]">Cases</p>
+                          <p className="font-medium">{currentSubscription.plan.max_cases === -1 ? "Unlimited" : currentSubscription.plan.max_cases}</p>
+                        </div>
+                        <div>
+                          <p className="text-[var(--text-secondary)]">Team Members</p>
+                          <p className="font-medium">{currentSubscription.plan.max_users === -1 ? "Unlimited" : currentSubscription.plan.max_users} included</p>
+                        </div>
+                        <div>
+                          <p className="text-[var(--text-secondary)]">Storage</p>
+                          <p className="font-medium">{currentSubscription.plan.max_storage_mb === -1 ? "Unlimited" : `${Math.round(currentSubscription.plan.max_storage_mb / 1024)} GB`}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-[var(--text-secondary)]">Team Members</p>
-                        <p className="font-medium">{currentSubscription.plan.max_users === -1 ? "Unlimited" : currentSubscription.plan.max_users} included</p>
-                      </div>
-                      <div>
-                        <p className="text-[var(--text-secondary)]">Storage</p>
-                        <p className="font-medium">{currentSubscription.plan.max_storage_mb === -1 ? "Unlimited" : `${Math.round(currentSubscription.plan.max_storage_mb / 1024)} GB`}</p>
+                      <div className="mt-4 text-sm text-[var(--text-secondary)]">
+                        {currentSubscription.expires_at && <p>Next billing date: <strong>{new Date(currentSubscription.expires_at).toLocaleDateString("en-IN", { month: "long", day: "numeric", year: "numeric" })}</strong></p>}
+                        {currentSubscription.payment_method && <p>Payment method: <strong>{currentSubscription.payment_method}</strong></p>}
+                        <p>Amount: <strong>Rs {currentSubscription.plan.price.toLocaleString("en-IN")}/month</strong></p>
                       </div>
                     </div>
-                    <div className="mt-4 text-sm text-[var(--text-secondary)]">
-                      {currentSubscription.expires_at && <p>Next billing date: <strong>{new Date(currentSubscription.expires_at).toLocaleDateString("en-IN", { month: "long", day: "numeric", year: "numeric" })}</strong></p>}
-                      {currentSubscription.payment_method && <p>Payment method: <strong>{currentSubscription.payment_method}</strong></p>}
-                      <p>Amount: <strong>₹{currentSubscription.plan.price.toLocaleString("en-IN")}/month</strong></p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-4 border-2 border-[var(--border)] rounded-lg bg-[var(--background)]">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold text-lg">Free Plan</h3>
-                        <p className="text-[var(--text-secondary)]">Basic access with limited features</p>
+                  ) : (
+                    <div className="p-4 border-2 border-[var(--border)] rounded-lg bg-[var(--background)]">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-semibold text-lg">No Active Subscription</h3>
+                          <p className="text-[var(--text-secondary)]">Subscribe to unlock all features</p>
+                        </div>
+                        <Badge variant="secondary">No Plan</Badge>
                       </div>
-                      <Badge variant="secondary">Free</Badge>
+                      <div className="mt-4 text-sm text-[var(--text-secondary)]">
+                        <p>Choose a plan below to get started.</p>
+                      </div>
                     </div>
-                    <div className="mt-4 text-sm text-[var(--text-secondary)]">
-                      <p>Upgrade to unlock more features and remove limits.</p>
-                    </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Available Plans */}
+                  {/* Available Plans */}
                 <div>
                   <h4 className="font-medium mb-3">Available Plans</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -748,15 +832,12 @@ export default function SettingsPage() {
                             {isCurrent && <Badge>Current</Badge>}
                           </div>
                           <p className="text-2xl font-bold mt-2">
-                            ₹{plan.price.toLocaleString("en-IN")}<span className="text-sm text-[var(--text-secondary)]">/{plan.billing_period === "yearly" ? "year" : "month"}</span>
+                            Rs {plan.price.toLocaleString("en-IN")}<span className="text-sm text-[var(--text-secondary)]">/{plan.billing_period === "yearly" ? "year" : "month"}</span>
                           </p>
                           <ul className="mt-3 space-y-1 text-sm text-[var(--text-secondary)]">
                             <li>• {plan.max_cases === -1 ? "Unlimited" : plan.max_cases} active cases</li>
                             <li>• {plan.max_users === -1 ? "Unlimited" : plan.max_users} user{(plan.max_users === -1 || plan.max_users > 1) ? "s" : ""}</li>
                             <li>• {plan.max_storage_mb === -1 ? "Unlimited" : `${Math.round(plan.max_storage_mb / 1024)} GB`} storage</li>
-                            {(Array.isArray(plan.features) ? plan.features : typeof plan.features === "string" ? JSON.parse(plan.features) : []).slice(0, 2).map((f: string, i: number) => (
-                              <li key={i}>• {f}</li>
-                            ))}
                           </ul>
                           {!isCurrent && !isFree && (
                             <Button
@@ -765,25 +846,60 @@ export default function SettingsPage() {
                               size="sm"
                               onClick={async () => {
                                 try {
-                                  const res = await fetch("/api/subscriptions", {
+                                  const planSlug = plan.slug || plan.name?.toLowerCase();
+                                  const billingCycle = plan.billing_period === "yearly" ? "annual" : "monthly";
+                                  const orderRes = await fetch("/api/payments/create-order", {
                                     method: "POST",
                                     headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({
-                                      planSlug: plan.slug || plan.name?.toLowerCase(),
-                                      billingCycle: plan.billing_period === "yearly" ? "annual" : "monthly",
-                                    }),
+                                    body: JSON.stringify({ planSlug, billingCycle }),
                                   });
-                                  const data = await res.json();
-                                  if (data.error) {
-                                    toast.error(data.error);
-                                  } else if (data.short_url) {
-                                    window.location.href = data.short_url;
-                                  } else {
-                                    toast.success(`Subscription created! Plan: ${plan.name}`);
-                                    fetchSettings();
+                                  const orderData = await orderRes.json();
+                                  if (orderData.error) {
+                                    toast.error(orderData.error);
+                                    return;
                                   }
+                                  const loadRazorpay = () => new Promise<void>((resolve) => {
+                                    const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+                                    if (existing) { resolve(); return; }
+                                    const script = document.createElement("script");
+                                    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+                                    script.onload = () => resolve();
+                                    document.body.appendChild(script);
+                                  });
+
+                                  await loadRazorpay();
+                                  const rzp = new window.Razorpay({
+                                    key: orderData.keyId,
+                                    amount: orderData.amount,
+                                    currency: orderData.currency,
+                                    name: "CaseFiles",
+                                    description: `${orderData.planName} Plan (${billingCycle})`,
+                                    order_id: orderData.orderId,
+                                    handler: async (response: any) => {
+                                      const verifyRes = await fetch("/api/payments/verify", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({
+                                          razorpay_order_id: response.razorpay_order_id,
+                                          razorpay_payment_id: response.razorpay_payment_id,
+                                          razorpay_signature: response.razorpay_signature,
+                                          planSlug,
+                                          billingCycle,
+                                        }),
+                                      });
+                                      const verifyData = await verifyRes.json();
+                                      if (verifyData.success) {
+                                        toast.success("Payment successful! Subscription activated.");
+                                        fetchSettings();
+                                      } else {
+                                        toast.error(verifyData.error || "Payment verification failed");
+                                      }
+                                    },
+                                    theme: { color: "#4f46e5" },
+                                  });
+                                  rzp.open();
                                 } catch {
-                                  toast.error("Failed to start subscription");
+                                  toast.error("Failed to start payment");
                                 }
                               }}
                             >
@@ -791,8 +907,70 @@ export default function SettingsPage() {
                             </Button>
                           )}
                           {!isCurrent && isFree && !currentSubscription && (
-                            <Button variant="outline" className="w-full mt-4" size="sm" disabled>
-                              Free Plan
+                            <Button variant="outline" className="w-full mt-4" size="sm" onClick={async () => {
+                              try {
+                                const planSlug = plan.slug || plan.name?.toLowerCase();
+                                const billingCycle = plan.billing_period === "yearly" ? "annual" : "monthly";
+                                const orderRes = await fetch("/api/payments/create-order", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ planSlug, billingCycle }),
+                                });
+                                const orderData = await orderRes.json();
+                                if (orderData.error) {
+                                  toast.error(orderData.error);
+                                  return;
+                                }
+                                if (orderData.free) {
+                                  toast.success("Free plan activated!");
+                                  fetchSettings();
+                                  return;
+                                }
+                                const loadRazorpay = () => new Promise<void>((resolve) => {
+                                  const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+                                  if (existing) { resolve(); return; }
+                                  const script = document.createElement("script");
+                                  script.src = "https://checkout.razorpay.com/v1/checkout.js";
+                                  script.onload = () => resolve();
+                                  document.body.appendChild(script);
+                                });
+
+                                await loadRazorpay();
+                                const rzp = new window.Razorpay({
+                                  key: orderData.keyId,
+                                  amount: orderData.amount,
+                                  currency: orderData.currency,
+                                  name: "CaseFiles",
+                                  description: `${orderData.planName} Plan (${billingCycle})`,
+                                  order_id: orderData.orderId,
+                                  handler: async (response: any) => {
+                                    const verifyRes = await fetch("/api/payments/verify", {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({
+                                        razorpay_order_id: response.razorpay_order_id,
+                                        razorpay_payment_id: response.razorpay_payment_id,
+                                        razorpay_signature: response.razorpay_signature,
+                                        planSlug,
+                                        billingCycle,
+                                      }),
+                                    });
+                                    const verifyData = await verifyRes.json();
+                                    if (verifyData.success) {
+                                      toast.success("Payment successful! Subscription activated.");
+                                      fetchSettings();
+                                    } else {
+                                      toast.error(verifyData.error || "Payment verification failed");
+                                    }
+                                  },
+                                  theme: { color: "#4f46e5" },
+                                });
+                                rzp.open();
+                              } catch {
+                                toast.error("Failed to start payment");
+                              }
+                            }}>
+                              Select Free Plan
                             </Button>
                           )}
                         </div>
@@ -869,6 +1047,7 @@ export default function SettingsPage() {
                 </div>
               </CardContent>
             </Card>
+            </div>
           )}
 
           {/* Templates Tab */}

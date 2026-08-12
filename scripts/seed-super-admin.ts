@@ -56,7 +56,7 @@ async function insertSuperAdmin(supabase: any, userId: string, email: string) {
     email,
     phone: "",
     role: "admin",
-    firm_name: "LawXP",
+    firm_name: "CaseFiles",
     is_active: true,
   });
 

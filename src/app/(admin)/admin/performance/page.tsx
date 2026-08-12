@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatsCard } from "@/components/ui/stats-card";
+import { useUser } from "@/hooks/use-user";
 import {
   Users,
   Briefcase,
@@ -24,6 +25,7 @@ interface EmployeePerformance {
 }
 
 export default function PerformancePage() {
+  const { user: appUser } = useUser();
   const [performance, setPerformance] = useState<EmployeePerformance[]>([]);
   const [totals, setTotals] = useState({ clients: 0, cases: 0, active: 0, won: 0 });
   const [loading, setLoading] = useState(true);
@@ -32,13 +34,12 @@ export default function PerformancePage() {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!appUser) return;
 
       const { data: profile } = await supabase
         .from("profiles")
         .select("firm_id")
-        .eq("id", user.id)
+        .eq("id", appUser?.uuid)
         .single();
 
       const fid = profile?.firm_id;
@@ -49,7 +50,7 @@ export default function PerformancePage() {
       }
     };
     init();
-  }, [supabase]);
+  }, []);
 
   const fetchPerformance = async (fid: string) => {
     setLoading(true);
@@ -64,7 +65,14 @@ export default function PerformancePage() {
       return;
     }
 
-    const empIds = employees.map((e) => e.id);
+    const empIds = employees.map((e: { id: string }) => e.id);
+
+    if (empIds.length === 0) {
+      setTotals({ clients: 0, cases: 0, active: 0, won: 0 });
+      setPerformance([]);
+      setLoading(false);
+      return;
+    }
 
     const [clientsRes, casesRes, activeCasesRes, wonCasesRes] = await Promise.all([
       supabase
@@ -96,46 +104,43 @@ export default function PerformancePage() {
     const totalActive = activeCasesRes.count || 0;
     const totalWon = wonCasesRes.count || 0;
 
-    // Per-employee breakdown
-    const perfData: EmployeePerformance[] = [];
+    // Per-employee breakdown - batch queries
+    const empClientCounts = await Promise.all(
+      empIds.map((id: string) =>
+        supabase.from("clients").select("id", { count: "exact", head: true }).eq("created_by", id).is("deleted_at", null)
+      )
+    );
+    const empCaseCounts = await Promise.all(
+      empIds.map((id: string) =>
+        supabase.from("cases").select("id", { count: "exact", head: true })
+          .or(`assigned_to.eq.${id},created_by.eq.${id}`).is("deleted_at", null)
+      )
+    );
+    const empActiveCounts = await Promise.all(
+      empIds.map((id: string) =>
+        supabase.from("cases").select("id", { count: "exact", head: true })
+          .or(`assigned_to.eq.${id},created_by.eq.${id}`)
+          .in("status", ["active", "in-progress", "pending"]).is("deleted_at", null)
+      )
+    );
+    const empWonCounts = await Promise.all(
+      empIds.map((id: string) =>
+        supabase.from("cases").select("id", { count: "exact", head: true })
+          .or(`assigned_to.eq.${id},created_by.eq.${id}`)
+          .eq("status", "won").is("deleted_at", null)
+      )
+    );
 
-    for (const emp of employees) {
-      const [empClientsRes, empCasesRes, empActiveRes, empWonRes] = await Promise.all([
-        supabase
-          .from("clients")
-          .select("id", { count: "exact", head: true })
-          .eq("created_by", emp.id)
-          .is("deleted_at", null),
-        supabase
-          .from("cases")
-          .select("id", { count: "exact", head: true })
-          .or(`assigned_to.eq.${emp.id},created_by.eq.${emp.id}`)
-          .is("deleted_at", null),
-        supabase
-          .from("cases")
-          .select("id", { count: "exact", head: true })
-          .or(`assigned_to.eq.${emp.id},created_by.eq.${emp.id}`)
-          .in("status", ["active", "in-progress", "pending"])
-          .is("deleted_at", null),
-        supabase
-          .from("cases")
-          .select("id", { count: "exact", head: true })
-          .or(`assigned_to.eq.${emp.id},created_by.eq.${emp.id}`)
-          .eq("status", "won")
-          .is("deleted_at", null),
-      ]);
-
-      perfData.push({
-        id: emp.id,
-        full_name: emp.full_name || "Unnamed",
-        email: emp.email || "",
-        role: emp.role || "unknown",
-        clients_acquired: empClientsRes.count || 0,
-        cases_handled: empCasesRes.count || 0,
-        active_cases: empActiveRes.count || 0,
-        won_cases: empWonRes.count || 0,
-      });
-    }
+    const perfData: EmployeePerformance[] = employees.map((emp: { id: string; full_name: string; email: string; role: string }, i: number) => ({
+      id: emp.id,
+      full_name: emp.full_name || "Unnamed",
+      email: emp.email || "",
+      role: emp.role || "unknown",
+      clients_acquired: empClientCounts[i].count || 0,
+      cases_handled: empCaseCounts[i].count || 0,
+      active_cases: empActiveCounts[i].count || 0,
+      won_cases: empWonCounts[i].count || 0,
+    }));
 
     perfData.sort((a, b) => b.clients_acquired - a.clients_acquired);
 

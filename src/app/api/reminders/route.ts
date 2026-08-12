@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
+
+// HTML entity escape for email templates
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 interface ReminderClient {
   id: string;
@@ -31,7 +42,7 @@ interface ReminderRecord {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -39,7 +50,7 @@ export async function POST(request: NextRequest) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("firm_id, role")
-      .eq("id", user.id)
+      .eq("id", user.uuid)
       .single();
 
     if (!profile) {
@@ -54,12 +65,12 @@ export async function POST(request: NextRequest) {
     }
 
     // If no firm_id on profile, use user id as firm_id (solo user)
-    const firmId = profile.firm_id || user.id;
+    const firmId = profile.firm_id || user.uuid;
 
     const { data, error } = await supabase
       .from("scheduled_reminders")
       .insert({
-        user_id: user.id,
+        user_id: user.uuid,
         firm_id: firmId,
         case_id: case_id || null,
         client_id: client_id || null,
@@ -78,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     // Create in-app notification
     await supabase.from("notifications").insert({
-      user_id: user.id,
+      user_id: user.uuid,
       type: "reminder",
       title: `Reminder: ${title}`,
       message: message || `Reminder scheduled for ${new Date(reminder_date).toLocaleString("en-IN")}`,
@@ -114,7 +125,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -122,7 +133,7 @@ export async function GET(request: NextRequest) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("firm_id, role")
-      .eq("id", user.id)
+      .eq("id", user.uuid)
       .single();
 
     if (!profile) {
@@ -141,7 +152,7 @@ export async function GET(request: NextRequest) {
 
     // Owners see all firm reminders, employees see only their own
     if (!isOwner) {
-      query = query.eq("user_id", user.id);
+      query = query.eq("user_id", user.uuid);
     } else if (profile.firm_id) {
       query = query.eq("firm_id", profile.firm_id);
     }
@@ -170,7 +181,7 @@ export async function GET(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -189,11 +200,11 @@ export async function DELETE(request: NextRequest) {
       .eq("id", id)
       .single();
 
-    if (reminder && reminder.user_id !== user.id) {
+    if (reminder && reminder.user_id !== user.uuid) {
       const { data: profile } = await supabase
         .from("profiles")
         .select("role, firm_id")
-        .eq("id", user.id)
+        .eq("id", user.uuid)
         .single();
 
       if (!["owner", "partner", "super_admin"].includes(profile?.role || "")) {
@@ -282,20 +293,20 @@ async function sendEmail(reminder: ReminderRecord, supabase: any) {
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     await resend.emails.send({
-      from: process.env.EMAIL_FROM || "LawXP <reminders@LawXP.in>",
+      from: process.env.EMAIL_FROM || "CaseFiles <reminders@CaseFiles.in>",
       to: client.email,
       subject: `Reminder: ${reminder.title}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">${reminder.title}</h2>
-          <p>${reminder.message || ""}</p>
+          <h2 style="color: #2563eb;">${escapeHtml(reminder.title)}</h2>
+          <p>${escapeHtml(reminder.message || "")}</p>
           <p><strong>Date:</strong> ${new Date(reminder.reminder_date).toLocaleString("en-IN", {
             dateStyle: "medium",
             timeStyle: "short",
           })}</p>
-          ${reminder.case ? `<p><strong>Case:</strong> ${reminder.case.case_number || ""}</p>` : ""}
+          ${reminder.case ? `<p><strong>Case:</strong> ${escapeHtml(reminder.case.case_number || "")}</p>` : ""}
           <hr style="margin: 20px 0; border: 1px solid #e5e7eb;" />
-          <p style="color: #6b7280; font-size: 12px;">This is an automated reminder from LawXP</p>
+          <p style="color: #6b7280; font-size: 12px;">This is an automated reminder from CaseFiles</p>
         </div>
       `,
     });
@@ -315,7 +326,7 @@ async function sendSMS(reminder: ReminderRecord, supabase: any) {
 
     if (!client?.phone) return;
 
-    const message = `LawXP Reminder: ${reminder.title}\n${reminder.message || ""}\nDate: ${new Date(reminder.reminder_date).toLocaleString("en-IN")}`;
+    const message = `CaseFiles Reminder: ${reminder.title}\n${reminder.message || ""}\nDate: ${new Date(reminder.reminder_date).toLocaleString("en-IN")}`;
 
     await fetch("https://api.msg91.com/api/v5/flow", {
       method: "POST",
@@ -345,7 +356,7 @@ async function sendWhatsApp(reminder: ReminderRecord, supabase: any) {
 
     if (!client?.phone) return;
 
-    const message = `Hi ${client.full_name},\n\nReminder: ${reminder.title}\n${reminder.message || ""}\n\nDate: ${new Date(reminder.reminder_date).toLocaleString("en-IN")}\n\n- LawXP`;
+    const message = `Hi ${client.full_name},\n\nReminder: ${reminder.title}\n${reminder.message || ""}\n\nDate: ${new Date(reminder.reminder_date).toLocaleString("en-IN")}\n\n- CaseFiles`;
 
     await fetch("https://api.interakt.shop/v1/public/message/", {
       method: "POST",

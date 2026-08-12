@@ -18,6 +18,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { useUser } from "@/hooks/use-user";
 
 interface LawyerPerformance {
   name: string;
@@ -53,6 +54,7 @@ const priorityColors: Record<string, string> = {
 };
 
 export default function PerformanceReportPage() {
+  const { user: appUser } = useUser();
   const [stats, setStats] = useState<PerformanceStats>({
     overallWinRate: 0,
     avgCaseDuration: 0,
@@ -88,13 +90,12 @@ export default function PerformanceReportPage() {
     try {
       const startDate = getDateFilter();
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!appUser) throw new Error("Not authenticated");
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("firm_id, role")
-        .eq("id", user.id)
+        .eq("id", appUser?.uuid)
         .single();
       if (profileError || !profile) throw new Error("Profile not found");
 
@@ -106,7 +107,7 @@ export default function PerformanceReportPage() {
         .gte("created_at", startDate);
 
       if (!isOwner) {
-        casesQuery = casesQuery.or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`);
+        casesQuery = casesQuery.or(`assigned_to.eq.${appUser?.uuid},created_by.eq.${appUser?.uuid}`);
       }
 
       const { data: cases, error: casesError } = await casesQuery;
@@ -182,7 +183,7 @@ export default function PerformanceReportPage() {
         .gte("payment_date", startDate);
 
       if (!isOwner) {
-        paymentsQuery = paymentsQuery.eq("received_by", user.id);
+        paymentsQuery = paymentsQuery.eq("received_by", appUser?.uuid);
       }
 
       const { data: payments } = await paymentsQuery;
@@ -197,10 +198,10 @@ export default function PerformanceReportPage() {
         .sort((a, b) => b.totalCases - a.totalCases)
         .slice(0, 10);
 
-      // Monthly resolution
+      // Monthly resolution - use updated_at (when case was resolved)
       const monthMap: Record<string, number> = {};
       resolvedCases.forEach((c) => {
-        const month = new Date(c.created_at).toLocaleDateString("en-IN", {
+        const month = new Date(c.updated_at || c.created_at).toLocaleDateString("en-IN", {
           month: "short",
           year: "numeric",
         });

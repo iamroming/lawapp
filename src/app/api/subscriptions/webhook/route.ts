@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 import { PLANS, type PlanSlug } from "../route";
 
@@ -32,13 +32,14 @@ export async function POST(request: NextRequest) {
   // Parse body after verification
   const body = JSON.parse(bodyText);
   const event = body.event;
+  const eventId = body.id;
   const payload = body.payload?.subscription?.entity;
 
   if (!payload) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
   const razorpaySubId = payload.id;
   const notes = payload.notes || {};
   const userId = notes.user_id;
@@ -49,85 +50,117 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing user_id" }, { status: 400 });
   }
 
+  // Idempotency: check if subscription already matches target state (Bug #35)
+  const { data: existingSub } = await supabase
+    .from("user_subscriptions")
+    .select("status, plan_id, razorpay_sub_id, event_id")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  // Skip if this event was already processed
+  if (existingSub?.event_id === eventId) {
+    return NextResponse.json({ received: true, skipped: "duplicate event" });
+  }
+
   switch (event) {
     case "subscription.activated": {
-      await supabase
+      // Idempotency: skip if already active with same plan (Bug #35)
+      if (existingSub?.status === "active" && existingSub?.plan_id === planSlug) {
+        return NextResponse.json({ received: true, skipped: "already active" });
+      }
+
+      const { error: updateError } = await supabase
         .from("user_subscriptions")
         .update({
           status: "active",
+          plan_id: planSlug || null,
           expires_at: new Date(payload.current_end * 1000).toISOString(),
+          razorpay_sub_id: razorpaySubId,
+          event_id: eventId,
         })
         .eq("user_id", userId)
         .eq("status", "trialing");
+
+      if (updateError) {
+        console.error("Failed to update subscription on activated:", updateError);
+        return NextResponse.json({ error: "Failed to update subscription" }, { status: 500 });
+      }
 
       // BUG #15 fix: use billing cycle for amount
       if (planSlug && PLANS[planSlug]) {
         const plan = PLANS[planSlug];
         const amount = billingCycle === "annual" ? plan.annual.price : plan.monthly.price;
-        await supabase.from("user_subscriptions").update({
+        const { error: amountError } = await supabase.from("user_subscriptions").update({
           amount_paid: amount,
         }).eq("user_id", userId).eq("status", "active");
+        if (amountError) {
+          console.error("Failed to update amount_paid on activated:", amountError);
+        }
       }
       break;
     }
 
     case "subscription.charged": {
-      await supabase
+      const { error: updateError } = await supabase
         .from("user_subscriptions")
         .update({
           status: "active",
           expires_at: new Date(payload.current_end * 1000).toISOString(),
+          event_id: eventId,
         })
         .eq("user_id", userId)
         .eq("status", "active");
+
+      if (updateError) {
+        console.error("Failed to update subscription on charged:", updateError);
+        return NextResponse.json({ error: "Failed to update subscription" }, { status: 500 });
+      }
       break;
     }
 
     case "subscription.cancelled": {
-      await supabase
+      if (existingSub?.status === "cancelled") {
+        return NextResponse.json({ received: true, skipped: "already cancelled" });
+      }
+
+      const { error: updateError } = await supabase
         .from("user_subscriptions")
         .update({
           status: "cancelled",
           cancelled_at: new Date().toISOString(),
           auto_renew: false,
+          event_id: eventId,
         })
         .eq("user_id", userId)
         .in("status", ["active", "trialing"]);
-      break;
-    }
 
-    case "subscription.halted": {
-      await supabase
-        .from("user_subscriptions")
-        .update({ status: "past_due" })
-        .eq("user_id", userId)
-        .eq("status", "active");
-
-      // Send payment failure email
-      try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name, email")
-          .eq("id", userId)
-          .single();
-        if (profile?.email) {
-          const { paymentFailedEmail } = await import("@/lib/email-templates");
-          const { sendEmail } = await import("@/lib/email");
-          const planName = planSlug ? planSlug.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) : "Paid";
-          await sendEmail(profile.email, paymentFailedEmail(profile.full_name || "User", planName));
-        }
-      } catch (e) {
-        console.error("Failed to send payment failure email:", e);
+      if (updateError) {
+        console.error("Failed to update subscription on cancelled:", updateError);
+        return NextResponse.json({ error: "Failed to update subscription" }, { status: 500 });
       }
       break;
     }
 
+    case "subscription.halted":
     case "subscription.paused": {
-      await supabase
+      // subscription.halted and subscription.paused are identical events from Razorpay
+      // (Bug #85): Both handled by the same case block to avoid code duplication.
+      if (existingSub?.status === "past_due") {
+        return NextResponse.json({ received: true, skipped: "already past_due" });
+      }
+
+      const { error: updateError } = await supabase
         .from("user_subscriptions")
-        .update({ status: "past_due" })
+        .update({ status: "past_due", event_id: eventId })
         .eq("user_id", userId)
         .eq("status", "active");
+
+      if (updateError) {
+        console.error("Failed to update subscription on halted:", updateError);
+        return NextResponse.json({ error: "Failed to update subscription" }, { status: 500 });
+      }
 
       // Send payment failure email
       try {
@@ -149,11 +182,20 @@ export async function POST(request: NextRequest) {
     }
 
     case "subscription.resumed": {
-      await supabase
+      if (existingSub?.status === "active") {
+        return NextResponse.json({ received: true, skipped: "already active" });
+      }
+
+      const { error: updateError } = await supabase
         .from("user_subscriptions")
-        .update({ status: "active" })
+        .update({ status: "active", event_id: eventId })
         .eq("user_id", userId)
         .eq("status", "past_due");
+
+      if (updateError) {
+        console.error("Failed to update subscription on resumed:", updateError);
+        return NextResponse.json({ error: "Failed to update subscription" }, { status: 500 });
+      }
       break;
     }
   }

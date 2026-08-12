@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -44,7 +44,7 @@ export default function AdminSubscriptionsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"plans" | "subscriptions">("plans");
   const [showPlanModal, setShowPlanModal] = useState(false);
-  const supabase = createClient();
+  const supabase = createServiceRoleClient();
 
   const [newPlan, setNewPlan] = useState({
     name: "",
@@ -70,7 +70,7 @@ export default function AdminSubscriptionsPage() {
         .order("created_at", { ascending: false }),
     ]);
 
-    const formattedSubs = (subsRes.data || []).map((s) => ({
+    const formattedSubs = (subsRes.data || []).map((s: Record<string, unknown>) => ({
       ...s,
       user: unwrap(s.user),
       plan: unwrap(s.plan),
@@ -219,19 +219,31 @@ export default function AdminSubscriptionsPage() {
                     {plan.max_storage_mb === -1 ? "Unlimited" : `${plan.max_storage_mb} MB`}
                   </p>
                 </div>
-                {plan.features && (Array.isArray(plan.features) ? plan.features : typeof plan.features === "string" ? JSON.parse(plan.features) : []).length > 0 && (
-                  <div className="text-sm">
-                    <p className="font-medium mb-1">Features:</p>
-                    <ul className="space-y-1">
-                      {(Array.isArray(plan.features) ? plan.features : typeof plan.features === "string" ? JSON.parse(plan.features) : []).map((f, i) => (
+                {(() => {
+                  let parsedFeatures: (string | Record<string, unknown>)[] = [];
+                  try {
+                    if (Array.isArray(plan.features)) {
+                      parsedFeatures = plan.features;
+                    } else if (typeof plan.features === "string") {
+                      parsedFeatures = JSON.parse(plan.features);
+                    }
+                  } catch {
+                    parsedFeatures = [];
+                  }
+                  return parsedFeatures.length > 0 && (
+                    <div className="text-sm">
+                      <p className="font-medium mb-1">Features:</p>
+                      <ul className="space-y-1">
+                        {parsedFeatures.map((f: string | Record<string, unknown>, i: number) => (
                         <li key={i} className="flex items-center gap-1 text-[var(--text-secondary)]">
                           <CheckCircle className="h-3 w-3 text-green-500" />
                           {typeof f === "string" ? f : JSON.stringify(f)}
                         </li>
                       ))}
-                    </ul>
-                  </div>
-                )}
+                      </ul>
+                    </div>
+                  );
+                })()}
                 <Button
                   variant={plan.is_active ? "outline" : "default"}
                   size="sm"

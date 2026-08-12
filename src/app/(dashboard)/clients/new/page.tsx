@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { dbWrite } from "@/lib/db-write";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { useUser } from "@/hooks/use-user";
 
 const indianStates = [
   "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
@@ -22,6 +24,7 @@ const indianStates = [
 ];
 
 export default function NewClientPage() {
+  const { user: appUser } = useUser();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     full_name: "",
@@ -83,15 +86,18 @@ export default function NewClientPage() {
       return;
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
+    if (!appUser) { toast.error("You must be logged in to continue"); setLoading(false); return; }
 
-    const { error } = await supabase.from("clients").insert({
+    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", appUser?.uuid).single();
+
+    const { error } = await dbWrite("clients", "insert", {
       ...formData,
-      created_by: user?.id,
+      firm_id: profile?.firm_id,
+      created_by: appUser?.uuid,
     });
 
     if (error) {
-      toast.error(error.message);
+      toast.error(error);
       setLoading(false);
       return;
     }

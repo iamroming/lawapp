@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
 // GET — list tasks
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") || "0", 10);
 
     const { data: profile } = await supabase
-      .from("profiles").select("firm_id, role").eq("id", user.id).single();
+      .from("profiles").select("firm_id, role").eq("id", user.uuid).single();
 
     let query = supabase
       .from("tasks")
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
     if (profile?.firm_id && ["owner", "partner"].includes(profile.role || "")) {
       query = query.eq("firm_id", profile.firm_id);
     } else {
-      query = query.or(`user_id.eq.${user.id},assigned_to.eq.${user.id}`);
+      query = query.or(`user_id.eq.${user.uuid},assigned_to.eq.${user.uuid}`);
     }
 
     if (status) query = query.eq("status", status);
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
@@ -57,12 +58,12 @@ export async function POST(request: NextRequest) {
     if (!title) return NextResponse.json({ error: "Title is required" }, { status: 400 });
 
     const { data: profile } = await supabase
-      .from("profiles").select("firm_id").eq("id", user.id).single();
+      .from("profiles").select("firm_id").eq("id", user.uuid).single();
 
     const { data, error } = await supabase
       .from("tasks")
       .insert({
-        user_id: user.id,
+        user_id: user.uuid,
         case_id: case_id || null,
         client_id: client_id || null,
         firm_id: profile?.firm_id || null,
@@ -86,14 +87,14 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
     const { id, title, description, status, priority, due_date, assigned_to, case_id, client_id } = body;
     if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
-    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.id).single();
+    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.uuid).single();
     const firmId = profile?.firm_id;
 
     const updates: Record<string, unknown> = {};
@@ -107,11 +108,17 @@ export async function PATCH(request: NextRequest) {
     if (client_id !== undefined) updates.client_id = client_id;
     updates.updated_at = new Date().toISOString();
 
-    const { data, error } = await supabase
+    let updateQuery = supabase
       .from("tasks")
       .update(updates)
-      .eq("id", id)
-      .eq("firm_id", firmId)
+      .eq("id", id);
+    if (firmId) {
+      updateQuery = updateQuery.eq("firm_id", firmId);
+    } else {
+      updateQuery = updateQuery.eq("user_id", user.uuid);
+    }
+
+    const { data, error } = await updateQuery
       .select("*, cases(id, title, case_number), clients(id, full_name), assigned_user:profiles!tasks_assigned_to_fkey(full_name)")
       .single();
 
@@ -126,17 +133,23 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.id).single();
+    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.uuid).single();
     const firmId = profile?.firm_id;
 
-    const { error } = await supabase.from("tasks").delete().eq("id", id).eq("firm_id", firmId);
+    let deleteQuery = supabase.from("tasks").delete().eq("id", id);
+    if (firmId) {
+      deleteQuery = deleteQuery.eq("firm_id", firmId);
+    } else {
+      deleteQuery = deleteQuery.eq("user_id", user.uuid);
+    }
+    const { error } = await deleteQuery;
     if (error) throw error;
     return NextResponse.json({ success: true });
   } catch (error) {

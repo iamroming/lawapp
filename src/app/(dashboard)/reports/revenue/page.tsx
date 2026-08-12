@@ -17,6 +17,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { useUser } from "@/hooks/use-user";
 
 interface MonthlyRevenue {
   month: string;
@@ -51,6 +52,7 @@ const dateRangeOptions = [
 ];
 
 export default function RevenueReportPage() {
+  const { user: appUser } = useUser();
   const [stats, setStats] = useState<RevenueStats>({
     totalRevenue: 0,
     monthlyRevenue: [],
@@ -87,13 +89,12 @@ export default function RevenueReportPage() {
     try {
       const startDate = getDateFilter();
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!appUser) throw new Error("Not authenticated");
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("firm_id, role")
-        .eq("id", user.id)
+        .eq("id", appUser?.uuid)
         .single();
       if (profileError || !profile) throw new Error("Profile not found");
 
@@ -110,8 +111,8 @@ export default function RevenueReportPage() {
         .gte("created_at", startDate);
 
       if (!isOwner) {
-        paymentsQuery = paymentsQuery.eq("received_by", user.id);
-        invoicesQuery = invoicesQuery.eq("issued_by", user.id);
+        paymentsQuery = paymentsQuery.eq("received_by", appUser?.uuid);
+        invoicesQuery = invoicesQuery.eq("issued_by", appUser?.uuid);
       }
 
       const [paymentsRes, invoicesRes] = await Promise.all([

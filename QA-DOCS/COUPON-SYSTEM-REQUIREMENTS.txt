@@ -1,0 +1,165 @@
+======================================================================
+              COUPON SYSTEM — REQUIREMENTS UNDERSTANDING
+======================================================================
+
+1. PROMOTIONAL COUPON (30% OFF — FIRST 100 USERS)
+----------------------------------------------------------------------
+- Discount: 30% off the subscription price
+- Applies to: ALL plans (Solo, Professional, Firm, Enterprise)
+- Applies to: BOTH monthly and annual billing
+- Usage limit: First 100 users only (max_uses = 100)
+- One-time use per user (enforced via coupon_uses table)
+- After 100 uses, coupon becomes invalid automatically
+
+  Example:
+    Solo Monthly ₹299 → ₹209 after 30% off
+    Firm Annual ₹19,999 → ₹13,999 after 30% off
+
+
+2. FRIEND BYPASS / FREE ACCESS CODE
+----------------------------------------------------------------------
+- Discount type: "free" (100% off — ₹0 payment)
+- Plan: Admin selects which plan the code grants (e.g., Solo, Professional, etc.)
+- Billing: Admin selects monthly or annual
+- Usage limit: 1 code = 1 user only (max_uses = 1)
+- If a second user tries the same code → denial: "Coupon used already"
+- Duration: 1 year from activation (or admin-defined expiry)
+- No Razorpay involved — subscription activates directly
+
+  Example:
+    Admin creates "FRIEND2026" → Free access to Professional plan (annual)
+    User A applies it → gets Professional for free for 1 year
+    User B tries same code → "Coupon used already" error
+
+
+3. SUPER ADMIN COUPON CREATOR MODULE
+----------------------------------------------------------------------
+Location: /super-admin/coupons (already exists, needs redesign)
+
+The coupon creation form should have these fields:
+
+  Field                    Options
+  ──────────────────────── ──────────────────────────────────
+  Coupon Code              Manual input OR auto-generate button
+  
+  Discount Type            ▸ Percentage off (e.g., 30%)
+                           ▸ Fixed amount off (e.g., ₹500)
+                           ▸ Free access (friend bypass)
+  
+  Discount Value           Number input (e.g., 30 for 30%,
+                           500 for ₹500, disabled for "free")
+  
+  Applies To Plan          ▸ All Plans
+                           ▸ Solo only
+                           ▸ Professional only
+                           ▸ Firm only
+                           ▸ Enterprise only
+  
+  Billing Cycle            ▸ Both (monthly + annual)
+                           ▸ Monthly only
+                           ▸ Annual only
+  
+  Usage Limit              Number input (-1 = unlimited,
+                           or specific number like 100)
+  
+  Max Uses Per User        ▸ 1 time (one-time use)
+                           ▸ Unlimited (can reuse)
+  
+  Valid From               Date picker (start date)
+  
+  Valid Until              Date picker (end date, optional)
+  
+  Description              Text input (internal note)
+  
+  Status                   ▸ Active
+                           ▸ Inactive (draft mode)
+
+
+4. DATABASE CHANGES NEEDED
+----------------------------------------------------------------------
+Table: coupon_codes (already exists, needs new columns)
+
+  New column:               Purpose
+  ──────────────────────── ──────────────────────────────────
+  max_per_user              int (1 = one-time use per user,
+                              -1 = unlimited per user)
+  billing_cycle             text ('both', 'monthly', 'annual')
+                              default 'both'
+
+  Existing columns being reused:
+  - discount_type: 'percent', 'fixed', 'free'
+  - max_uses: total usage limit across all users
+  - plan_id: NULL = all plans, or specific plan ID
+  - valid_from / valid_until: date range
+  - is_active: enable/disable toggle
+
+
+5. VALIDATION LOGIC (API: /api/coupons/validate)
+----------------------------------------------------------------------
+When user enters a coupon code:
+
+  1. Find coupon by code (case-insensitive)
+  2. Check is_active = true
+  3. Check valid_from <= now AND valid_until >= now
+  4. Check current_uses < max_uses (or max_uses = -1)
+  5. Check user hasn't already used it (coupon_uses table)
+  6. Check plan restriction matches selected plan
+  7. Check billing_cycle restriction matches selected cycle
+  8. Check max_per_user limit for this user
+  9. Return: valid, discount_type, discount_value, final_price
+
+
+6. EDGE CASES
+----------------------------------------------------------------------
+- Coupon "SAVE30" created with max_uses=100:
+  → After 100 redemptions, automatically invalid
+
+- Coupon "FRIEND2026" (free) with max_uses=1, max_per_user=1:
+  → User A uses it → success, subscription activated
+  → User B uses same code → "Coupon used already"
+  → User A tries again → "You have already used this coupon"
+
+- Coupon restricted to "Professional only" + "Monthly only":
+  → User on Solo plan → "This coupon is not valid for your plan"
+  → User selecting annual billing → "This coupon is for monthly plans only"
+
+- Coupon "FLAT500" (₹500 off) on Solo Monthly (₹299):
+  → Price would go below ₹0 → cap at ₹0 (free)
+
+
+7. SUPER ADMIN DASHBOARD (COUPONS PAGE)
+----------------------------------------------------------------------
+Stats bar:
+  - Total coupons
+  - Active coupons
+  - Total redemptions
+  - Revenue lost to discounts
+
+Coupon list:
+  - Code, discount badge, plan, usage count, status, actions
+  - Actions: View usage, Toggle active, Delete
+
+Create coupon modal (redesigned with all fields above)
+
+
+8. WHAT EXISTS vs WHAT NEEDS TO CHANGE
+----------------------------------------------------------------------
+EXISTS (keep as-is):
+  ✅ /super-admin/coupons page (redesign the create form)
+  ✅ /api/coupons/validate route (add billing_cycle + max_per_user checks)
+  ✅ /api/coupons/apply route (add billing_cycle + max_per_user checks)
+  ✅ coupon_codes table (add 2 new columns)
+  ✅ coupon_uses table (no changes needed)
+  ✅ Subscription page coupon input field
+  ✅ Subscription-required page coupon input field
+
+NEEDS CHANGES:
+  🔧 coupon_codes table: add max_per_user, billing_cycle columns
+  🔧 /api/coupons/validate: add billing_cycle + max_per_user validation
+  🔧 /api/coupons/apply: add billing_cycle + max_per_user enforcement
+  🔧 /super-admin/coupons: redesign create modal with all new fields
+  🔧 Subscription pages: pass billing_cycle to coupon validation
+
+----------------------------------------------------------------------
+                         END OF DOCUMENT
+======================================================================

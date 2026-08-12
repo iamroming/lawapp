@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 import { PLANS, type PlanSlug, type BillingCycle } from "../route";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -20,10 +19,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
   }
 
+  if (!billingCycle || !["monthly", "annual"].includes(billingCycle)) {
+    return NextResponse.json({ error: "Invalid billing cycle" }, { status: 400 });
+  }
+
   const { data: currentSub } = await supabase
     .from("user_subscriptions")
     .select("id, status, notes")
-    .eq("user_id", user.id)
+    .eq("user_id", user.uuid)
     .in("status", ["active", "trialing"])
     .single();
 

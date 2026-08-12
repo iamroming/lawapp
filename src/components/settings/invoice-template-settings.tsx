@@ -4,9 +4,11 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { INVOICE_TEMPLATES, type InvoiceTemplateId } from "@/lib/invoices/templates";
-import { createClient } from "@/lib/supabase/client";
+import { dbWrite } from "@/lib/db-write";
+import { getFirebaseAuth } from "@/lib/firebase/config";
 import { CheckCircle, FileText } from "lucide-react";
 import toast from "react-hot-toast";
+import { firebaseUidToUuid } from "@/lib/firebase/uid";
 
 interface Props {
   currentTemplate?: string;
@@ -16,15 +18,15 @@ interface Props {
 export function InvoiceTemplateSettings({ currentTemplate = "classic", onSave }: Props) {
   const [selected, setSelected] = useState<InvoiceTemplateId>(currentTemplate as InvoiceTemplateId);
   const [saving, setSaving] = useState(false);
-  const supabase = createClient();
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const auth = getFirebaseAuth();
+      const user = auth.currentUser;
       if (!user) return;
-      const { error } = await supabase.from("profiles").update({ invoice_template: selected }).eq("id", user.id);
-      if (error) toast.error(error.message);
+      const { error } = await dbWrite("profiles", "update", { invoice_template: selected }, { id: firebaseUidToUuid(user.uid) });
+      if (error) toast.error(error);
       else { toast.success("Template saved!"); onSave?.(); }
     } catch {
       toast.error("Failed to save");

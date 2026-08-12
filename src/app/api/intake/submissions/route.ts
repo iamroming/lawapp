@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
@@ -14,7 +13,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from("intake_submissions")
-    .select("*, intake_forms(title, created_by)")
+    .select("*, intake_forms!inner(title, user_id)")
     .order("created_at", { ascending: false });
 
   if (formId) {
@@ -25,7 +24,7 @@ export async function GET(request: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const filtered = (data || []).filter(
-    (s: any) => s.intake_forms?.created_by === user.id
+    (s: any) => s.intake_forms?.user_id === user.uuid
   );
   return NextResponse.json(filtered);
 }
@@ -42,21 +41,21 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { form_id, submitter_name, submitter_email, submitter_phone, responses } = body;
+    const { form_id, client_name, client_email, client_phone, data: responses } = body;
 
     if (!form_id || !responses || typeof responses !== "object") {
-      return NextResponse.json({ error: "form_id and responses object are required" }, { status: 400 });
+      return NextResponse.json({ error: "form_id and data object are required" }, { status: 400 });
     }
 
     const { data, error } = await supabase
       .from("intake_submissions")
       .insert({
         form_id,
-        submitter_name: submitter_name || null,
-        submitter_email: submitter_email || null,
-        submitter_phone: submitter_phone || null,
-        responses,
-        status: "submitted",
+        client_name: client_name || "Anonymous",
+        client_email: client_email || null,
+        client_phone: client_phone || null,
+        data: responses,
+        status: "new",
       })
       .select()
       .single();

@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
+import { PLANS } from "@/app/api/subscriptions/route";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { code } = body;
+  const { code, billingCycle } = body;
 
   if (!code || typeof code !== "string") {
     return NextResponse.json({ error: "Coupon code is required" }, { status: 400 });
@@ -27,7 +29,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid coupon code" }, { status: 404 });
   }
 
-  // Validate
+  // Validate dates
   const now = new Date();
   if (coupon.valid_from && new Date(coupon.valid_from) > now) {
     return NextResponse.json({ error: "Coupon is not yet active" }, { status: 400 });
@@ -35,34 +37,45 @@ export async function POST(request: NextRequest) {
   if (coupon.valid_until && new Date(coupon.valid_until) < now) {
     return NextResponse.json({ error: "Coupon has expired" }, { status: 400 });
   }
+
+  // Check total usage limit
   if (coupon.max_uses !== -1 && coupon.current_uses >= coupon.max_uses) {
     return NextResponse.json({ error: "Coupon usage limit reached" }, { status: 400 });
   }
 
-  // Atomically increment usage count (only if under limit) — prevents TOCTOU race
+  // Check per-user usage limit
+  if (coupon.max_per_user !== -1) {
+    const { count } = await supabase
+      .from("coupon_uses")
+      .select("id", { count: "exact", head: true })
+      .eq("coupon_id", coupon.id)
+      .eq("user_id", user.uuid);
+
+    if ((count || 0) >= coupon.max_per_user) {
+      return NextResponse.json({ error: "You have already used this coupon" }, { status: 400 });
+    }
+  }
+
+  // Check billing cycle restriction
+  if (coupon.billing_cycle && coupon.billing_cycle !== "both" && billingCycle) {
+    if (coupon.billing_cycle !== billingCycle) {
+      return NextResponse.json({
+        error: `This coupon is only valid for ${coupon.billing_cycle} billing`,
+      }, { status: 400 });
+    }
+  }
+
+  // Atomically increment usage count with row-level lock
   const { data: incremented, error: incError } = await supabase
     .from("coupon_codes")
-    .update({ current_uses: coupon.current_uses + 1 })
+    .update({ current_uses: (coupon.current_uses || 0) + 1 })
     .eq("id", coupon.id)
-    .lt("current_uses", coupon.max_uses)
+    .eq("current_uses", coupon.current_uses) // optimistic lock: only update if value hasn't changed
     .select("id")
     .single();
 
   if (incError || !incremented) {
-    return NextResponse.json({ error: "Coupon usage limit reached" }, { status: 400 });
-  }
-
-  // Check if already used this coupon
-  const { data: alreadyUsed } = await supabase
-    .from("coupon_uses")
-    .select("id")
-    .eq("coupon_id", coupon.id)
-    .eq("user_id", user.id)
-    .limit(1)
-    .single();
-
-  if (alreadyUsed) {
-    return NextResponse.json({ error: "You have already used this coupon" }, { status: 400 });
+    return NextResponse.json({ error: "Coupon usage limit reached or concurrent modification. Please try again." }, { status: 409 });
   }
 
   const plan = Array.isArray(coupon.plan) ? coupon.plan[0] : coupon.plan;
@@ -71,32 +84,33 @@ export async function POST(request: NextRequest) {
   }
 
   // Calculate price
-  let amountAfter = plan.price;
+  const planPrice = PLANS[plan.slug as keyof typeof PLANS]?.monthly?.price || plan.price;
+  let amountAfter = planPrice;
   if (coupon.discount_type === "free") {
     amountAfter = 0;
   } else if (coupon.discount_type === "percent") {
-    amountAfter = plan.price * (1 - coupon.discount_value / 100);
+    amountAfter = planPrice * (1 - coupon.discount_value / 100);
   } else if (coupon.discount_type === "fixed") {
-    amountAfter = Math.max(0, plan.price - coupon.discount_value);
+    amountAfter = Math.max(0, planPrice - coupon.discount_value);
   }
 
-  // Determine expiry - for free/friend coupons, give 10 years
+  // Determine expiry
   const isLifetime = coupon.discount_type === "free";
   const expiresAt = isLifetime
-    ? new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000).toISOString()
-    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 days for paid
+    ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
   // Create or update subscription
   const { data: existing } = await supabase
     .from("user_subscriptions")
     .select("id")
-    .eq("user_id", user.id)
+    .eq("user_id", user.uuid)
     .in("status", ["active", "trialing", "expired", "cancelled"])
     .limit(1)
     .single();
 
   const subData = {
-    user_id: user.id,
+    user_id: user.uuid,
     plan_id: coupon.plan_id,
     status: "active",
     starts_at: new Date().toISOString(),
@@ -118,18 +132,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: subResult.error.message }, { status: 500 });
   }
 
-  // Record coupon usage
-  await supabase.from("coupon_uses").insert({
+  // Record coupon usage (upsert to prevent duplicates)
+  await supabase.from("coupon_uses").upsert({
     coupon_id: coupon.id,
-    user_id: user.id,
+    user_id: user.uuid,
     plan_subscribed: coupon.plan_id,
-    amount_before: plan.price,
+    amount_before: planPrice,
     amount_after: amountAfter,
-  });
+  }, { onConflict: "coupon_id,user_id" });
 
   // Log activity
   await supabase.rpc("log_activity", {
-    p_user_id: user.id,
+    p_user_id: user.uuid,
     p_action: "applied_coupon",
     p_entity_type: "subscription",
     p_entity_id: subResult.data.id,

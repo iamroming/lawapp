@@ -10,9 +10,6 @@ import {
   Calendar,
   FileText,
   Receipt,
-  BookOpen,
-  Calculator,
-  Bell,
   Brain,
   BarChart3,
   Settings,
@@ -23,103 +20,70 @@ import {
   Shield,
   Globe,
   MessageSquare,
-  Clock,
   Wallet,
-  Timer,
   CheckSquare,
-  Sparkles,
-  MessageCircle,
-  FileSearch,
   ClipboardList,
-  CalendarCheck,
-  ListOrdered,
-  IndianRupee,
   ChevronDown,
   ChevronRight,
   Search,
+  Building2,
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { createClient } from "@/lib/supabase/client";
+import { getFirebaseAuth } from "@/lib/firebase/config";
+import { signOut as firebaseSignOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { firebaseUidToUuid } from "@/lib/firebase/uid";
+import { BranchSwitcher } from "@/components/branch-switcher";
 
 interface NavGroup {
   label: string;
   items: typeof allNavItems;
 }
 
+const EMPLOYEE_ROLES = ["senior_associate", "associate", "junior_associate", "paralegal", "intern", "office_admin"];
+
 const allNavItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["owner","partner","senior_associate","associate","junior_associate","paralegal","intern","office_admin","super_admin"] },
   { name: "Cases", href: "/cases", icon: Briefcase, roles: ["owner","partner","senior_associate","associate","junior_associate","paralegal","intern","office_admin"] },
   { name: "Clients", href: "/clients", icon: Users, roles: ["owner","partner","senior_associate","associate","junior_associate","paralegal","office_admin"] },
   { name: "Calendar", href: "/calendar", icon: Calendar, roles: ["owner","partner","senior_associate","associate","junior_associate","paralegal","intern","office_admin"] },
-  { name: "eCourts Tracking", href: "/ecourts", icon: Globe, roles: ["owner","partner","senior_associate","associate","junior_associate"] },
-  { name: "Cause List", href: "/cause-list", icon: ListOrdered, roles: ["owner","partner","senior_associate","associate","junior_associate"] },
-  { name: "Court Research", href: "/research", icon: Scale, roles: ["owner","partner","senior_associate","associate","junior_associate","paralegal","intern"] },
+  { name: "Court Tracking", href: "/court-tracking", icon: Globe, roles: ["owner","partner","senior_associate","associate","junior_associate"] },
   { name: "Documents", href: "/documents", icon: FileText, roles: ["owner","partner","senior_associate","associate","junior_associate","paralegal","office_admin"] },
-  { name: "Templates", href: "/documents/templates", icon: FileText, roles: ["owner","partner","senior_associate","associate"] },
-  { name: "Billing", href: "/billing", icon: Receipt, roles: ["owner","partner","senior_associate","associate","office_admin"] },
-  { name: "Outstanding", href: "/billing/outstanding", icon: IndianRupee, roles: ["owner","partner","senior_associate","associate","office_admin"] },
-  { name: "Collections", href: "/billing/collections", icon: IndianRupee, roles: ["owner","partner","senior_associate","associate","office_admin"] },
-  { name: "Expenses", href: "/expenses", icon: Wallet, roles: ["owner","partner","senior_associate","associate","junior_associate","paralegal"] },
-  { name: "Timesheets", href: "/timesheets", icon: Timer, roles: ["owner","partner","senior_associate","associate","junior_associate","paralegal","intern"] },
+  { name: "Billing", href: "/billing", icon: Receipt, roles: ["owner","partner","senior_associate","associate","office_admin"], ownerOnly: true },
+  { name: "Quotations", href: "/quotations", icon: ClipboardList, roles: ["owner","partner","senior_associate","associate","office_admin"], ownerOnly: true },
+  { name: "Expenses", href: "/expenses", icon: Wallet, roles: ["owner","partner","senior_associate","associate","junior_associate","paralegal"], ownerOnly: true },
   { name: "Tasks", href: "/tasks", icon: CheckSquare, roles: ["owner","partner","senior_associate","associate","junior_associate","paralegal","intern","office_admin"] },
-  { name: "Reminders", href: "/reminders", icon: Clock, roles: ["owner","partner","senior_associate","associate","junior_associate","paralegal","intern"] },
-  { name: "Bare Acts", href: "/bare-acts", icon: BookOpen, roles: ["owner","partner","senior_associate","associate","junior_associate","paralegal","intern"] },
-  { name: "Calculators", href: "/calculators", icon: Calculator, roles: ["owner","partner","senior_associate","associate","junior_associate","paralegal","intern"] },
-  { name: "Notifications", href: "/notifications", icon: Bell, roles: ["owner","partner","senior_associate","associate","junior_associate","paralegal","intern","office_admin"] },
-  { name: "AI Assistant", href: "/ai/case-analysis", icon: Brain, roles: ["owner","partner","senior_associate","associate","junior_associate"] },
-  { name: "AI Drafting", href: "/ai/drafting", icon: Sparkles, roles: ["owner","partner","senior_associate","associate"] },
-  { name: "AI Chat", href: "/ai/chat", icon: MessageCircle, roles: ["owner","partner","senior_associate","associate","junior_associate"] },
-  { name: "AI Summarize", href: "/ai/summarize", icon: FileSearch, roles: ["owner","partner","senior_associate","associate"] },
-  { name: "Consultations", href: "/consultations", icon: CalendarCheck, roles: ["owner","partner","senior_associate","associate"] },
-  { name: "Intake Forms", href: "/intake", icon: ClipboardList, roles: ["owner","partner","senior_associate","associate"] },
-  { name: "Reports", href: "/reports", icon: BarChart3, roles: ["owner","partner","senior_associate"] },
-  { name: "Financial Analytics", href: "/reports/financial", icon: IndianRupee, roles: ["owner","partner"] },
-  { name: "Team Analytics", href: "/reports/team", icon: Users, roles: ["owner","partner"] },
-  { name: "Client Analytics", href: "/reports/clients-deep", icon: Users, roles: ["owner","partner"] },
+  { name: "Branches", href: "/branches", icon: Building2, roles: ["owner","partner"], plans: ["firm", "enterprise"] },
+  { name: "AI Tools", href: "/ai", icon: Brain, roles: ["owner","partner","senior_associate","associate","junior_associate"], ownerOnly: true },
+  { name: "Reports", href: "/reports", icon: BarChart3, roles: ["owner","partner","senior_associate"], ownerOnly: true },
+  { name: "CRM", href: "/crm", icon: ClipboardList, roles: ["owner","partner","senior_associate","associate"], ownerOnly: true },
   { name: "Messages", href: "/messages", icon: MessageSquare, roles: ["owner","partner","senior_associate","associate","junior_associate","paralegal","intern","office_admin"] },
+  { name: "Subscription", href: "/subscription", icon: Receipt, roles: ["owner","partner","senior_associate","associate","junior_associate","paralegal","intern","office_admin"] },
   { name: "Settings", href: "/settings", icon: Settings, roles: ["owner","partner","senior_associate","associate","junior_associate","paralegal","intern","office_admin"] },
 ];
 
-function buildGroups(userRole: string | null): NavGroup[] {
+function buildGroups(userRole: string | null, planSlug?: string): NavGroup[] {
   const has = (roles: string[]) => !userRole || roles.includes(userRole);
-  const filter = (items: typeof allNavItems) => items.filter(i => has(i.roles));
+  const hasPlan = (plans?: string[]) => !plans || !planSlug || plans.includes(planSlug);
+  const isEmployee = userRole ? EMPLOYEE_ROLES.includes(userRole) : false;
+  const filter = (items: typeof allNavItems) =>
+    items.filter(i => has(i.roles) && hasPlan((i as any).plans) && !(isEmployee && (i as any).ownerOnly));
 
   const groups: NavGroup[] = [];
 
-  const main = filter(allNavItems.filter(i => i.href === "/dashboard"));
+  const main = filter(allNavItems.filter(i => ["/dashboard", "/cases", "/clients", "/calendar"].includes(i.href)));
   if (main.length) groups.push({ label: "", items: main });
 
-  const practice = filter(allNavItems.filter(i => ["/cases", "/clients", "/calendar"].includes(i.href)));
-  if (practice.length) groups.push({ label: "Practice", items: practice });
+  const tools = filter(allNavItems.filter(i => ["/court-tracking", "/documents", "/billing", "/quotations", "/expenses", "/tasks", "/branches"].includes(i.href)));
+  if (tools.length) groups.push({ label: "Tools", items: tools });
 
-  const court = filter(allNavItems.filter(i => ["/ecourts", "/cause-list", "/research"].includes(i.href)));
-  if (court.length) groups.push({ label: "Court", items: court });
+  const advanced = filter(allNavItems.filter(i => ["/ai", "/reports", "/crm"].includes(i.href)));
+  if (advanced.length) groups.push({ label: "Advanced", items: advanced });
 
-  const docs = filter(allNavItems.filter(i => ["/documents", "/documents/templates"].includes(i.href)));
-  if (docs.length) groups.push({ label: "Documents", items: docs });
-
-  const billing = filter(allNavItems.filter(i => ["/billing", "/billing/outstanding", "/billing/collections", "/expenses"].includes(i.href)));
-  if (billing.length) groups.push({ label: "Billing", items: billing });
-
-  const work = filter(allNavItems.filter(i => ["/timesheets", "/tasks", "/reminders"].includes(i.href)));
-  if (work.length) groups.push({ label: "Work", items: work });
-
-  const research = filter(allNavItems.filter(i => ["/bare-acts", "/calculators"].includes(i.href)));
-  if (research.length) groups.push({ label: "Research", items: research });
-
-  const ai = filter(allNavItems.filter(i => i.href.startsWith("/ai/")));
-  if (ai.length) groups.push({ label: "AI Tools", items: ai });
-
-  const crm = filter(allNavItems.filter(i => ["/consultations", "/intake", "/messages"].includes(i.href)));
-  if (crm.length) groups.push({ label: "CRM", items: crm });
-
-  const reports = filter(allNavItems.filter(i => i.href.startsWith("/reports")));
-  if (reports.length) groups.push({ label: "Reports", items: reports });
-
-  const system = filter(allNavItems.filter(i => ["/notifications", "/settings"].includes(i.href)));
-  if (system.length) groups.push({ label: "System", items: system });
+  const system = filter(allNavItems.filter(i => ["/messages", "/subscription", "/settings"].includes(i.href)));
+  if (system.length) groups.push({ label: "", items: system });
 
   return groups;
 }
@@ -127,6 +91,8 @@ function buildGroups(userRole: string | null): NavGroup[] {
 export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [firmName, setFirmName] = useState<string>("CaseFiles");
+  const [subscriptionPlan, setSubscriptionPlan] = useState<string>("free");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const pathname = usePathname();
   const router = useRouter();
@@ -134,23 +100,45 @@ export function Sidebar() {
 
   useEffect(() => {
     const checkAdmin = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const auth = getFirebaseAuth();
+      const user = auth.currentUser;
       if (user) {
         const { data } = await supabase
           .from("profiles")
-          .select("role")
-          .eq("id", user.id)
+          .select("role, firm_name")
+          .eq("id", firebaseUidToUuid(user.uid))
           .single();
         if (data?.role) {
           setUserRole(data.role);
+        }
+        if (data?.firm_name) {
+          setFirmName(data.firm_name);
+        }
+
+        // Check subscription plan
+        const { data: subData } = await supabase
+          .from("user_subscriptions")
+          .select("notes")
+          .eq("user_id", firebaseUidToUuid(user.uid))
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (subData?.notes) {
+          try {
+            const notes = JSON.parse(subData.notes);
+            if (notes.plan_slug) {
+              setSubscriptionPlan(notes.plan_slug);
+            }
+          } catch {}
         }
       }
     };
     checkAdmin();
   }, [supabase]);
 
-  const canAccessAdmin = userRole === "owner" || userRole === "partner";
-  const groups = buildGroups(userRole);
+  const canAccessAdmin = (userRole === "owner" || userRole === "partner") && subscriptionPlan !== "solo";
+  const groups = buildGroups(userRole, subscriptionPlan);
 
   const toggleGroup = (label: string) => {
     setCollapsed(prev => ({ ...prev, [label]: !prev[label] }));
@@ -160,7 +148,8 @@ export function Sidebar() {
     items.some(item => pathname === item.href || pathname.startsWith(item.href + "/"));
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await firebaseSignOut(getFirebaseAuth());
+    await fetch("/api/auth/session", { method: "DELETE" });
     router.push("/login");
     router.refresh();
   };
@@ -183,7 +172,7 @@ export function Sidebar() {
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
                   isActive
                     ? "bg-[var(--accent)] text-white shadow-sm"
-                    : "text-[var(--text-secondary)] hover:bg-gray-100 hover:text-[var(--text-primary)]"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)]"
                 )}
               >
                 <item.icon className="h-4 w-4 shrink-0" />
@@ -199,7 +188,7 @@ export function Sidebar() {
               onClick={() => toggleGroup(group.label)}
               className={cn(
                 "flex items-center justify-between w-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-md transition-colors",
-                active ? "text-[var(--accent)]" : "text-gray-400 hover:text-gray-600"
+                active ? "text-[var(--accent)]" : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
               )}
             >
               {group.label}
@@ -216,7 +205,7 @@ export function Sidebar() {
                     "flex items-center gap-3 pl-5 pr-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
                     isActive
                       ? "bg-[var(--accent)] text-white shadow-sm"
-                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                      : "text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)]"
                   )}
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
@@ -228,7 +217,12 @@ export function Sidebar() {
         );
       })}
       {canAccessAdmin && (
-        <div className="mt-2 pt-2 border-t border-gray-200">
+        <div className="mt-2 pt-2 border-t border-[var(--border)]">
+          <BranchSwitcher />
+        </div>
+      )}
+      {canAccessAdmin && (
+        <div className="mt-2 pt-2 border-t border-[var(--border)]">
           <Link
             href="/admin"
             onClick={() => isMobile && setMobileOpen(false)}
@@ -236,7 +230,7 @@ export function Sidebar() {
               "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
               pathname.startsWith("/admin")
                 ? "bg-[var(--accent)] text-white shadow-sm"
-                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                : "text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)]"
             )}
           >
             <Shield className="h-4 w-4 shrink-0" />
@@ -250,22 +244,22 @@ export function Sidebar() {
   return (
     <>
       {/* Mobile top bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 px-3 h-14 flex items-center shadow-sm">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-[var(--surface)] border-b border-[var(--border)] px-3 h-14 flex items-center shadow-sm">
         <button
           onClick={() => setMobileOpen(true)}
-          className="text-gray-600 hover:text-gray-900 p-1 -ml-1"
+          className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1 -ml-1"
           aria-label="Open menu"
         >
           <Menu className="h-5 w-5" />
         </button>
         <Link href="/dashboard" className="ml-3 flex items-center gap-2">
           <Scale className="h-5 w-5 text-[var(--accent)]" />
-          <span className="font-bold text-base text-gray-900">LawXP</span>
+          <span className="font-bold text-base text-[var(--text-primary)]">{firmName}</span>
         </Link>
         <div className="flex-1" />
         <Link
           href="/dashboard"
-          className="p-2 text-gray-500 hover:text-gray-900"
+          className="p-2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
           aria-label="Search"
         >
           <Search className="h-5 w-5" />
@@ -276,26 +270,26 @@ export function Sidebar() {
       {mobileOpen && (
         <div className="lg:hidden fixed inset-0 z-50">
           <div className="fixed inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
-          <div className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-white shadow-2xl flex flex-col">
-            <div className="flex items-center justify-between h-14 px-4 border-b border-gray-200 shrink-0">
+          <div className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-[var(--surface)] shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between h-14 px-4 border-b border-[var(--border)] shrink-0">
               <div className="flex items-center gap-2">
                 <Scale className="h-5 w-5 text-[var(--accent)]" />
-                <span className="font-bold text-base text-gray-900">LawXP</span>
+                <span className="font-bold text-base text-[var(--text-primary)]">{firmName}</span>
               </div>
               <button
                 onClick={() => setMobileOpen(false)}
-                className="p-1 -mr-1 text-gray-500 hover:text-gray-900"
+                className="p-1 -mr-1 text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
                 aria-label="Close menu"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
             {renderNav(true)}
-            <div className="p-4 border-t border-gray-200 shrink-0 space-y-3">
+            <div className="p-4 border-t border-[var(--border)] shrink-0 space-y-3">
               <LanguageSwitcher />
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors"
               >
                 <LogOut className="h-4 w-4" />
                 Sign Out
@@ -306,19 +300,19 @@ export function Sidebar() {
       )}
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white border-r border-gray-200 shadow-sm">
-        <div className="flex items-center gap-2 h-14 px-5 border-b border-gray-200">
+      <div className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-[var(--surface)] border-r border-[var(--border)] shadow-sm">
+        <div className="flex items-center gap-2 h-14 px-5 border-b border-[var(--border)]">
           <Scale className="h-5 w-5 text-[var(--accent)]" />
-          <span className="font-bold text-base text-gray-900">LawXP</span>
+          <span className="font-bold text-base text-[var(--text-primary)]">{firmName}</span>
         </div>
         {renderNav()}
-        <div className="p-4 border-t border-gray-200">
+        <div className="p-4 border-t border-[var(--border)]">
           <div className="mb-3">
             <LanguageSwitcher />
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors"
           >
             <LogOut className="h-4 w-4" />
             Sign Out

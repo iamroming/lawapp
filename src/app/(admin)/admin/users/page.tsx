@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,14 +34,16 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
-  const supabase = createClient();
+  const [firmId, setFirmId] = useState<string | null>(null);
+  const supabase = createServiceRoleClient();
+  const authClient = createClient();
 
   useEffect(() => {
     fetchUsers();
   }, []);
 
   const fetchUsers = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await authClient.auth.getUser();
     if (!user) { setLoading(false); return; }
 
     const { data: profile } = await supabase
@@ -51,6 +54,7 @@ export default function AdminUsersPage() {
 
     const isSuperAdmin = profile?.role === "super_admin";
     const firmId = profile?.firm_id || user.id;
+    setFirmId(firmId);
 
     let query = supabase
       .from("profiles")
@@ -98,7 +102,8 @@ export default function AdminUsersPage() {
     const { error } = await supabase
       .from("profiles")
       .update({ role: newRole })
-      .eq("id", userId);
+      .eq("id", userId)
+      .eq("firm_id", firmId);
 
     if (!error) {
       fetchUsers();
@@ -109,7 +114,8 @@ export default function AdminUsersPage() {
     const { error } = await supabase
       .from("profiles")
       .update({ is_active: !isActive })
-      .eq("id", userId);
+      .eq("id", userId)
+      .eq("firm_id", firmId);
 
     if (!error) {
       fetchUsers();

@@ -2,12 +2,14 @@
 
 import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { dbWrite } from "@/lib/db-write";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Loader2, Plus, Trash2, Clock } from "lucide-react";
 import toast from "react-hot-toast";
+import { useUser } from "@/hooks/use-user";
 
 interface Slot {
   id: string;
@@ -41,6 +43,7 @@ const DAY_COLORS = [
 ];
 
 export default function ConsultationSlotsPage() {
+  const { user: appUser } = useUser();
   const [slots, setSlots] = useState<Slot[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -60,13 +63,12 @@ export default function ConsultationSlotsPage() {
   }, []);
 
   async function loadSlots() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!appUser) return;
 
     const { data } = await supabase
       .from("consultation_slots")
       .select("*")
-      .eq("lawyer_id", user.id)
+      .eq("lawyer_id", appUser?.uuid)
       .order("day_of_week");
 
     setSlots(data || []);
@@ -115,10 +117,7 @@ export default function ConsultationSlotsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase
-      .from("consultation_slots")
-      .delete()
-      .eq("id", id);
+    const { error } = await dbWrite("consultation_slots", "delete", undefined, { id });
 
     if (error) {
       toast.error("Failed to delete slot");

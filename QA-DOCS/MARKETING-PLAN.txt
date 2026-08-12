@@ -1,0 +1,300 @@
+======================================================================
+    MARKETING PLAN — CASEFILES (INDIAN LEGAL MARKET)
+======================================================================
+
+======================================================================
+EXECUTIVE SUMMARY
+======================================================================
+Target: 1.5 million+ lawyers in India
+Goal: 10,000 users in 12 months, 50,000 in 24 months
+Strategy: Community-first, word-of-mouth, content marketing
+Budget: ₹5-10 lakhs/month (lean startup approach)
+
+
+======================================================================
+PHASE 1: FOUNDATION (Months 1-3)
+======================================================================
+
+--- Content Marketing ---
+
+1. Hindi + English Blog
+   - "How to manage cases efficiently in 2026"
+   - "GST invoicing guide for lawyers"
+   - "eCourts integration: Complete guide"
+   - "Client management tips for small firms"
+   - Publish 3 posts/week (2 Hindi, 1 English)
+   - SEO target: "case management software India", "legal billing India"
+
+2. YouTube Channel
+   - "CaseFiles Demo" — 5-minute product walkthrough
+   - "How to" tutorials in Hindi
+   - "Law practice management tips"
+   - Target: 100 videos in 6 months
+   - Hindi voiceover with English subtitles
+
+3. LinkedIn Content
+   - Founder's personal brand: legal tech thought leadership
+   - Daily posts about legal tech, practice management
+   - Engage in Indian lawyer groups
+   - Target: 5000 followers in 6 months
+
+--- Community Building ---
+
+4. WhatsApp Groups
+   - Create "Indian Legal Tech" WhatsApp group
+   - Share tips, not just product updates
+   - Target: 50 groups, 5000 members in 6 months
+   - Regional groups: Hindi, Tamil, Telugu, Marathi
+
+5. Bar Association Partnerships
+   - Partner with Delhi, Mumbai, Bangalore bar associations
+   - Free workshops on "Technology for Lawyers"
+   - Sponsor bar association events
+   - Offer 3-month free trial to members
+
+6. Legal Community Platforms
+   - Active on Lawctopus, Bar & Bench, LiveLaw
+   - Answer questions, share expertise
+   - Guest posts on legal blogs
+
+--- Referral Program ---
+
+7. "Refer a Friend" Program
+   - Refer 1 friend → 1 month free
+   - Refer 3 friends → 3 months free
+   - Refer 10 friends → 1 year free
+   - Unique referral link per user
+   - Track via referral_codes table
+
+8. "Law Firm Champion" Program
+   - 10+ users from same firm → free Firm plan for 6 months
+   - Designate firm champion who gets premium support
+   - Case study published about their firm
+
+
+======================================================================
+PHASE 2: GROWTH (Months 4-8)
+======================================================================
+
+--- Paid Acquisition ---
+
+9. Google Ads
+   - Target: "case management software India", "legal billing software"
+   - Budget: ₹50,000/month
+   - Expected CPC: ₹20-50
+   - Landing page: /pricing with demo video
+
+10. Facebook/Instagram Ads
+    - Target: Lawyers, advocates, legal professionals
+    - Age: 25-55, India
+    - Interests: Law, legal practice, courtroom
+    - Budget: ₹30,000/month
+    - Creative: Before/After (manual vs CaseFiles)
+
+11. LinkedIn Ads
+    - Target: Law firm partners, managing partners
+    - Job titles: Advocate, Lawyer, Partner, Associate
+    - Budget: ₹20,000/month
+    - Creative: ROI calculator (time saved = money saved)
+
+--- Strategic Partnerships ---
+
+12. Court Complex Installations
+    - Partner with court complexes for free kiosks
+    - Lawyers can try CaseFiles at court
+    - QR code → instant signup
+    - Target: 10 court complexes in 6 months
+
+13. Legal Education Institutes
+    - Partner with NLSIU, NALSAR, NLUD, etc.
+    - Free access for law students
+    - Students become users after graduation
+    - Guest lectures on "Legal Technology"
+
+14. CA/CS Firm Partnerships
+    - Cross-sell to chartered accountants
+    - Shared client management needs
+    - Integration with Tally/other accounting tools
+
+--- Product-Led Growth ---
+
+15. Freemium Tier
+    - Free plan: 3 cases, 1 user, 200MB
+    - Enough to experience value
+    - Upgrade prompt when limit hit
+    - "Upgrade for more" email sequence
+
+16. In-App Virality
+    - Share case details via WhatsApp → "Powered by CaseFiles"
+    - Client portal login page → "Your lawyer uses CaseFiles"
+    - Invoice PDF footer → "Generated with CaseFiles"
+    - Document watermark → "CaseFiles"
+
+17. Templates & Tools
+    - Free legal document templates (Vakalatnama, Legal Notice)
+    - Free legal calculators (Stamp Duty, Limitation Period)
+    - These rank on Google → drive traffic → convert to users
+
+
+======================================================================
+PHASE 3: SCALE (Months 9-12)
+======================================================================
+
+--- Regional Expansion ---
+
+18. Regional Language Support
+    - Hindi (done), Tamil, Telugu, Marathi, Bengali, Gujarati
+    - Regional content marketing
+    - Regional WhatsApp groups
+    - Regional customer support
+
+19. State-Specific Features
+    - State-wise stamp duty calculator
+    - State-wise court fee calculator
+    - State-specific procedural rules
+    - Local court integrations
+
+--- Enterprise Sales ---
+
+20. Law Firm Enterprise Sales
+    - Direct sales team for 50+ user firms
+    - Custom onboarding and training
+    - SLA guarantees
+    - SSO/SAML integration
+    - Target: 10 enterprise deals in 12 months
+
+21. Legal Departments
+    - Target: Corporate legal departments
+    - Features: matter management, compliance tracking
+    - Integration with corporate workflows
+
+--- Events & Conferences ---
+
+22. Legal Tech Conferences
+    - Sponsor/attend: India Law Forum, Legal Tech Summit
+    - Host: "CaseFiles Legal Tech Meetup" quarterly
+    - Target: 500 attendees per event
+
+23. Webinars
+    - Weekly webinars on practice management
+    - Guest speakers: senior advocates, judges
+    - Record and publish on YouTube
+    - Target: 1000 registrants per webinar
+
+
+======================================================================
+PHASE 4: RETENTION (Ongoing)
+======================================================================
+
+--- Customer Success ---
+
+24. Onboarding Sequence
+    - Day 1: Welcome email + setup guide
+    - Day 3: "How to create your first case" video
+    - Day 7: Check-in email + tips
+    - Day 14: "You're doing great!" milestone
+    - Day 30: Feedback survey + upgrade prompt
+
+25. Customer Support
+    - WhatsApp support (Indian users prefer WhatsApp)
+    - Hindi + English support
+    - Response time: < 2 hours
+    - Knowledge base in Hindi + English
+
+26. Community Events
+    - Monthly "Lawyer Success Stories"
+    - Quarterly "CaseFiles User Meetup"
+    - Annual "CaseFiles Conference"
+    - User-generated content contests
+
+--- Retention Tactics ---
+
+27. Usage-Based Emails
+    - Low usage: "We miss you! Here's what's new"
+    - High usage: "You're a power user! Upgrade for more"
+    - Limit approaching: "You're almost at your limit"
+    - Feature discovery: "Did you know you can..."
+
+28. Loyalty Program
+    - 1 year: Free upgrade to next plan
+    - 2 years: Priority support
+    - 3 years: Free add-ons
+    - 5 years: Lifetime discount
+
+29. Annual Plan Incentive
+    - 2 months free on annual billing
+    - Exclusive features for annual subscribers
+    - Early access to new features
+
+
+======================================================================
+GROWTH METRICS
+======================================================================
+
+Month 1-3:   500 users   (community + content)
+Month 4-6:   2,000 users (paid ads + partnerships)
+Month 7-9:   5,000 users (regional + enterprise)
+Month 10-12: 10,000 users (scale + retention)
+
+Revenue targets:
+Month 6:  ₹2 lakhs MRR
+Month 12: ₹10 lakhs MRR
+Month 24: ₹50 lakhs MRR
+
+
+======================================================================
+COMPETITIVE ADVANTAGES
+======================================================================
+
+1. Hindi-first: Only legal SaaS with full Hindi support
+2. eCourts integration: Direct CNR tracking
+3. WhatsApp-native: Share via WhatsApp (Indian lawyers' #1 tool)
+4. Indian court system: Stamp duty, limitation, court fees
+5. Affordable: ₹299/month (cheaper than a court visit)
+6. Mobile-first: Works on phone (lawyers are always on the move)
+7. Client portal: Clients can track their cases
+8. AI tools: Legal research, document drafting
+9. Multi-tenant: Full firm data isolation
+10. Bar association partnerships: Trust factor
+
+
+======================================================================
+BUDGET ALLOCATION (Monthly)
+======================================================================
+
+Content Marketing:    ₹1,50,000 (30%)
+  - Writers (Hindi + English): ₹80,000
+  - Video production: ₹50,000
+  - SEO tools: ₹20,000
+
+Paid Ads:             ₹1,00,000 (20%)
+  - Google Ads: ₹50,000
+  - Facebook/Instagram: ₹30,000
+  - LinkedIn: ₹20,000
+
+Community:            ₹75,000 (15%)
+  - WhatsApp groups: ₹10,000
+  - Bar association events: ₹40,000
+  - User meetups: ₹25,000
+
+Partnerships:         ₹75,000 (15%)
+  - Court complex demos: ₹30,000
+  - Legal institute tie-ups: ₹25,000
+  - CA/CS partnerships: ₹20,000
+
+Customer Success:     ₹50,000 (10%)
+  - Support team: ₹30,000
+  - Onboarding automation: ₹20,000
+
+Tools & Infrastructure: ₹50,000 (10%)
+  - Email marketing: ₹10,000
+  - Analytics: ₹10,000
+  - CRM: ₹10,000
+  - Hosting: ₹20,000
+
+TOTAL: ₹5,00,000/month
+
+
+======================================================================
+                         END OF MARKETING PLAN
+======================================================================

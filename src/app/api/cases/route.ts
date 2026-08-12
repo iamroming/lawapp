@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 import { caseSchema } from "@/lib/validators";
 import { checkCaseLimit } from "@/lib/subscription-limits";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: profile } = await supabase.from("profiles").select("firm_id, role").eq("id", user.id).single();
+  const { data: profile } = await supabase.from("profiles").select("firm_id, role").eq("id", user.uuid).single();
   const firmId = profile?.firm_id;
-  const isOwner = ["owner", "partner"].includes(profile?.role || "");
+  const isOwner = ["owner", "partner", "super_admin"].includes(profile?.role || "");
 
   let query = supabase
     .from("cases")
@@ -21,11 +22,14 @@ export async function GET() {
   if (isOwner && firmId) {
     query = query.eq("firm_id", firmId);
   } else {
-    query = query.or(`created_by.eq.${user.id},assigned_to.eq.${user.id}`);
+    query = query.or(`created_by.eq.${user.uuid},assigned_to.eq.${user.uuid}`);
   }
 
   const { data, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("Failed to fetch cases:", error.message);
+    return NextResponse.json({ error: "Failed to fetch cases" }, { status: 500 });
+  }
 
   const cases = (data || []).map((c: any) => ({
     ...c,
@@ -37,7 +41,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
@@ -47,13 +51,17 @@ export async function POST(request: NextRequest) {
   }
 
   // Subscription limit check
-  const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.id).single();
-  const firmId = profile?.firm_id;
+  const { data: profile } = await supabase.from("profiles").select("firm_id, role").eq("id", user.uuid).single();
+  const firmId = profile?.firm_id || user.uuid;
+  const isOwnerOrPartner = ["owner", "partner", "super_admin"].includes(profile?.role || "");
 
-  const { count } = await supabase.from("cases").select("id", { count: "exact", head: true }).eq("created_by", user.id).is("deleted_at", null);
-  const limitCheck = await checkCaseLimit(user.id, count || 0);
+  const { count } = await supabase.from("cases").select("id", { count: "exact", head: true }).eq("firm_id", firmId).is("deleted_at", null);
+  const limitCheck = await checkCaseLimit(user.uuid, count || 0);
   if (!limitCheck.allowed) {
-    return NextResponse.json({ error: limitCheck.message }, { status: 403 });
+    const message = isOwnerOrPartner
+      ? `You've reached your ${limitCheck.plan} plan limit of ${limitCheck.limit} cases. Upgrade your plan to add more cases.`
+      : `Your firm has reached the ${limitCheck.plan} plan limit of ${limitCheck.limit} cases. Contact the firm owner to upgrade.`;
+    return NextResponse.json({ error: message }, { status: 403 });
   }
 
   // Verify client_id belongs to user's firm if provided
@@ -72,23 +80,29 @@ export async function POST(request: NextRequest) {
   }
 
   const caseNumber = await supabase.rpc("generate_case_number");
+  if (caseNumber.error || !caseNumber.data) {
+    return NextResponse.json({ error: "Failed to generate case number" }, { status: 500 });
+  }
 
   const { data, error } = await supabase
     .from("cases")
     .insert({
       ...parsed.data,
       case_number: caseNumber.data,
-      created_by: user.id,
+      created_by: user.uuid,
       firm_id: firmId,
       client_id: parsed.data.client_id || null,
       total_fee: parsed.data.total_fee || 0,
     })
     .select()
     .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("Failed to create case:", error.message);
+    return NextResponse.json({ error: "Failed to create case" }, { status: 500 });
+  }
 
   await supabase.rpc("log_activity", {
-    p_user_id: user.id,
+    p_user_id: user.uuid,
     p_action: "created",
     p_entity_type: "case",
     p_entity_id: data.id,

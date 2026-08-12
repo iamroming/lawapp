@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { Plus, Timer, Play, Pause, Trash2, Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { dbWrite } from "@/lib/db-write";
+import { useUser } from "@/hooks/use-user";
 
 function formatDuration(seconds: number) {
   const h = Math.floor(seconds / 3600);
@@ -16,6 +18,7 @@ function formatDuration(seconds: number) {
 }
 
 export default function TimesheetsPage() {
+  const { user: appUser } = useUser();
   const [timesheets, setTimesheets] = useState<any[]>([]);
   const [cases, setCases] = useState<any[]>([]);
   const [activeTimer, setActiveTimer] = useState<any>(null);
@@ -44,28 +47,27 @@ export default function TimesheetsPage() {
   }, [activeTimer]);
 
   const fetchData = async () => {
-    const user = (await supabase.auth.getUser()).data.user;
-    if (!user) { setLoading(false); return; }
+    if (!appUser) { setLoading(false); return; }
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("role, firm_id")
-      .eq("id", user.id)
+      .eq("id", appUser?.uuid)
       .single();
 
     const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
-    const firmId = profile?.firm_id || user.id;
+    const firmId = profile?.firm_id || appUser?.uuid;
 
     const tsQuery = supabase.from("timesheets").select("*, cases(id, title, case_number)").order("worked_date", { ascending: false }).limit(50);
     const casesQuery = supabase.from("cases").select("id, title, case_number");
-    const timerQuery = supabase.from("active_timers").select("*, cases(id, title, case_number)").eq("user_id", user.id).single();
+    const timerQuery = supabase.from("active_timers").select("*, cases(id, title, case_number)").eq("user_id", appUser?.uuid).maybeSingle();
 
     if (isOwner) {
       tsQuery.eq("firm_id", firmId);
       casesQuery.eq("firm_id", firmId);
     } else {
-      tsQuery.eq("user_id", user.id);
-      casesQuery.or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`);
+      tsQuery.eq("user_id", appUser?.uuid);
+      casesQuery.or(`assigned_to.eq.${appUser?.uuid},created_by.eq.${appUser?.uuid}`);
     }
 
     const [tsRes, casesRes, timerRes] = await Promise.all([tsQuery, casesQuery, timerQuery]);
@@ -76,14 +78,21 @@ export default function TimesheetsPage() {
   };
 
   const startTimer = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    await supabase.from("active_timers").delete().eq("user_id", user.id);
-    const { data } = await supabase.from("active_timers").insert({
-      user_id: user.id,
+    if (!appUser) return;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("firm_id")
+      .eq("id", appUser?.uuid)
+      .single();
+
+    await dbWrite("active_timers", "delete", undefined, { user_id: appUser?.uuid });
+    const { data, error } = await dbWrite("active_timers", "insert", {
+      user_id: appUser?.uuid,
       case_id: timerCaseId || null,
       description: timerDesc || null,
-    }).select("*, cases(id, title, case_number)").single();
+      firm_id: profile?.firm_id || null,
+    });
     if (data) setActiveTimer(data);
   };
 
@@ -91,27 +100,26 @@ export default function TimesheetsPage() {
     if (!activeTimer) return;
     const start = new Date(activeTimer.started_at).getTime();
     const hours = Math.round(((Date.now() - start) / 3600000) * 100) / 100;
-    if (hours <= 0) { await supabase.from("active_timers").delete().eq("id", activeTimer.id); setActiveTimer(null); return; }
+    if (hours <= 0) { await dbWrite("active_timers", "delete", undefined, { id: activeTimer.id }); setActiveTimer(null); return; }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user?.id || "").single();
+    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", appUser?.uuid || "").single();
 
-    await supabase.from("timesheets").insert({
-      user_id: user?.id,
+    await dbWrite("timesheets", "insert", {
+      user_id: appUser?.uuid,
       case_id: activeTimer.case_id,
       firm_id: profile?.firm_id || null,
       description: activeTimer.description,
       hours,
       worked_date: new Date().toISOString().split("T")[0],
     });
-    await supabase.from("active_timers").delete().eq("id", activeTimer.id);
+    await dbWrite("active_timers", "delete", undefined, { id: activeTimer.id });
     setActiveTimer(null);
     fetchData();
   };
 
   const deleteTimesheet = async (id: string) => {
     if (!confirm("Delete this entry?")) return;
-    await supabase.from("timesheets").delete().eq("id", id);
+    await dbWrite("timesheets", "delete", undefined, { id });
     fetchData();
   };
 

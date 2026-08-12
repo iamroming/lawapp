@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
 // GET /api/analytics?type=...&startDate=...&endDate=...
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
   const startDate = searchParams.get("startDate");
   const endDate = searchParams.get("endDate");
 
-  const { data: profile } = await supabase.from("profiles").select("firm_id, role").eq("id", user.id).single();
+  const { data: profile } = await supabase.from("profiles").select("firm_id, role").eq("id", user.uuid).single();
   const firmId = profile?.firm_id;
   if (!firmId) return NextResponse.json({ error: "No firm" }, { status: 400 });
 
@@ -26,9 +27,10 @@ export async function GET(request: NextRequest) {
     switch (type) {
       // ==================== PHASE 1 ====================
       case "win_rate_by_judge": {
-        const { data } = await supabase
-          .from("cases").select("judge_name, status")
-          .eq("firm_id", firmId).is("deleted_at", null);
+        const { data } = await dateFilter(
+          supabase.from("cases").select("judge_name, status")
+            .eq("firm_id", firmId).is("deleted_at", null)
+        );
         const judgeMap: Record<string, { total: number; won: number; lost: number; settled: number }> = {};
         for (const c of data || []) {
           const judge = c.judge_name || "Unknown";
@@ -49,9 +51,10 @@ export async function GET(request: NextRequest) {
       }
 
       case "avg_payment_time": {
-        const { data } = await supabase
-          .from("payments").select("created_at, invoice_id, invoices(created_at)")
-          .eq("firm_id", firmId);
+        const { data } = await dateFilter(
+          supabase.from("payments").select("created_at, invoice_id, invoices(created_at)")
+            .eq("firm_id", firmId)
+        );
         const days: number[] = [];
         for (const p of data || []) {
           const inv = Array.isArray(p.invoices) ? p.invoices[0] : p.invoices;
@@ -71,9 +74,10 @@ export async function GET(request: NextRequest) {
       }
 
       case "time_utilization": {
-        const { data } = await supabase
-          .from("time_entries").select("user_id, profiles(full_name), hours, billable, created_at")
-          .eq("firm_id", firmId);
+        const { data } = await dateFilter(
+          supabase.from("time_entries").select("user_id, profiles(full_name), hours, billable, created_at")
+            .eq("firm_id", firmId)
+        );
         const lawyerMap: Record<string, { name: string; billable: number; nonBillable: number; total: number }> = {};
         for (const e of data || []) {
           const u = Array.isArray(e.profiles) ? e.profiles[0] : e.profiles;
@@ -91,35 +95,48 @@ export async function GET(request: NextRequest) {
       }
 
       case "client_ltv": {
-        const { data } = await supabase
+        const { data: clients } = await supabase
           .from("clients").select("id, full_name, email")
           .eq("firm_id", firmId).is("deleted_at", null);
-        const ltvData = [];
-        for (const client of data || []) {
-          const { data: payments } = await supabase
-            .from("payments").select("amount")
-            .eq("client_id", client.id);
-          const totalRevenue = (payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
-          const { count: caseCount } = await supabase
-            .from("cases").select("id", { count: "exact", head: true })
-            .eq("client_id", client.id).is("deleted_at", null);
-          ltvData.push({
-            clientId: client.id,
-            name: client.full_name,
-            email: client.email,
-            totalRevenue,
-            caseCount: caseCount || 0,
-          });
+
+        const clientIds = (clients || []).map((c) => c.id);
+
+        const { data: allPayments } = clientIds.length > 0
+          ? await supabase.from("payments").select("client_id, amount").in("client_id", clientIds)
+          : { data: [] };
+
+        const { data: allCases } = clientIds.length > 0
+          ? await supabase.from("cases").select("client_id").eq("firm_id", firmId).is("deleted_at", null).in("client_id", clientIds)
+          : { data: [] };
+
+        const paymentByClient: Record<string, number> = {};
+        for (const p of allPayments || []) {
+          paymentByClient[p.client_id] = (paymentByClient[p.client_id] || 0) + (p.amount || 0);
         }
+
+        const casesByClient: Record<string, number> = {};
+        for (const c of allCases || []) {
+          casesByClient[c.client_id] = (casesByClient[c.client_id] || 0) + 1;
+        }
+
+        const ltvData = (clients || []).map((client) => ({
+          clientId: client.id,
+          name: client.full_name,
+          email: client.email,
+          totalRevenue: paymentByClient[client.id] || 0,
+          caseCount: casesByClient[client.id] || 0,
+        }));
+
         ltvData.sort((a, b) => b.totalRevenue - a.totalRevenue);
         const avgLtv = ltvData.length > 0 ? Math.round(ltvData.reduce((s, c) => s + c.totalRevenue, 0) / ltvData.length) : 0;
         return NextResponse.json({ clients: ltvData.slice(0, 50), avgLtv, totalClients: ltvData.length });
       }
 
       case "case_duration_by_type": {
-        const { data } = await supabase
-          .from("cases").select("case_type, filing_date, status, created_at, updated_at")
-          .eq("firm_id", firmId).is("deleted_at", null).not("status", "in", "(pending,active,in-progress)");
+        const { data } = await dateFilter(
+          supabase.from("cases").select("case_type, filing_date, status, created_at, updated_at")
+            .eq("firm_id", firmId).is("deleted_at", null).not("status", "in", "(pending,active,in-progress)")
+        );
         const typeMap: Record<string, number[]> = {};
         for (const c of data || []) {
           const start = c.filing_date ? new Date(c.filing_date) : new Date(c.created_at);
@@ -142,9 +159,10 @@ export async function GET(request: NextRequest) {
 
       // ==================== PHASE 2 ====================
       case "revenue_forecast": {
-        const { data } = await supabase
-          .from("payments").select("amount, created_at")
-          .eq("firm_id", firmId);
+        const { data } = await dateFilter(
+          supabase.from("payments").select("amount, created_at")
+            .eq("firm_id", firmId)
+        );
         const monthlyRevenue: Record<string, number> = {};
         for (const p of data || []) {
           const month = new Date(p.created_at).toISOString().slice(0, 7);
@@ -180,9 +198,10 @@ export async function GET(request: NextRequest) {
       }
 
       case "payment_methods": {
-        const { data } = await supabase
-          .from("payments").select("payment_method")
-          .eq("firm_id", firmId);
+        const { data } = await dateFilter(
+          supabase.from("payments").select("payment_method")
+            .eq("firm_id", firmId)
+        );
         const methods: Record<string, number> = {};
         for (const p of data || []) {
           const m = p.payment_method || "Other";
@@ -195,15 +214,26 @@ export async function GET(request: NextRequest) {
         const { data: cases } = await supabase
           .from("cases").select("id, case_type, total_fee")
           .eq("firm_id", firmId).is("deleted_at", null);
+
+        const caseIds = (cases || []).map((c) => c.id);
+
+        const { data: allExpenses } = caseIds.length > 0
+          ? await supabase.from("expenses").select("case_id, amount").in("case_id", caseIds)
+          : { data: [] };
+
+        const expensesByCase: Record<string, number> = {};
+        for (const e of allExpenses || []) {
+          expensesByCase[e.case_id] = (expensesByCase[e.case_id] || 0) + (e.amount || 0);
+        }
+
         const typeMap: Record<string, { revenue: number; expenses: number; count: number }> = {};
         for (const c of cases || []) {
           if (!typeMap[c.case_type]) typeMap[c.case_type] = { revenue: 0, expenses: 0, count: 0 };
           typeMap[c.case_type].revenue += c.total_fee || 0;
           typeMap[c.case_type].count++;
-          const { data: exps } = await supabase
-            .from("expenses").select("amount").eq("case_id", c.id);
-          typeMap[c.case_type].expenses += (exps || []).reduce((s, e) => s + (e.amount || 0), 0);
+          typeMap[c.case_type].expenses += expensesByCase[c.id] || 0;
         }
+
         const result = Object.entries(typeMap).map(([type, data]) => ({
           type,
           ...data,
@@ -214,9 +244,10 @@ export async function GET(request: NextRequest) {
       }
 
       case "revenue_per_lawyer": {
-        const { data } = await supabase
-          .from("cases").select("assigned_to, total_fee, created_at, profiles(full_name)")
-          .eq("firm_id", firmId).is("deleted_at", null);
+        const { data } = await dateFilter(
+          supabase.from("cases").select("assigned_to, total_fee, created_at, profiles(full_name)")
+            .eq("firm_id", firmId).is("deleted_at", null)
+        );
         const lawyerMap: Record<string, { name: string; revenue: number; months: Record<string, number> }> = {};
         for (const c of data || []) {
           if (!c.assigned_to) continue;
@@ -230,12 +261,14 @@ export async function GET(request: NextRequest) {
       }
 
       case "expense_ratio": {
-        const { data: exps } = await supabase
-          .from("expenses").select("amount, category, created_at")
-          .eq("firm_id", firmId);
-        const { data: revs } = await supabase
-          .from("payments").select("amount, created_at")
-          .eq("firm_id", firmId);
+        const { data: exps } = await dateFilter(
+          supabase.from("expenses").select("amount, category, created_at")
+            .eq("firm_id", firmId)
+        );
+        const { data: revs } = await dateFilter(
+          supabase.from("payments").select("amount, created_at")
+            .eq("firm_id", firmId)
+        );
         const monthlyExpenses: Record<string, number> = {};
         const monthlyRevenue: Record<string, number> = {};
         for (const e of exps || []) {
@@ -258,11 +291,7 @@ export async function GET(request: NextRequest) {
 
       // ==================== PHASE 3 ====================
       case "adjournment_rate": {
-        const { data } = await supabase
-          .from("hearings").select("is_completed, outcome, case_id")
-          .eq("case_id", (await supabase.from("cases").select("id").eq("firm_id", firmId)).data?.[0]?.id || "");
-        // Fallback: get all hearings for firm's cases
-        const { data: firmCases } = await supabase.from("cases").select("id").eq("firm_id", firmId);
+        const { data: firmCases } = await supabase.from("cases").select("id").eq("firm_id", firmId).is("deleted_at", null);
         const caseIds = (firmCases || []).map((c: any) => c.id);
         const { data: hearings } = await supabase.from("hearings").select("is_completed, outcome").in("case_id", caseIds);
         const total = hearings?.length || 0;
@@ -271,7 +300,7 @@ export async function GET(request: NextRequest) {
       }
 
       case "hearings_per_case": {
-        const { data: firmCases } = await supabase.from("cases").select("id").eq("firm_id", firmId);
+        const { data: firmCases } = await supabase.from("cases").select("id").eq("firm_id", firmId).is("deleted_at", null);
         const caseIds = (firmCases || []).map((c: any) => c.id);
         const { data: hearings } = await supabase.from("hearings").select("case_id").in("case_id", caseIds);
         const hearingCounts: Record<string, number> = {};
@@ -292,28 +321,38 @@ export async function GET(request: NextRequest) {
         const { data } = await supabase
           .from("clients").select("id, created_at")
           .eq("firm_id", firmId).is("deleted_at", null);
-        const oneTime = [];
-        const returning = [];
-        for (const client of data || []) {
-          const { count } = await supabase
-            .from("cases").select("id", { count: "exact", head: true })
-            .eq("client_id", client.id).is("deleted_at", null);
-          if ((count || 0) > 1) returning.push(client);
-          else oneTime.push(client);
+
+        const clientIds = (data || []).map((c) => c.id);
+
+        const { data: allCases } = clientIds.length > 0
+          ? await supabase.from("cases").select("client_id").eq("firm_id", firmId).is("deleted_at", null).in("client_id", clientIds)
+          : { data: [] };
+
+        const casesByClient: Record<string, number> = {};
+        for (const c of allCases || []) {
+          casesByClient[c.client_id] = (casesByClient[c.client_id] || 0) + 1;
         }
+
         const total = (data || []).length;
+        let returning = 0;
+        for (const client of data || []) {
+          if ((casesByClient[client.id] || 0) > 1) returning++;
+        }
+        const oneTime = total - returning;
+
         return NextResponse.json({
           total,
-          oneTime: oneTime.length,
-          returning: returning.length,
-          retentionRate: total > 0 ? Math.round((returning.length / total) * 100) : 0,
+          oneTime,
+          returning,
+          retentionRate: total > 0 ? Math.round((returning / total) * 100) : 0,
         });
       }
 
       case "task_completion": {
-        const { data } = await supabase
-          .from("tasks").select("assigned_to, status, due_date, completed_at, profiles(full_name)")
-          .eq("firm_id", firmId);
+        const { data } = await dateFilter(
+          supabase.from("tasks").select("assigned_to, status, due_date, completed_at, profiles(full_name)")
+            .eq("firm_id", firmId)
+        );
         const lawyerMap: Record<string, { name: string; completed: number; overdue: number; total: number }> = {};
         for (const t of data || []) {
           if (!t.assigned_to) continue;
@@ -357,9 +396,10 @@ export async function GET(request: NextRequest) {
 
       // ==================== PHASE 4 ====================
       case "risk_score": {
-        const { data } = await supabase
-          .from("cases").select("id, case_type, judge_name, court, status, filing_date")
-          .eq("firm_id", firmId).is("deleted_at", null).in("status", ["active", "in-progress", "under-trial"]);
+        const { data } = await dateFilter(
+          supabase.from("cases").select("id, case_type, judge_name, court, status, filing_date")
+            .eq("firm_id", firmId).is("deleted_at", null).in("status", ["active", "in-progress", "under-trial"])
+        );
         // Simple risk model based on case duration, court, case type
         const results = (data || []).map(c => {
           const daysSinceFiling = c.filing_date
@@ -386,6 +426,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Unknown analytics type" }, { status: 400 });
     }
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Server error" }, { status: 500 });
+    console.error("Analytics error:", error);
+    return NextResponse.json({ error: "Failed to fetch analytics" }, { status: 500 });
   }
 }

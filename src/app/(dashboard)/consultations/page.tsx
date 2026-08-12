@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { dbWrite } from "@/lib/db-write";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import toast from "react-hot-toast";
+import { useUser } from "@/hooks/use-user";
 
 interface Consultation {
   id: string;
@@ -49,6 +51,7 @@ const typeLabels: Record<string, string> = {
 };
 
 export default function ConsultationsPage() {
+  const { user: appUser } = useUser();
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -70,17 +73,16 @@ export default function ConsultationsPage() {
   }, []);
 
   async function loadConsultations() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!appUser) return;
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("role, firm_id")
-      .eq("id", user.id)
+      .eq("id", appUser?.uuid)
       .single();
 
     const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
-    const firmId = profile?.firm_id || user.id;
+    const firmId = profile?.firm_id || appUser?.uuid;
 
     let query = supabase
       .from("consultations")
@@ -90,7 +92,7 @@ export default function ConsultationsPage() {
     if (isOwner) {
       query = query.eq("firm_id", firmId);
     } else {
-      query = query.eq("lawyer_id", user.id);
+      query = query.eq("lawyer_id", appUser?.uuid);
     }
 
     const { data } = await query;
@@ -160,10 +162,7 @@ export default function ConsultationsPage() {
   };
 
   const handleStatusUpdate = async (id: string, status: string) => {
-    const { error } = await supabase
-      .from("consultations")
-      .update({ status })
-      .eq("id", id);
+    const { error } = await dbWrite("consultations", "update", { status }, { id });
 
     if (error) {
       toast.error("Failed to update status");

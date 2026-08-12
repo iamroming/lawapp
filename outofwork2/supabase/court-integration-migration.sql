@@ -1,4 +1,4 @@
--- Court data integration tables for LawXP
+-- Court data integration tables for CaseFiles
 -- Run this in Supabase SQL Editor
 
 -- Link cases to eCourts

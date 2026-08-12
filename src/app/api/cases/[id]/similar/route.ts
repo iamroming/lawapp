@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 import {
   searchIndianKanoon,
   buildSearchQuery,
@@ -16,9 +17,7 @@ export async function GET(
   const { searchParams } = new URL(request.url);
   const forceRefresh = searchParams.get("refresh") === "true";
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -38,19 +37,19 @@ export async function GET(
   const { data: profile } = await supabase
     .from("profiles")
     .select("firm_id, role")
-    .eq("id", user.id)
+    .eq("id", user.uuid)
     .single();
 
-  if (!profile || profile.firm_id !== caseData.firm_id) {
+  const effectiveFirmId = profile?.firm_id || user.uuid;
+  const isPrivileged = profile?.role === "owner" || profile?.role === "partner";
+
+  // Firm members can only access their own firm's cases
+  if (caseData.firm_id !== effectiveFirmId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const isPrivileged = profile.role === "owner" || profile.role === "partner";
-  if (
-    !isPrivileged &&
-    caseData.created_by !== user.id &&
-    caseData.assigned_to !== user.id
-  ) {
+  // Non-privileged users can only access cases they created or are assigned to
+  if (!isPrivileged && caseData.created_by !== user.uuid && caseData.assigned_to !== user.uuid) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

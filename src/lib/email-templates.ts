@@ -17,10 +17,10 @@ export function trialStartEmail(userName: string, planName: string, daysLeft: nu
   const safeName = escapeHtml(userName);
   const safePlan = escapeHtml(planName);
   return {
-    subject: `Welcome to LawXP ${planName} - Your ${daysLeft}-Day Trial Has Started`,
+    subject: `Welcome to CaseFiles ${planName} - Your ${daysLeft}-Day Trial Has Started`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h1 style="color: #4f46e5;">Welcome to LawXP, ${safeName}!</h1>
+        <h1 style="color: #4f46e5;">Welcome to CaseFiles, ${safeName}!</h1>
         <p>Your <strong>${safePlan}</strong> trial has started and will last for <strong>${daysLeft} days</strong>.</p>
         <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0;">Your Trial Includes:</h3>
@@ -37,7 +37,7 @@ export function trialStartEmail(userName: string, planName: string, daysLeft: nu
         </p>
       </div>
     `,
-    text: `Welcome to LawXP, ${userName}! Your ${planName} trial has started for ${daysLeft} days. Go to ${process.env.NEXT_PUBLIC_APP_URL}/dashboard to get started.`,
+    text: `Welcome to CaseFiles, ${userName}! Your ${planName} trial has started for ${daysLeft} days. Go to ${process.env.NEXT_PUBLIC_APP_URL}/dashboard to get started.`,
   };
 }
 
@@ -45,7 +45,7 @@ export function trialExpiringEmail(userName: string, planName: string, daysLeft:
   const safeName = escapeHtml(userName);
   const safePlan = escapeHtml(planName);
   return {
-    subject: `Your LawXP ${planName} Trial Ends in ${daysLeft} Day${daysLeft > 1 ? "s" : ""}`,
+    subject: `Your CaseFiles ${planName} Trial Ends in ${daysLeft} Day${daysLeft > 1 ? "s" : ""}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h1 style="color: #f59e0b;">Trial Ending Soon</h1>
@@ -56,7 +56,7 @@ export function trialExpiringEmail(userName: string, planName: string, daysLeft:
         </div>
         <a href="${process.env.NEXT_PUBLIC_APP_URL}/settings?tab=subscription" style="display: inline-block; background: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Upgrade Now</a>
         <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-          After your trial ends, you'll be moved to the Free plan with limited features.
+          After your trial ends, your account will be restricted until you subscribe.
         </p>
       </div>
     `,
@@ -68,25 +68,25 @@ export function trialExpiredEmail(userName: string, planName: string): EmailTemp
   const safeName = escapeHtml(userName);
   const safePlan = escapeHtml(planName);
   return {
-    subject: `Your LawXP ${planName} Trial Has Ended`,
+    subject: `Your CaseFiles ${planName} Trial Has Ended`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h1 style="color: #ef4444;">Trial Ended</h1>
         <p>Hi ${safeName},</p>
-        <p>Your <strong>${safePlan}</strong> trial has ended. You've been moved to the <strong>Free</strong> plan.</p>
+        <p>Your <strong>${safePlan}</strong> trial has ended. Your account has been restricted.</p>
         <div style="background: #fee2e2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;">
           <p style="margin: 0;"><strong>What happens now?</strong></p>
           <ul style="margin: 10px 0 0 0;">
-            <li>You have access to 3 cases and 1 user</li>
-            <li>100 MB storage limit</li>
-            <li>Basic features only</li>
+            <li>Your access is limited until you subscribe</li>
+            <li>Your data is safe and preserved</li>
+            <li>Subscribe anytime to regain full access</li>
           </ul>
         </div>
-        <p>Upgrade anytime to regain full access to your data and all features.</p>
+        <p>Choose a plan that fits your practice and get back to work.</p>
         <a href="${process.env.NEXT_PUBLIC_APP_URL}/pricing" style="display: inline-block; background: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">View Plans</a>
       </div>
     `,
-    text: `Hi ${userName}, your ${planName} trial has ended. You've been moved to the Free plan (3 cases, 1 user, 100 MB storage). Upgrade at ${process.env.NEXT_PUBLIC_APP_URL}/pricing.`,
+    text: `Hi ${userName}, your ${planName} trial has ended. Your account is restricted. Subscribe at ${process.env.NEXT_PUBLIC_APP_URL}/pricing to regain access.`,
   };
 }
 
@@ -94,7 +94,7 @@ export function subscriptionActivatedEmail(userName: string, planName: string, a
   const safeName = escapeHtml(userName);
   const safePlan = escapeHtml(planName);
   return {
-    subject: `LawXP ${planName} Subscription Activated`,
+    subject: `CaseFiles ${planName} Subscription Activated`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h1 style="color: #10b981;">Subscription Activated!</h1>
@@ -116,7 +116,7 @@ export function paymentFailedEmail(userName: string, planName: string): EmailTem
   const safeName = escapeHtml(userName);
   const safePlan = escapeHtml(planName);
   return {
-    subject: `Payment Failed for LawXP ${planName}`,
+    subject: `Payment Failed for CaseFiles ${planName}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h1 style="color: #ef4444;">Payment Failed</h1>

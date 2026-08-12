@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getSuperAdminStats } from "@/app/actions/super-admin";
 import { StatsCard } from "@/components/ui/stats-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,12 +10,8 @@ import {
   Users,
   Briefcase,
   Receipt,
-  Activity,
   IndianRupee,
-  TrendingUp,
-  AlertTriangle,
   UserPlus,
-  Clock,
   Settings,
 } from "lucide-react";
 import Link from "next/link";
@@ -29,7 +25,6 @@ interface PlatformStats {
   recentSignups: { id: string; full_name: string; email: string; role: string; created_at: string }[];
   recentCases: { id: string; title: string; case_number: string; status: string; created_at: string }[];
   subscriptionBreakdown: { status: string; count: number }[];
-  topLawyers: { name: string; cases: number; revenue: number }[];
 }
 
 export default function SuperAdminDashboardPage() {
@@ -42,45 +37,27 @@ export default function SuperAdminDashboardPage() {
     recentSignups: [],
     recentCases: [],
     subscriptionBreakdown: [],
-    topLawyers: [],
   });
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    const fetchAllData = async () => {
-      const [usersRes, casesRes, clientsRes, subsRes, paymentsRes, signupsRes, casesListRes] = await Promise.all([
-        supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase.from("cases").select("id", { count: "exact", head: true }),
-        supabase.from("clients").select("id", { count: "exact", head: true }),
-        supabase.from("user_subscriptions").select("id, status"),
-        supabase.from("payments").select("amount"),
-        supabase.from("profiles").select("id, full_name, email, role, created_at").order("created_at", { ascending: false }).limit(5),
-        supabase.from("cases").select("id, title, case_number, status, created_at").order("created_at", { ascending: false }).limit(5),
-      ]);
+  const fetchAllData = async () => {
+      try {
+        const data = await getSuperAdminStats();
+        setStats(data);
+      } catch {
+        // Error fetching data — stats remain at defaults
+      }
+    setLoading(false);
+  };
 
-      const subs = subsRes.data || [];
-      const activeSubs = subs.filter((s) => s.status === "active" || s.status === "trialing");
+  useEffect(() => { fetchAllData(); }, []);
 
-      const breakdown: Record<string, number> = {};
-      subs.forEach((s) => { breakdown[s.status] = (breakdown[s.status] || 0) + 1; });
-
-      setStats({
-        totalUsers: usersRes.count || 0,
-        totalCases: casesRes.count || 0,
-        totalClients: clientsRes.count || 0,
-        totalRevenue: (paymentsRes.data || []).reduce((sum, p) => sum + (p.amount || 0), 0),
-        activeSubscriptions: activeSubs.length,
-        recentSignups: (signupsRes.data as PlatformStats["recentSignups"]) || [],
-        recentCases: (casesListRes.data as PlatformStats["recentCases"]) || [],
-        subscriptionBreakdown: Object.entries(breakdown).map(([status, count]) => ({ status, count })),
-        topLawyers: [],
-      });
-      setLoading(false);
-    };
-
-    fetchAllData();
-  }, [supabase]);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchAllData();
+    setRefreshing(false);
+  };
 
   if (loading) {
     return (
@@ -101,6 +78,11 @@ export default function SuperAdminDashboardPage() {
           <h1 className="text-2xl font-bold">Command Center</h1>
           <p className="text-[var(--text-secondary)]">Complete overview of the entire platform</p>
         </div>
+        <button onClick={handleRefresh} disabled={refreshing} className="ml-auto p-2 rounded-lg border hover:bg-[var(--surface-subtle)] transition-colors" title="Refresh data">
+          <svg className={`h-5 w-5 ${refreshing ? "animate-spin" : ""}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
+          </svg>
+        </button>
       </div>
 
       {/* Core Stats */}

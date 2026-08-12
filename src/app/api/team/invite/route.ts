@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { checkUserLimit } from "@/lib/subscription-limits";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   // Rate limit: max 5 invites per hour
   const ip = getClientIp(request);
-  const { allowed } = await checkRateLimit(`team-invite:${user.id}:${ip}`, { windowMs: 3600000, maxRequests: 5 });
+  const { allowed } = await checkRateLimit(`team-invite:${user.uuid}:${ip}`, { windowMs: 3600000, maxRequests: 5 });
   if (!allowed) {
     return NextResponse.json({ error: "Rate limit exceeded. Max 5 invites per hour." }, { status: 429 });
   }
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
   const { data: profile } = await supabase
     .from("profiles")
     .select("role, firm_id")
-    .eq("id", user.id)
+    .eq("id", user.uuid)
     .single();
 
   const allowedInviteRoles = ["owner", "partner"];
@@ -41,14 +42,19 @@ export async function POST(request: NextRequest) {
   }
 
   // Check subscription user limit
+  const firmId = profile.firm_id || user.uuid;
   const { count: memberCount } = await supabase
     .from("profiles")
     .select("id", { count: "exact", head: true })
-    .eq("firm_id", profile.firm_id || user.id)
+    .eq("firm_id", firmId)
     .eq("is_active", true);
-  const userLimitCheck = await checkUserLimit(user.id, memberCount || 0);
+  const userLimitCheck = await checkUserLimit(firmId, memberCount || 0);
   if (!userLimitCheck.allowed) {
-    return NextResponse.json({ error: userLimitCheck.message }, { status: 403 });
+    const isOwnerOrPartner = profile.role === "owner" || profile.role === "partner";
+    const message = isOwnerOrPartner
+      ? `You've reached your ${userLimitCheck.plan} plan limit of ${userLimitCheck.limit} team members. Upgrade your plan to add more.`
+      : `Your firm has reached the ${userLimitCheck.plan} plan limit of ${userLimitCheck.limit} team members. Contact your firm owner to upgrade.`;
+    return NextResponse.json({ error: message }, { status: 403 });
   }
 
   // Find the user by email
@@ -62,7 +68,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "No user found with this email. They must sign up first." }, { status: 404 });
   }
 
-  if (inviteeProfile.id === user.id) {
+  if (inviteeProfile.id === user.uuid) {
     return NextResponse.json({ error: "You cannot invite yourself" }, { status: 400 });
   }
 
@@ -73,7 +79,7 @@ export async function POST(request: NextRequest) {
     .eq("id", inviteeProfile.id)
     .single();
 
-  if (inviteeFullProfile?.firm_id && inviteeFullProfile.firm_id !== profile.firm_id && inviteeFullProfile.firm_id !== user.id) {
+  if (inviteeFullProfile?.firm_id && inviteeFullProfile.firm_id !== profile.firm_id && inviteeFullProfile.firm_id !== user.uuid) {
     return NextResponse.json({ error: "This user already belongs to another firm" }, { status: 400 });
   }
 
@@ -93,14 +99,14 @@ export async function POST(request: NextRequest) {
   const myLevel = roleHierarchy[profile?.role || ""] ?? 99;
   const theirLevel = roleHierarchy[existingMember?.role || ""] ?? 99;
   
-  if (theirLevel <= myLevel && profile?.role !== "super_admin") {
-    return NextResponse.json({ error: "Cannot change role of someone with equal or higher role" }, { status: 403 });
+  if (theirLevel < myLevel && profile?.role !== "super_admin") {
+    return NextResponse.json({ error: "Cannot promote someone to a role equal or higher than yours" }, { status: 403 });
   }
 
   // Update the invitee's role and firm_id
   const { error: updateError } = await supabase
     .from("profiles")
-    .update({ role, firm_id: profile.firm_id || user.id, updated_at: new Date().toISOString() })
+    .update({ role, firm_id: firmId, updated_at: new Date().toISOString() })
     .eq("id", inviteeProfile.id);
 
   if (updateError) {
@@ -109,12 +115,21 @@ export async function POST(request: NextRequest) {
 
   // Log activity
   await supabase.rpc("log_activity", {
-    p_user_id: user.id,
+    p_user_id: user.uuid,
     p_action: "invited",
     p_entity_type: "team_member",
     p_entity_id: inviteeProfile.id,
     p_entity_name: inviteeProfile.full_name || email,
     p_details: { role },
+  });
+
+  // Notify the added employee
+  await supabase.from("notifications").insert({
+    user_id: inviteeProfile.id,
+    type: "team_joined",
+    title: "You've been added to a firm",
+    message: `You have been added as ${role.replace(/_/g, " ")} by ${profile?.role || "your firm owner"}.`,
+    read: false,
   });
 
   return NextResponse.json({

@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getSuperAdminDocuments, softDeleteSuperAdminDocument } from "@/app/actions/super-admin";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,32 +9,38 @@ import { FileText, Search, Trash2, Download } from "lucide-react";
 import { formatDate, unwrap } from "@/lib/utils";
 import toast from "react-hot-toast";
 import type { DocumentWithCase } from "@/types/database";
+import { useUser } from "@/hooks/use-user";
 
 export default function SuperAdminDocumentsPage() {
+  const { user: appUser } = useUser();
   const [docs, setDocs] = useState<DocumentWithCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const supabase = createClient();
 
   useEffect(() => { fetchDocs(); }, []);
 
   const fetchDocs = async () => {
-    const { data } = await supabase.from("documents").select("*, case:cases(title, case_number), uploader:profiles(full_name)").order("created_at", { ascending: false });
-    setDocs(
-      (data || []).map((d) => ({
-        ...d,
-        case: unwrap(d.case),
-        uploader: unwrap(d.uploader),
-      })) as DocumentWithCase[]
-    );
+    const data = await getSuperAdminDocuments();
+    setDocs((data as DocumentWithCase[]) || []);
     setLoading(false);
   };
 
   const deleteDoc = async (id: string) => {
-    if (!confirm("Delete this document?")) return;
-    await supabase.from("documents").delete().eq("id", id);
-    toast.success("Deleted");
-    fetchDocs();
+    if (!confirm("Delete this document? This action can be undone later.")) return;
+    const doc = docs.find((d) => d.id === id);
+    try {
+      await softDeleteSuperAdminDocument(
+        id,
+        appUser?.uuid || null,
+        doc?.uploader?.firm_id || null,
+        doc?.title || null,
+        doc?.file_name || null
+      );
+      toast.success("Deleted");
+      fetchDocs();
+    } catch {
+      toast.error("Failed to delete document");
+    }
   };
 
   const filtered = docs.filter((d) => d.title?.toLowerCase().includes(search.toLowerCase()) || d.file_name?.toLowerCase().includes(search.toLowerCase()));
@@ -79,7 +85,7 @@ export default function SuperAdminDocumentsPage() {
                   <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
                     {doc.is_confidential && <Badge variant="destructive" className="text-xs">Confidential</Badge>}
                     <Badge variant="secondary" className="text-xs">{doc.category}</Badge>
-                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon"><Download className="h-4 w-4" /></Button></a>
+                    {doc.file_url && <a href={doc.file_url} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon"><Download className="h-4 w-4" /></Button></a>}
                     <Button variant="ghost" size="icon" onClick={() => deleteDoc(doc.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getSuperAdminSettings, updateSuperAdminPlatformSetting } from "@/app/actions/super-admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,13 +18,16 @@ export default function SuperAdminSettingsPage() {
   const [settings, setSettings] = useState<Setting[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const supabase = createClient();
 
   useEffect(() => { fetchSettings(); }, []);
 
   const fetchSettings = async () => {
-    const { data } = await supabase.from("platform_settings").select("*").order("key");
-    setSettings((data as Setting[]) || []);
+    try {
+      const data = await getSuperAdminSettings();
+      setSettings((data as Setting[]) || []);
+    } catch {
+      setSettings([]);
+    }
     setLoading(false);
   };
 
@@ -34,10 +37,19 @@ export default function SuperAdminSettingsPage() {
 
   const saveAll = async () => {
     setSaving(true);
+    const failures: string[] = [];
     for (const s of settings) {
-      await supabase.from("platform_settings").update({ value: s.value }).eq("key", s.key);
+      try {
+        await updateSuperAdminPlatformSetting(s.key, s.value);
+      } catch {
+        failures.push(s.key);
+      }
     }
-    toast.success("Settings saved!");
+    if (failures.length > 0) {
+      toast.error(`Failed to save: ${failures.join(", ")}`);
+    } else {
+      toast.success("Settings saved!");
+    }
     setSaving(false);
   };
 
@@ -52,7 +64,6 @@ export default function SuperAdminSettingsPage() {
   const getStringValue = (key: string) => {
     const s = settings.find((x) => x.key === key);
     if (!s) return "";
-    if (typeof s.value === "string") return s.value.replace(/^"|"$/g, "");
     return String(s.value);
   };
 
@@ -77,19 +88,25 @@ export default function SuperAdminSettingsPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">App Name</label>
-              <Input value={getStringValue("app_name")} onChange={(e) => updateSetting("app_name", `"${e.target.value}"`)} />
+              <Input value={getStringValue("app_name")} onChange={(e) => updateSetting("app_name", e.target.value)} />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Support Email</label>
-              <Input value={getStringValue("support_email")} onChange={(e) => updateSetting("support_email", `"${e.target.value}"`)} />
+              <Input value={getStringValue("support_email")} onChange={(e) => updateSetting("support_email", e.target.value)} />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Default Trial Days</label>
-              <Input type="number" value={getStringValue("default_trial_days")} onChange={(e) => updateSetting("default_trial_days", e.target.value)} />
+              <Input type="number" min={1} max={365} value={getStringValue("default_trial_days")} onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                updateSetting("default_trial_days", isNaN(v) ? "" : v);
+              }} />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Max Upload Size (MB)</label>
-              <Input type="number" value={getStringValue("max_upload_size_mb")} onChange={(e) => updateSetting("max_upload_size_mb", e.target.value)} />
+              <Input type="number" min={1} max={100} value={getStringValue("max_upload_size_mb")} onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                updateSetting("max_upload_size_mb", isNaN(v) ? "" : v);
+              }} />
             </div>
           </CardContent>
         </Card>
@@ -103,7 +120,11 @@ export default function SuperAdminSettingsPage() {
                 <p className="text-xs text-[var(--text-secondary)]">Block all access except super admin</p>
               </div>
               <button
-                onClick={() => updateSetting("maintenance_mode", !getBoolValue("maintenance_mode"))}
+                onClick={() => {
+                  const enabling = !getBoolValue("maintenance_mode");
+                  if (enabling && !confirm("Enabling maintenance mode will block ALL non-super-admin users from accessing the platform. Are you sure?")) return;
+                  updateSetting("maintenance_mode", enabling);
+                }}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${getBoolValue("maintenance_mode") ? "bg-red-600" : "bg-gray-200"}`}
               >
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${getBoolValue("maintenance_mode") ? "translate-x-6" : "translate-x-1"}`} />
@@ -129,10 +150,10 @@ export default function SuperAdminSettingsPage() {
         <CardHeader><CardTitle className="flex items-center gap-2"><Database className="h-5 w-5" />System Info</CardTitle></CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div><p className="text-[var(--text-secondary)]">Platform</p><p className="font-medium">LawXP v0.1.0</p></div>
+            <div><p className="text-[var(--text-secondary)]">Platform</p><p className="font-medium">{getStringValue("app_name") || "CaseFiles"} v{getStringValue("platform_version") || "0.1.0"}</p></div>
             <div><p className="text-[var(--text-secondary)]">Database</p><p className="font-medium">Supabase PostgreSQL</p></div>
-            <div><p className="text-[var(--text-secondary)]">Framework</p><p className="font-medium">Next.js 16</p></div>
-            <div><p className="text-[var(--text-secondary)]">Region</p><p className="font-medium">India (IN)</p></div>
+            <div><p className="text-[var(--text-secondary)]">Framework</p><p className="font-medium">Next.js</p></div>
+            <div><p className="text-[var(--text-secondary)]">Region</p><p className="font-medium">{getStringValue("region") || "India (IN)"}</p></div>
           </div>
         </CardContent>
       </Card>

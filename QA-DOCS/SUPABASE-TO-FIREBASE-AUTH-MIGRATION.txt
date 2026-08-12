@@ -1,0 +1,692 @@
+================================================================================
+  SUPABASE AUTH → FIREBASE AUTH MIGRATION PLAN
+  CaseFiles - Legal Practice Management SaaS
+  Date: August 2026
+================================================================================
+
+TABLE OF CONTENTS
+-----------------
+1. Overview & Why Firebase Auth
+2. Current Supabase Auth Architecture
+3. What Changes vs What Stays
+4. Firebase Project Setup
+5. Environment Variables
+6. New Files to Create
+7. Files to Modify (by category)
+8. Google OAuth Migration
+9. Email/Password Auth Migration
+10. Session & Middleware Migration
+11. Admin SDK (Service Role) Migration
+12. Database (Supabase Postgres) — What Stays
+13. Step-by-Step Migration Order
+14. Testing Checklist
+15. Rollback Plan
+
+================================================================================
+1. OVERVIEW & WHY FIREBASE AUTH
+================================================================================
+
+CURRENT STATE:
+- Supabase Auth handles: email/password, Google OAuth, email verification,
+  password reset, session management via cookies
+- Supabase Postgres handles ALL database tables (profiles, cases, clients, etc.)
+- Supabase RLS (Row Level Security) enforces data access rules
+
+WHY MIGRATE AUTH ONLY:
+- Firebase Auth has better Google OAuth integration (native support)
+- Firebase Auth has built-in phone auth (useful for Indian market)
+- Firebase Auth has better token management (ID tokens vs Supabase JWT)
+- Firebase Auth is more widely documented and has larger community
+- Firebase Auth supports more OAuth providers out of the box
+
+WHAT STAYS ON SUPABASE:
+- ALL database tables (profiles, cases, clients, invoices, etc.)
+- Supabase Postgres as the database
+- Supabase RLS policies (modified to use Firebase UID instead of Supabase UID)
+- Supabase Storage (if used for documents)
+- All API routes that query/write data
+
+CRITICAL INSIGHT:
+- The user ID (UUID) stored in profiles.id, cases.created_by, etc. will change
+  from Supabase Auth UUIDs to Firebase Auth UIDs
+- You MUST migrate existing user IDs in the database OR use a mapping table
+- Option A: Migrate all existing user IDs (cleaner, one-time migration)
+- Option B: Add a firebase_uid column and map (less disruptive)
+
+RECOMMENDATION: Option A — Migrate all user IDs at once during a maintenance
+window. It's cleaner and avoids perpetual mapping overhead.
+
+================================================================================
+2. CURRENT SUPABASE AUTH ARCHITECTURE
+================================================================================
+
+Auth operations used:
+  a) signInWithPassword (email + password login)     — login, client-login
+  b) signInWithOAuth (Google OAuth)                  — login, signup
+  c) signUp (email + password creation)              — (via API route admin SDK)
+  d) signOut (session destruction)                   — 6 sidebar/layout files
+  e) getUser (get current user from session)         — 50+ files
+  f) getSession (get session without network call)   — reset-password
+  g) onAuthStateChange (listen for auth events)     — reset-password
+  h) resetPasswordForEmail (send reset link)        — login page
+  i) resend (resend verification email)             — confirm-email page
+  j) updateUser (update password)                   — reset-password page
+  k) exchangeCodeForSession (OAuth callback)        — auth/callback route
+  l) admin.createUser (admin SDK, create user)      — signup API route
+  m) admin.deleteUser (admin SDK, delete user)      — account delete, super admin
+  n) admin.signOut (admin SDK, invalidate sessions) — account delete
+
+Files affected: ~100+ files
+  - 5 lib/foundation files (client.ts, server.ts, middleware.ts, admin.ts, queries.ts)
+  - 1 middleware.ts (Next.js middleware)
+  - 1 auth callback route
+  - 5 auth pages (login, signup, confirm-email, reset-password, client-login)
+  - 1 signup API route
+  - 1 account delete API route
+  - 2 server action files (super-admin, check-super-admin)
+  - 3 layout files (admin, super-admin, client-portal)
+  - 1 onboarding page
+  - 6 component files (sidebars, headers, subscription-required)
+  - 3 settings components
+  - 1 hooks file (use-permissions)
+  - 50+ API route files (all use getUser)
+
+================================================================================
+3. WHAT CHANGES vs WHAT STAYS
+================================================================================
+
+CHANGES (Auth Layer):
+  [CHANGED] src/lib/supabase/client.ts       → src/lib/firebase/client.ts (Firebase browser SDK)
+  [CHANGED] src/lib/supabase/server.ts       → src/lib/firebase/server.ts (Firebase Admin SDK)
+  [CHANGED] src/lib/supabase/middleware.ts   → src/lib/firebase/middleware.ts (Firebase session cookie)
+  [CHANGED] src/lib/supabase/admin.ts        → src/lib/firebase/admin.ts (Firebase Admin SDK)
+  [CHANGED] src/middleware.ts                → Updated to use Firebase session verification
+  [CHANGED] src/app/auth/callback/route.ts   → Firebase OAuth callback handler
+  [CHANGED] All auth pages                   → Use Firebase Auth SDK
+  [CHANGED] All signOut calls                → Firebase signOut
+  [CHANGED] All getUser calls                → Firebase token verification
+  [CHANGED] RLS policies                    → Use Firebase UID instead of Supabase UID
+
+STAYS (Data Layer):
+  [STAYS]   src/lib/supabase/queries.ts      → Still queries Supabase Postgres
+  [STAYS]   All database tables              → No schema changes (except user ID mapping)
+  [STAYS]   All API routes (data operations) → Still use Supabase client for DB queries
+  [STAYS]   All business logic               → Unchanged
+  [STAYS]   Razorpay integration             → Unchanged
+  [STAYS]   Cloudinary integration           → Unchanged
+  [STAYS]   OpenAI integration               → Unchanged
+
+================================================================================
+4. FIREBASE PROJECT SETUP
+================================================================================
+
+Step 1: Create Firebase Project
+  - Go to https://console.firebase.google.com
+  - Create new project (e.g., "casefiles-prod")
+  - Enable Google Analytics (optional)
+
+Step 2: Enable Authentication
+  - Go to Authentication → Sign-in method
+  - Enable Email/Password
+  - Enable Google (add support email)
+  - Enable Phone (optional, for Indian market)
+
+Step 3: Register Web App
+  - Go to Project Settings → General → Your apps
+  - Add Web app (e.g., "casefiles-web")
+  - Copy firebaseConfig object
+
+Step 4: Get Service Account Key
+  - Go to Project Settings → Service accounts
+  - Generate new private key (JSON)
+  - Save as firebase-service-account.json (DO NOT commit to git)
+
+Step 5: Set up OAuth Redirect URIs
+  - In Firebase Auth → Settings → Authorized domains
+  - Add your production domain (e.g., casefiles.in)
+  - Add localhost for development
+
+Step 6: Configure Google OAuth Consent Screen
+  - In Google Cloud Console → APIs & Services → OAuth consent screen
+  - Add Firebase Auth redirect URI to authorized redirects
+
+================================================================================
+5. ENVIRONMENT VARIABLES
+================================================================================
+
+REMOVE from .env.local:
+  NEXT_PUBLIC_SUPABASE_URL        (keep if using Supabase for DB only)
+  NEXT_PUBLIC_SUPABASE_ANON_KEY   (keep if using Supabase for DB only)
+  SUPABASE_SERVICE_ROLE_KEY        (keep if using Supabase for DB only)
+
+ADD to .env.local:
+  NEXT_PUBLIC_FIREBASE_API_KEY=AIza...
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=casefiles-prod.firebaseapp.com
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID=casefiles-prod
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=casefiles-prod.appspot.com
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
+  NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abc123
+
+  # Server-side only (Firebase Admin SDK)
+  FIREBASE_PROJECT_ID=casefiles-prod
+  FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@casefiles-prod.iam.gserviceaccount.com
+  FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEv..."
+
+  # Keep Supabase vars for database access
+  NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+  SUPABASE_SERVICE_ROLE_KEY=eyJ...
+
+NOTE: You still need Supabase env vars for the DATABASE. Only auth is moving
+to Firebase. The Supabase client is still used for all database queries.
+
+================================================================================
+6. NEW FILES TO CREATE
+================================================================================
+
+a) src/lib/firebase/config.ts
+   - Firebase browser SDK initialization
+   - Exports: app (FirebaseApp), auth (Auth)
+   - Uses NEXT_PUBLIC_FIREBASE_* env vars
+
+b) src/lib/firebase/server.ts
+   - Firebase Admin SDK initialization
+   - Exports: adminAuth (Auth), adminDb (Firestore or just auth)
+   - Uses FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY
+   - Handles service account or application default credentials
+
+c) src/lib/firebase/middleware.ts
+   - Session cookie creation/verification
+   - Replaces Supabase middleware.ts
+   - Functions: createSessionCookie(), verifySessionCookie(), updateSession()
+
+d) src/lib/firebase/auth-helpers.ts
+   - Wrapper functions that match current Supabase auth API shape:
+     - getUser(request) — verifies Firebase ID token, returns { id, email, ... }
+     - signOut() — clears Firebase session cookie
+     - exchangeCodeForSession(code) — handles OAuth callback
+   - This minimizes changes in downstream files
+
+================================================================================
+7. FILES TO MODIFY (by category)
+================================================================================
+
+--- FOUNDATION (5 files) ---
+1. src/lib/supabase/client.ts
+   - KEEP for database queries
+   - REMOVE auth methods (signInWithPassword, signOut, getUser, etc.)
+   - OR: Create src/lib/firebase/client.ts for auth, keep supabase/client.ts for DB only
+
+2. src/lib/supabase/server.ts
+   - KEEP for database queries
+   - REMOVE auth methods
+   - OR: Create src/lib/firebase/server.ts for auth, keep supabase/server.ts for DB only
+
+3. src/lib/supabase/middleware.ts (195 lines)
+   - REWRITE entirely for Firebase session cookie verification
+   - Keep route protection logic (role checks, subscription checks)
+   - Replace supabase.auth.getUser() with Firebase token verification
+   - Replace cookie handling with Firebase session cookie handling
+
+4. src/lib/supabase/admin.ts
+   - KEEP for database admin operations (service role for DB)
+   - ADD Firebase Admin SDK for auth admin operations (createUser, deleteUser)
+
+5. src/lib/supabase/queries.ts
+   - NO CHANGES (pure database queries)
+
+--- MIDDLEWARE (1 file) ---
+6. src/middleware.ts
+   - UPDATE to call Firebase session verification instead of Supabase
+
+--- AUTH ROUTES (2 files) ---
+7. src/app/auth/callback/route.ts (61 lines)
+   - REWRITE for Firebase OAuth callback
+   - Exchange authorization code for Firebase ID token
+   - Create session cookie
+   - Handle redirect
+
+8. src/app/api/auth/signup/route.ts (177 lines)
+   - REPLACE supabaseAdmin.auth.admin.createUser() with Firebase Admin SDK
+     firebaseAdmin.auth().createUser({ email, password, displayName, emailVerified: false })
+   - Keep profile creation in Supabase database
+   - Keep invite code logic
+   - Keep rate limiting
+
+--- AUTH PAGES (5 files) ---
+9. src/app/(auth)/login/page.tsx (289 lines)
+   - REPLACE supabase.auth.signInWithPassword() with Firebase signInWithEmailAndPassword()
+   - REPLACE supabase.auth.signInWithOAuth() with Firebase signInWithPopup() or signInWithRedirect()
+   - REPLACE supabase.auth.resetPasswordForEmail() with Firebase sendPasswordResetEmail()
+   - Keep role-based redirect logic
+
+10. src/app/(auth)/signup/page.tsx (469 lines)
+    - REPLACE supabase.auth.signInWithOAuth() with Firebase Google auth
+    - Keep form submission to /api/auth/signup (which will use Firebase Admin)
+    - Keep T&C checkbox (just added)
+
+11. src/app/(auth)/confirm-email/page.tsx (139 lines)
+    - Firebase handles email verification differently
+    - REPLACE supabase.auth.resend() with Firebase sendEmailVerification()
+    - OR: Firebase email verification is automatic — just show "check your email" page
+
+12. src/app/(auth)/reset-password/page.tsx (210 lines)
+    - REPLACE onAuthStateChange with Firebase onIdTokenChanged orActionCodeSettings
+    - REPLACE supabase.auth.updateUser() with Firebase updatePassword()
+    - REPLACE supabase.auth.getSession() with Firebase auth.currentUser
+
+13. src/app/client-login/page.tsx (124 lines)
+    - REPLACE supabase.auth.signInWithPassword() with Firebase signInWithEmailAndPassword()
+    - Keep client_portal_users table check
+    - REPLACE supabase.auth.signOut() with Firebase signOut()
+
+--- ONBOARDING (1 file) ---
+14. src/app/onboarding/page.tsx (304 lines)
+    - REPLACE supabase.auth.getUser() with Firebase auth.currentUser
+    - Keep profile creation in Supabase database
+
+--- ACCOUNT MANAGEMENT (1 file) ---
+15. src/app/api/account/delete/route.ts (77 lines)
+    - REPLACE supabase.auth.getUser() with Firebase token verification
+    - REPLACE adminSupabase.auth.admin.signOut() with Firebase admin.revokeRefreshTokens()
+    - REPLACE adminSupabase.auth.admin.deleteUser() with Firebase admin.deleteUser()
+    - Keep Supabase database deletion
+
+--- SUPER ADMIN (2 files) ---
+16. src/app/actions/check-super-admin.ts (26 lines)
+    - REPLACE supabase.auth.getUser() with Firebase token verification
+
+17. src/app/actions/super-admin.ts (227 lines)
+    - REPLACE supabase.auth.getUser() with Firebase token verification
+    - REPLACE serviceRoleClient.auth.admin.deleteUser() with Firebase admin.deleteUser()
+
+--- LAYOUTS (3 files) ---
+18. src/app/(admin)/layout.tsx (65 lines)
+    - REPLACE supabase.auth.getUser() with Firebase token verification
+
+19. src/app/(super-admin)/layout.tsx (60 lines)
+    - Auth logic is in checkSuperAdminAccess() — update that instead
+
+20. src/app/(client-portal)/layout.tsx (173 lines)
+    - REPLACE supabase.auth.getUser() with Firebase token verification
+    - REPLACE supabase.auth.signOut() with Firebase signOut()
+
+--- COMPONENTS (6 files) ---
+21. src/components/sidebar.tsx
+    - REPLACE supabase.auth.getUser() with Firebase auth check
+    - REPLACE supabase.auth.signOut() with Firebase signOut()
+
+22. src/components/admin-sidebar.tsx
+    - REPLACE supabase.auth.signOut() with Firebase signOut()
+
+23. src/components/super-admin-sidebar.tsx
+    - REPLACE supabase.auth.signOut() with Firebase signOut()
+
+24. src/components/header.tsx
+    - REPLACE supabase.auth.getUser() with Firebase auth check
+
+25. src/components/admin-header.tsx
+    - REPLACE supabase.auth.getUser() with Firebase auth check
+
+26. src/components/super-admin-header.tsx
+    - REPLACE supabase.auth.getUser() with Firebase auth check
+
+--- SETTINGS (3 files) ---
+27. src/components/settings/profile-settings.tsx
+    - REPLACE supabase.auth.getUser() with Firebase auth check
+
+28. src/components/settings/invoice-settings-panel.tsx
+    - REPLACE supabase.auth.getUser() with Firebase auth check
+
+29. src/components/settings/invoice-template-settings.tsx
+    - REPLACE supabase.auth.getUser() with Firebase auth check
+
+--- HOOKS (1 file) ---
+30. src/hooks/use-permissions.ts
+    - REPLACE supabase.auth.getUser() with Firebase auth check
+
+--- OTHER COMPONENTS (2 files) ---
+31. src/components/notification-bell.tsx
+    - REPLACE supabase.auth.getUser() with Firebase auth check
+
+32. src/components/global-search.tsx
+    - REPLACE supabase.auth.getUser() with Firebase auth check
+
+33. src/app/subscription-required/page.tsx
+    - REPLACE supabase.auth.signOut() with Firebase signOut()
+
+--- 50+ API ROUTES ---
+    All API routes that call supabase.auth.getUser() need updating.
+    STRATEGY: Create a helper function (verifyFirebaseToken) that each route
+    calls, so changes are minimal per file.
+
+    Typical change per route:
+      BEFORE: const { data: { user } } = await supabase.auth.getUser();
+      AFTER:  const user = await verifyFirebaseToken(request);
+
+    Files (all under src/app/api/):
+    - analytics/route.ts
+    - audit/route.ts
+    - ai/usage-status/route.ts
+    - ai/research/route.ts
+    - admin/subscription-toggle/route.ts
+    - admin/subscription-override/route.ts
+    - admin/subscription-discount/route.ts
+    - client-portal/route.ts
+    - clients/route.ts
+    - cases/route.ts
+    - dashboard/route.ts
+    - expenses/route.ts
+    - hearings/route.ts
+    - invoices/route.ts
+    - payments/route.ts
+    - tasks/route.ts
+    - team/invite/route.ts
+    - time-entries/route.ts
+    - timesheets/route.ts
+    - subscriptions/route.ts
+    ... and ~30 more
+
+================================================================================
+8. GOOGLE OAUTH MIGRATION
+================================================================================
+
+CURRENT (Supabase):
+  Login page → supabase.auth.signInWithOAuth({ provider: "google" })
+    → Redirects to Supabase → Google → /auth/callback?code=...
+    → supabase.auth.exchangeCodeForSession(code)
+    → Session cookies set
+
+NEW (Firebase):
+  Login page → firebase signInWithPopup(googleProvider)
+    → Popup closes, Firebase sets auth state
+    → OR: signInWithRedirect for mobile
+
+  Callback is handled CLIENT-SIDE by Firebase automatically.
+  No server-side /auth/callback route needed for Google.
+
+  BUT: We need to create a session cookie for server-side auth:
+    1. Client gets Firebase ID token: await user.getIdToken()
+    2. POST to /api/auth/session with the ID token
+    3. Server verifies token with Firebase Admin SDK
+    4. Server creates HTTP-only session cookie
+    5. Subsequent requests use session cookie for auth
+
+ENV SETUP:
+  - In Firebase Console → Authentication → Sign-in method → Google
+  - Enable and add support email
+  - Copy Web Client ID and Web Client Secret to Firebase project settings
+  - These are SEPARATE from Supabase's Google OAuth credentials
+  - You may need to update Google Cloud Console OAuth consent screen
+
+================================================================================
+9. EMAIL/PASSWORD AUTH MIGRATION
+================================================================================
+
+SIGNUP:
+  BEFORE: POST /api/auth/signup → supabaseAdmin.auth.admin.createUser()
+  AFTER:  POST /api/auth/signup → firebaseAdmin.auth().createUser()
+          {
+            email, password, displayName,
+            emailVerified: false
+          }
+
+LOGIN:
+  BEFORE: supabase.auth.signInWithPassword({ email, password })
+  AFTER:  Firebase signInWithEmailAndPassword(auth, email, password)
+          Then: POST /api/auth/session with ID token to create session cookie
+
+PASSWORD RESET:
+  BEFORE: supabase.auth.resetPasswordForEmail(email, { redirectTo })
+  AFTER:  Firebase sendPasswordResetEmail(auth, email)
+          Firebase handles the email link automatically
+          No custom redirect needed (or use actionCodeSettings for custom URL)
+
+EMAIL VERIFICATION:
+  BEFORE: supabase.auth.resend({ type: "signup", email })
+  AFTER:  Firebase sendEmailVerification(user)
+          OR: Set emailVerified: true during signup (skip verification)
+
+================================================================================
+10. SESSION & MIDDLEWARE MIGRATION
+================================================================================
+
+CURRENT (Supabase):
+  - Supabase uses JWT access token in cookies
+  - middleware.ts calls supabase.auth.getUser() which verifies JWT
+  - Session refresh happens automatically via cookie setAll
+
+NEW (Firebase):
+  - Firebase uses ID tokens (short-lived, 1 hour)
+  - For SSR, create a SESSION COOKIE (longer-lived, HTTP-only)
+  - Middleware verifies session cookie on every request
+
+MIDDLEWARE FLOW:
+  1. Request comes in
+  2. Read session cookie (firebase-session)
+  3. Verify with Firebase Admin SDK: adminAuth.verifySessionCookie(cookie)
+  4. If valid: attach user info to request headers
+  5. If invalid: redirect to /login (for protected routes)
+  6. Refresh cookie if needed (token refresh)
+
+HELPER FUNCTION:
+  export async function verifyFirebaseToken(request: NextRequest) {
+    const sessionCookie = request.cookies.get('firebase-session')?.value;
+    if (!sessionCookie) return null;
+    try {
+      const decoded = await adminAuth.verifySessionCookie(sessionCookie);
+      return { id: decoded.uid, email: decoded.email, ... };
+    } catch {
+      return null;
+    }
+  }
+
+================================================================================
+11. ADMIN SDK (SERVICE ROLE) MIGRATION
+================================================================================
+
+CURRENT (Supabase):
+  import { createClient } from '@supabase/supabase-js'
+  const admin = createClient(url, SERVICE_ROLE_KEY)
+  admin.auth.admin.createUser({ ... })
+  admin.auth.admin.deleteUser(userId)
+  admin.auth.admin.signOut(userId)
+
+NEW (Firebase):
+  import { initializeApp, cert, getApps } from 'firebase-admin/app'
+  import { getAuth } from 'firebase-admin/auth'
+
+  const app = initializeApp({ credential: cert(serviceAccount) })
+  const adminAuth = getAuth(app)
+
+  adminAuth.createUser({ email, password, displayName })
+  adminAuth.deleteUser(uid)
+  adminAuth.revokeRefreshTokens(uid)  // equivalent to signOut
+
+FIREBASE ADMIN OPERATIONS:
+  createUser()       → replaces admin.auth.admin.createUser()
+  deleteUser()       → replaces admin.auth.admin.deleteUser()
+  getUser()          → replaces admin.auth.admin.getUser()
+  getUserByEmail()   → replaces admin.auth.admin.getUserByEmail()
+  updateUser()       → replaces admin.auth.admin.updateUser()
+  revokeRefreshTokens() → replaces admin.auth.admin.signOut()
+
+================================================================================
+12. DATABASE (SUPABASE POSTGRES) — WHAT STAYS
+================================================================================
+
+CRITICAL: Supabase is STILL your database. Only AUTH moves to Firebase.
+
+All these stay unchanged:
+  - profiles table (but id column changes from Supabase UUID to Firebase UID)
+  - cases, clients, invoices, payments, documents tables
+  - All other tables
+  - All RLS policies (updated to check Firebase UID)
+  - All database queries in src/lib/supabase/queries.ts
+  - All API route data operations
+
+DATABASE CHANGES REQUIRED:
+  a) profiles.id: Change from Supabase auth UUID → Firebase UID (string)
+     - Firebase UIDs are strings like "abc123Def456..."
+     - Supabase UIDs are UUIDs like "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
+     - If you migrate, all foreign keys referencing profiles.id must update
+
+  b) RLS policies: Update auth.uid() calls
+     - Supabase: auth.uid() returns Supabase auth user UUID
+     - Firebase: Need to pass Firebase UID via request header or JWT claim
+     - Option: Use a Supabase function to get Firebase UID from header
+
+  c) MIGRATION STRATEGY:
+     - Create a migration table: user_id_map (supabase_uuid → firebase_uid)
+     - Run migration: For each Supabase auth user, create Firebase user
+     - Update all foreign keys in batch
+     - OR: Add firebase_uid column to profiles and use that going forward
+
+================================================================================
+13. STEP-BY-STEP MIGRATION ORDER
+================================================================================
+
+PHASE 1: SETUP (No downtime)
+  1. Create Firebase project
+  2. Enable Email/Password + Google OAuth
+  3. Install firebase and firebase-admin packages
+  4. Create Firebase config files (config.ts, server.ts, middleware.ts)
+  5. Create auth helper functions (verifyFirebaseToken, etc.)
+  6. Add Firebase env vars to .env.local
+  7. Test Firebase auth in isolation (separate test page)
+
+PHASE 2: PARALLEL RUNNING (No downtime)
+  8.  Keep Supabase auth working
+  9.  Add Firebase auth alongside (dual auth)
+  10. On signup: Create user in BOTH Supabase and Firebase
+  11. On login: Try Firebase first, fallback to Supabase
+  12. Map user IDs in a user_id_map table
+
+PHASE 3: MIGRATE AUTH PAGES (Minimal downtime)
+  13. Update login page to use Firebase
+  14. Update signup page to use Firebase
+  15. Update auth callback for Firebase
+  16. Update reset-password for Firebase
+  17. Update confirm-email for Firebase
+  18. Update client-login for Firebase
+  19. Test all auth flows
+
+PHASE 4: MIGRATE MIDDLEWARE (Minimal downtime)
+  20. Rewrite middleware.ts for Firebase session cookies
+  21. Create /api/auth/session route for session cookie creation
+  22. Test session cookie flow
+  23. Deploy and test in staging
+
+PHASE 5: MIGRATE API ROUTES (No downtime, gradual)
+  24. Create verifyFirebaseToken helper
+  25. Update API routes one by one (50+ routes)
+  26. Can be done incrementally — each route is independent
+
+PHASE 6: MIGRATE COMPONENTS (No downtime, gradual)
+  27. Update signOut calls in all sidebars/layouts
+  28. Update getUser calls in headers/components
+  29. Update settings components
+
+PHASE 7: DATABASE MIGRATION (Downtime required)
+  30. Export all Supabase auth users
+  31. Create Firebase auth users with same UIDs (if possible) or new UIDs
+  32. Create user_id_map table
+  33. Update all foreign keys referencing auth user IDs
+  34. Update RLS policies for Firebase UID
+  35. Test all data access
+
+PHASE 8: CLEANUP
+  36. Remove Supabase Auth configuration (keep database)
+  37. Remove @supabase/ssr package (keep @supabase/supabase-js for DB)
+  38. Clean up old auth files
+  39. Update documentation
+
+================================================================================
+14. TESTING CHECKLIST
+================================================================================
+
+AUTH FLOWS:
+  [ ] Email/password signup (owner mode)
+  [ ] Email/password signup (employee mode with invite code)
+  [ ] Email verification flow
+  [ ] Email/password login
+  [ ] Google OAuth login (new user)
+  [ ] Google OAuth login (existing user)
+  [ ] Password reset flow
+  [ ] Client portal login
+  [ ] Client portal logout
+  [ ] Sign out from sidebar (main, admin, super-admin)
+
+ROLE-BASED ACCESS:
+  [ ] Super admin can access /super-admin
+  [ ] Non-super-admin redirected from /super-admin
+  [ ] Owner/partner can access /admin
+  [ ] Regular user redirected from /admin
+  [ ] Disabled account redirected to login
+  [ ] User without profile redirected to /onboarding
+  [ ] User without subscription redirected to /subscription-required
+
+API ROUTES:
+  [ ] All API routes return 401 for unauthenticated requests
+  [ ] All API routes work with valid Firebase session
+  [ ] Service role operations work (user creation, deletion)
+
+SESSION:
+  [ ] Session cookie is set on login
+  [ ] Session cookie is verified on each request
+  [ ] Session cookie expires correctly
+  [ ] Session cookie is cleared on logout
+  [ ] Session refresh works (long-lived sessions)
+
+DATABASE:
+  [ ] Firebase UID stored in profiles table
+  [ ] All foreign keys reference correct user IDs
+  [ ] RLS policies work with Firebase UID
+  [ ] All CRUD operations work
+
+================================================================================
+15. ROLLBACK PLAN
+================================================================================
+
+IF FIREBASE MIGRATION FAILS:
+  1. Keep Supabase auth running in parallel during migration
+  2. At any point, revert middleware.ts to use Supabase
+  3. Revert login/signup pages to use Supabase
+  4. Database remains on Supabase Postgres (no changes)
+  5. User IDs in database may need cleanup if partial migration occurred
+
+ROLLBACK TIME: < 1 hour (revert code changes, redeploy)
+
+PREVENTION:
+  - Test in staging environment first
+  - Keep dual auth running for 1-2 weeks
+  - Monitor error rates during migration
+  - Have database backup before user ID migration
+
+================================================================================
+END OF MIGRATION PLAN
+================================================================================
+
+ESTIMATED EFFORT:
+  - Phase 1 (Setup): 2-3 hours
+  - Phase 2 (Parallel): 3-4 hours
+  - Phase 3 (Auth Pages): 4-6 hours
+  - Phase 4 (Middleware): 3-4 hours
+  - Phase 5 (API Routes): 6-8 hours (50+ routes × ~10 min each)
+  - Phase 6 (Components): 2-3 hours
+  - Phase 7 (Database): 4-6 hours (including testing)
+  - Phase 8 (Cleanup): 1-2 hours
+  TOTAL: ~25-36 hours
+
+RISKS:
+  - User ID migration is the riskiest part (foreign key updates)
+  - RLS policy changes need careful testing
+  - Session cookie handling is complex (CSRF, security)
+  - Google OAuth redirect URIs need to be updated
+  - Email templates (verification, reset) need to be customized in Firebase
+
+RECOMMENDATION:
+  - Start with Phase 1-2 (setup + parallel) — no risk
+  - Test Firebase auth thoroughly before cutting over
+  - Consider keeping Supabase auth as fallback for 2 weeks
+  - Do database migration during a maintenance window (low traffic)

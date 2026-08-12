@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { Plus, CheckSquare, ArrowRight, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { dbWrite } from "@/lib/db-write";
+import { useUser } from "@/hooks/use-user";
 
 const COLUMNS = [
   { key: "todo", label: "To Do", color: "bg-[var(--surface-subtle)] text-[var(--text-primary)]" },
@@ -25,6 +27,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 const STATUS_ORDER = ["todo", "in_progress", "review", "done"];
 
 export default function TasksPage() {
+  const { user: appUser } = useUser();
   const [tasks, setTasks] = useState<any[]>([]);
   const [filterPriority, setFilterPriority] = useState("all");
   const [loading, setLoading] = useState(true);
@@ -34,17 +37,16 @@ export default function TasksPage() {
 
   const fetchTasks = async () => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setLoading(false); return; }
+    if (!appUser) { setLoading(false); return; }
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("role, firm_id")
-      .eq("id", user.id)
+      .eq("id", appUser?.uuid)
       .single();
 
     const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
-    const firmId = profile?.firm_id || user.id;
+    const firmId = profile?.firm_id || appUser?.uuid;
 
     let query = supabase
       .from("tasks")
@@ -54,7 +56,7 @@ export default function TasksPage() {
     if (isOwner) {
       query = query.eq("firm_id", firmId);
     } else {
-      query = query.or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`);
+      query = query.or(`assigned_to.eq.${appUser?.uuid},created_by.eq.${appUser?.uuid}`);
     }
 
     const { data } = await query;
@@ -63,13 +65,13 @@ export default function TasksPage() {
   };
 
   const moveTask = async (taskId: string, newStatus: string) => {
-    await supabase.from("tasks").update({ status: newStatus }).eq("id", taskId);
+    await dbWrite("tasks", "update", { status: newStatus }, { id: taskId });
     setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: newStatus } : t));
   };
 
   const deleteTask = async (id: string) => {
     if (!confirm("Delete this task?")) return;
-    await supabase.from("tasks").delete().eq("id", id);
+    await dbWrite("tasks", "delete", undefined, { id });
     setTasks((prev) => prev.filter((t) => t.id !== id));
   };
 

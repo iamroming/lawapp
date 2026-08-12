@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
 interface DeadlineResult {
   case_id: string;
@@ -27,17 +28,22 @@ export async function POST(request?: NextRequest) {
       );
     } else {
       supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await verifySessionFromRequest(request);
       if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      userId = user.id;
+      userId = user.uuid;
     }
 
-    const { data: cases } = await supabase
+    let query = supabase
       .from("cases")
       .select("id, case_number, limitation_date")
-      .eq("created_by", userId)
       .is("deleted_at", null)
       .not("limitation_date", "is", null);
+
+    if (!isCronCall && userId) {
+      query = query.eq("created_by", userId);
+    }
+
+    const { data: cases } = await query;
 
     if (!cases || cases.length === 0) {
       return NextResponse.json({ data: [], message: "No cases with limitation dates" });

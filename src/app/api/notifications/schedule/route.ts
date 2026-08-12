@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 import { sendWhatsAppMessage, formatHearingReminder } from "@/lib/whatsapp";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
@@ -9,7 +10,7 @@ export async function POST(request: NextRequest) {
   const isCronCall = authHeader === `Bearer ${process.env.CRON_SECRET}`;
 
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = isCronCall ? null : await verifySessionFromRequest(request);
 
   // Allow cron calls (no user) or authenticated users
   if (!user && !isCronCall) {
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
 
   // Rate limit: max 3 calls per hour
   const ip = getClientIp(request);
-  const rateLimitKey = user ? `notif-schedule:${user.id}:${ip}` : `notif-schedule:cron:${ip}`;
+  const rateLimitKey = user ? `notif-schedule:${user.uuid}:${ip}` : `notif-schedule:cron:${ip}`;
   const { allowed } = await checkRateLimit(rateLimitKey, { windowMs: 3600000, maxRequests: 3 });
   if (!allowed) {
     return NextResponse.json({ error: "Rate limit exceeded. Max 3 schedule calls per hour." }, { status: 429 });
@@ -28,12 +29,30 @@ export async function POST(request: NextRequest) {
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().split("T")[0];
 
-  const { data: hearings, error } = await supabase
+  // Get firm_id for non-cron calls
+  let firmId: string | null = null;
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("firm_id")
+      .eq("id", user.uuid)
+      .single();
+    firmId = profile?.firm_id || user.uuid;
+  }
+
+  let hearingQuery = supabase
     .from("hearings")
-    .select("*, case:cases(id, case_number, title, created_by, assigned_to)")
+    .select("*, case:cases!inner(id, case_number, title, created_by, assigned_to, firm_id)")
     .eq("hearing_date", tomorrowStr)
     .eq("is_completed", false)
     .is("deleted_at", null);
+
+  // Scope to firm for non-cron calls
+  if (firmId) {
+    hearingQuery = hearingQuery.eq("case.firm_id", firmId);
+  }
+
+  const { data: hearings, error } = await hearingQuery;
 
   if (error || !hearings) {
     return NextResponse.json({ error: error?.message || "Failed to fetch hearings" }, { status: 500 });

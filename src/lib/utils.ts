@@ -52,18 +52,18 @@ export function getInitials(name: string): string {
 
 export function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
-    pending: "bg-yellow-100 text-yellow-800",
-    active: "bg-blue-100 text-blue-800",
-    "in-progress": "bg-purple-100 text-purple-800",
-    "under-trial": "bg-orange-100 text-orange-800",
-    won: "bg-green-100 text-green-800",
-    lost: "bg-red-100 text-red-800",
-    settled: "bg-emerald-100 text-emerald-800",
-    closed: "bg-gray-100 text-gray-800",
-    adjourned: "bg-indigo-100 text-indigo-800",
-    dismissed: "bg-rose-100 text-rose-800",
+    pending: "bg-yellow-500/15 text-yellow-500",
+    active: "bg-blue-500/15 text-blue-500",
+    "in-progress": "bg-purple-500/15 text-purple-500",
+    "under-trial": "bg-orange-500/15 text-orange-500",
+    won: "bg-green-500/15 text-green-500",
+    lost: "bg-red-500/15 text-red-500",
+    settled: "bg-emerald-500/15 text-emerald-500",
+    closed: "bg-gray-500/15 text-gray-400",
+    adjourned: "bg-indigo-500/15 text-indigo-500",
+    dismissed: "bg-rose-500/15 text-rose-500",
   };
-  return colors[status] || "bg-gray-100 text-gray-800";
+  return colors[status] || "bg-gray-500/15 text-gray-400";
 }
 
 export const caseStatuses = [

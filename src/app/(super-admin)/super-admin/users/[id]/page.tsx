@@ -1,19 +1,21 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { getSuperAdminUserDetail, getSuperAdminUserCases, getSuperAdminUserActivities, getSuperAdminUserSubscription, toggleSuperAdminUserActive, changeSuperAdminUserRole, checkIfSuperAdmin, softDeleteSuperAdminUser } from "@/app/actions/super-admin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Select } from "@/components/ui/select";
-import { formatDate, formatCurrency, getStatusColor, unwrap } from "@/lib/utils";
+import { formatDate, formatCurrency, getStatusColor } from "@/lib/utils";
 import { ArrowLeft, Mail, Phone, Building, Shield, Briefcase, Activity, Trash2 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import type { Profile, UserRole, Case, AuditLog, SubscriptionWithPlan } from "@/types/database";
+import { useUser } from "@/hooks/use-user";
 
 export default function SuperAdminUserDetailPage() {
+  const { user: appUser } = useUser();
   const params = useParams();
   const router = useRouter();
   const [user, setUser] = useState<Profile | null>(null);
@@ -21,54 +23,90 @@ export default function SuperAdminUserDetailPage() {
   const [activities, setActivities] = useState<AuditLog[]>([]);
   const [subscription, setSubscription] = useState<SubscriptionWithPlan | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const [currentUser, setCurrentUser] = useState<Profile | null>(null);
+  const [isTargetSuperAdmin, setIsTargetSuperAdmin] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: u } = await supabase.from("profiles").select("*").eq("id", params.id).single();
-      if (u) {
-        setUser(u);
-        const [cRes, aRes, sRes] = await Promise.all([
-          supabase.from("cases").select("*").eq("created_by", params.id).order("created_at", { ascending: false }).limit(10),
-          supabase.from("activity_logs").select("*").eq("user_id", params.id).order("created_at", { ascending: false }).limit(20),
-          supabase.from("user_subscriptions").select("*, plan:subscription_plans(name, price)").eq("user_id", params.id).order("created_at", { ascending: false }).limit(1).single(),
-        ]);
-        setCases(cRes.data || []);
-        setActivities(aRes.data || []);
-        if (sRes.data) {
-          setSubscription({
-            ...sRes.data,
-            plan: unwrap(sRes.data.plan),
-          } as SubscriptionWithPlan);
+      try {
+        if (appUser) {
+          const cu = await getSuperAdminUserDetail(appUser.uuid);
+          setCurrentUser(cu);
         }
+        const u = await getSuperAdminUserDetail(params.id as string);
+        if (u) {
+          setUser(u);
+          const isSA = await checkIfSuperAdmin(params.id as string);
+          setIsTargetSuperAdmin(isSA);
+          const [cData, aData, sData] = await Promise.all([
+            getSuperAdminUserCases(params.id as string),
+            getSuperAdminUserActivities(params.id as string),
+            getSuperAdminUserSubscription(params.id as string),
+          ]);
+          setCases(cData as Case[]);
+          setActivities(aData as AuditLog[]);
+          if (sData) {
+            setSubscription(sData as SubscriptionWithPlan);
+          }
+        }
+      } catch {
+        // Error fetching data
       }
       setLoading(false);
     };
     fetchData();
-  }, [params.id, supabase]);
+  }, [params.id, appUser]);
 
   const updateRole = async (role: string) => {
-    await supabase.from("profiles").update({ role }).eq("id", params.id);
-    setUser((prev) => prev ? { ...prev, role: role as UserRole } : null);
-    toast.success("Role updated");
+    if (role === "super_admin") {
+      toast.error("Cannot assign Super Admin role through this interface");
+      return;
+    }
+    try {
+      await changeSuperAdminUserRole(params.id as string, role);
+      setUser((prev) => prev ? { ...prev, role: role as UserRole } : null);
+      toast.success("Role updated");
+    } catch {
+      toast.error("Failed to update role");
+    }
   };
 
   const toggleActive = async () => {
-    if (!user) return;
-    await supabase.from("profiles").update({ is_active: !user.is_active }).eq("id", params.id);
-    setUser((prev) => prev ? { ...prev, is_active: !prev.is_active } : null);
-    toast.success(user.is_active ? "Deactivated" : "Activated");
+    if (!appUser) return;
+    if (isTargetSuperAdmin) {
+      toast.error("Cannot deactivate a Super Admin user");
+      return;
+    }
+    try {
+      await toggleSuperAdminUserActive(params.id as string, user?.is_active ?? true);
+      setUser((prev) => prev ? { ...prev, is_active: !prev.is_active } : null);
+      toast.success(user?.is_active ? "Deactivated" : "Activated");
+    } catch {
+      toast.error("Failed to update status");
+    }
   };
 
   const deleteUser = async () => {
+    if (currentUser && currentUser.id === params.id) {
+      toast.error("You cannot delete your own account");
+      return;
+    }
+    if (user && user.role === "super_admin") {
+      toast.error("Cannot delete a Super Admin user");
+      return;
+    }
     if (!confirm("PERMANENTLY delete this user? This cannot be undone.")) return;
-    await supabase.from("profiles").delete().eq("id", params.id);
-    toast.success("User deleted");
-    router.push("/super-admin/users");
+    try {
+      await softDeleteSuperAdminUser(params.id as string);
+      toast.success("User deleted");
+      router.push("/super-admin/users");
+    } catch {
+      toast.error("Failed to delete user");
+    }
   };
 
   if (loading) return <div className="text-center py-12 text-[var(--text-secondary)]">Loading...</div>;
-  if (!user) return <div className="text-center py-12 text-[var(--text-secondary)]">User not found</div>;
+  if (!appUser || !user) return <div className="text-center py-12 text-[var(--text-secondary)]">User not found</div>;
 
   return (
     <div className="space-y-6">
@@ -80,11 +118,11 @@ export default function SuperAdminUserDetailPage() {
             <Badge variant={user.role === "owner" ? "destructive" : "secondary"}><Shield className="h-3 w-3 mr-1" />{user.role}</Badge>
             {!user.is_active && <Badge variant="outline" className="text-red-500 border-red-300">Inactive</Badge>}
           </div>
-          <p className="text-[var(--text-secondary)] text-sm truncate">{user.email}</p>
+          <p className="text-[var(--text-secondary)] text-sm truncate">{appUser?.email}</p>
         </div>
         <div className="flex gap-2 flex-shrink-0">
-          <Button variant="outline" size="sm" onClick={toggleActive}>{user.is_active ? "Deactivate" : "Activate"}</Button>
-          <Button variant="destructive" size="sm" onClick={deleteUser}><Trash2 className="h-4 w-4 mr-1" />Delete User</Button>
+          <Button variant="outline" size="sm" onClick={toggleActive} disabled={isTargetSuperAdmin}>{user.is_active ? "Deactivate" : "Activate"}</Button>
+          <Button variant="destructive" size="sm" onClick={deleteUser} disabled={(currentUser && currentUser.id === params.id) || user.role === "super_admin"}><Trash2 className="h-4 w-4 mr-1" />Delete User</Button>
         </div>
       </div>
 
@@ -94,10 +132,10 @@ export default function SuperAdminUserDetailPage() {
             <CardHeader><CardTitle>Profile</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center gap-4">
-                <Avatar name={user.full_name || user.email} size="lg" />
+                <Avatar name={user.full_name || appUser?.email || "U"} size="lg" />
                 <div>
                   <h3 className="font-semibold text-lg">{user.full_name}</h3>
-                  <p className="text-[var(--text-secondary)]">{user.email}</p>
+                  <p className="text-[var(--text-secondary)]">{appUser?.email}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
@@ -114,18 +152,26 @@ export default function SuperAdminUserDetailPage() {
             <CardContent>
               <div className="flex items-center gap-4">
                 <Select
-                  options={[{ value: "admin", label: "Admin" }, { value: "lawyer", label: "Lawyer" }, { value: "paralegal", label: "Paralegal" }, { value: "staff", label: "Staff" }]}
+                  options={[
+                    { value: "owner", label: "Owner" },
+                    { value: "partner", label: "Partner" },
+                    { value: "senior_associate", label: "Senior Associate" },
+                    { value: "associate", label: "Associate" },
+                    { value: "junior_associate", label: "Junior Associate" },
+                    { value: "paralegal", label: "Paralegal" },
+                    { value: "intern", label: "Intern" },
+                    { value: "office_admin", label: "Office Admin" },
+                  ]}
                   value={user.role}
                   onChange={(e) => updateRole(e.target.value)}
                 />
-                <Button onClick={() => updateRole(user.role)} size="sm">Save</Button>
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row justify-between">
-              <CardTitle>Cases ({cases.length})</CardTitle>
+              <CardTitle>Recent Cases ({cases.length})</CardTitle>
             </CardHeader>
             <CardContent>
               {cases.length === 0 ? <p className="text-[var(--text-secondary)] text-center py-4">No cases.</p> : (

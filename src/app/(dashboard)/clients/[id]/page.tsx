@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { dbWrite } from "@/lib/db-write";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,16 @@ import { ArrowLeft, Phone, Mail, MapPin, Building, Edit, Trash2 } from "lucide-r
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { useUser } from "@/hooks/use-user";
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 interface ClientDetail {
   id: string;
@@ -37,6 +48,7 @@ interface ClientCase {
 }
 
 export default function ClientDetailPage() {
+  const { user: appUser } = useUser();
   const params = useParams();
   const router = useRouter();
   const [client, setClient] = useState<ClientDetail | null>(null);
@@ -48,13 +60,35 @@ export default function ClientDetailPage() {
 
   useEffect(() => {
     const fetchClient = async () => {
-      const { data } = await supabase.from("clients").select("*").eq("id", params.id).single();
+      if (!appUser) { setLoading(false); return; }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("firm_id")
+        .eq("id", appUser?.uuid)
+        .single();
+
+      if (!profile?.firm_id) {
+        setLoading(false);
+        return;
+      }
+      const firmId = profile.firm_id;
+
+      const { data } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("id", params.id)
+        .eq("firm_id", firmId)
+        .is("deleted_at", null)
+        .single();
       if (data) {
         setClient(data as ClientDetail);
         const { data: casesData } = await supabase
           .from("cases")
           .select("id, case_number, title, status, created_at")
           .eq("client_id", params.id)
+          .eq("firm_id", firmId)
+          .is("deleted_at", null)
           .order("created_at", { ascending: false });
         setCases(casesData || []);
       }
@@ -66,17 +100,36 @@ export default function ClientDetailPage() {
   const handleDelete = async () => {
     setDeleting(true);
     const now = new Date().toISOString();
-    for (const c of cases) {
-      await supabase.from("hearings").update({ deleted_at: now }).eq("case_id", c.id);
-      await supabase.from("time_entries").delete().eq("case_id", c.id);
-      await supabase.from("documents").update({ deleted_at: now }).eq("case_id", c.id);
-      await supabase.from("invoices").update({ status: "cancelled" }).eq("case_id", c.id);
+
+    if (!appUser) { setDeleting(false); return; }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("firm_id")
+      .eq("id", appUser?.uuid)
+      .single();
+
+    if (!profile?.firm_id) {
+      setDeleting(false);
+      toast.error("No firm associated with your account");
+      return;
     }
-    await supabase.from("cases").update({ deleted_at: now }).eq("client_id", params.id);
-    const { error } = await supabase.from("clients").update({ deleted_at: now }).eq("id", params.id);
+    const firmId = profile.firm_id;
+
+    const caseIds = cases.map((c) => c.id);
+    if (caseIds.length > 0) {
+      await Promise.all(caseIds.map(async (caseId) => {
+        await dbWrite("hearings", "update", { deleted_at: now }, { case_id: caseId, firm_id: firmId });
+        await dbWrite("time_entries", "update", { deleted_at: now }, { case_id: caseId, firm_id: firmId });
+        await dbWrite("documents", "update", { deleted_at: now }, { case_id: caseId, firm_id: firmId });
+        await dbWrite("invoices", "update", { status: "cancelled" }, { case_id: caseId, firm_id: firmId });
+      }));
+    }
+    await dbWrite("cases", "update", { deleted_at: now }, { client_id: params.id, firm_id: firmId });
+    const { error } = await dbWrite("clients", "update", { deleted_at: now }, { id: params.id, firm_id: firmId });
     setDeleting(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(error);
       return;
     }
     toast.success("Client and all related records deleted");
@@ -226,7 +279,7 @@ export default function ClientDetailPage() {
                 <CardTitle>Notes</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm whitespace-pre-wrap">{client.notes}</p>
+                <p className="text-sm whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: escapeHtml(client.notes) }} />
               </CardContent>
             </Card>
           )}

@@ -10,23 +10,30 @@ export default function TeamAnalyticsPage() {
   const [taskCompletion, setTaskCompletion] = useState<any[]>([]);
   const [caseLoad, setCaseLoad] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [u, t, c] = await Promise.all([
-        fetch("/api/analytics?type=time_utilization").then(r => r.json()),
-        fetch("/api/analytics?type=task_completion").then(r => r.json()),
-        fetch("/api/analytics?type=case_load_balance").then(r => r.json()),
-      ]);
-      setUtilization(u);
-      setTaskCompletion(t);
-      setCaseLoad(c);
-      setLoading(false);
+      try {
+        const [u, t, c] = await Promise.all([
+          fetch("/api/analytics?type=time_utilization").then(r => r.json()),
+          fetch("/api/analytics?type=task_completion").then(r => r.json()),
+          fetch("/api/analytics?type=case_load_balance").then(r => r.json()),
+        ]);
+        setUtilization(u);
+        setTaskCompletion(t);
+        setCaseLoad(c);
+      } catch {
+        setError("Failed to load analytics");
+      } finally {
+        setLoading(false);
+      }
     };
     fetchAll();
   }, []);
 
   if (loading) return <div className="text-center py-12 text-[var(--text-secondary)]">Loading analytics...</div>;
+  if (error) return <div className="text-center py-12 text-red-500">{error}</div>;
 
   const totalBillable = utilization.reduce((s, l) => s + l.billable, 0);
   const totalHours = utilization.reduce((s, l) => s + l.total, 0);

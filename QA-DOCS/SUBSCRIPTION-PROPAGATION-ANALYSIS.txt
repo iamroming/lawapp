@@ -1,0 +1,163 @@
+============================================================
+SUBSCRIPTION EXPIRY PROPAGATION: OWNER → EMPLOYEES
+============================================================
+Date: 2026-08-05
+Question: Does the subscription plan ending for the firm owner
+          affect all employees under that owner?
+
+============================================================
+SHORT ANSWER
+============================================================
+YES, employees are blocked — but NOT because the owner's
+subscription expired. Employees are blocked REGARDLESS of the
+owner's subscription status due to a bug in the middleware.
+
+The middleware checks subscriptions per-user, not per-firm.
+Since employees never get their own subscription row, they
+are redirected to /subscription-required on every page load,
+even when the owner has an active subscription.
+
+============================================================
+DETAILED FINDINGS
+============================================================
+
+--- 1. MIDDLEWARE (Access Gate) ---
+File: src/lib/supabase/middleware.ts:116-129
+
+The middleware queries:
+  .eq("user_id", user.id)   // <-- current logged-in user's auth UUID
+
+This means it only checks whether the CURRENT user has their
+own row in user_subscriptions. It does NOT look up the user's
+firm_id or check the owner's subscription.
+
+If no row is found → redirect to /subscription-required.
+
+--- 2. SUBSCRIPTION CREATION ---
+File: src/app/api/subscriptions/route.ts:81-92 (free plan)
+File: src/app/api/subscriptions/route.ts:148-163 (paid plan)
+
+When a subscription is created:
+  user_id: user.id   // <-- the person who clicked "Subscribe"
+
+Only the owner gets a row. No code anywhere creates subscription
+rows for employees.
+
+--- 3. TRIAL EXPIRATION CRON ---
+File: src/app/api/subscriptions/expire-trials/route.ts:18-22
+
+Queries:
+  .eq("status", "trialing")
+  .lt("expires_at", new Date().toISOString())
+
+Updates matching rows to status: "expired".
+
+This only affects rows that exist. Since employees have no rows,
+this cron does nothing to them directly.
+
+--- 4. PLAN LIMITS (API Layer) ---
+File: src/lib/subscription-limits.ts:19-35
+
+getPlanLimits() does something DIFFERENT from the middleware:
+
+  const lookupId = profile?.firm_id || userId;
+  //员工的 firm_id = owner's user ID
+
+  .eq("user_id", lookupId)   // looks up by OWNER's user ID
+
+This means employees DO inherit the owner's plan limits at
+the API level (case count, storage, user limits, AI queries).
+
+--- 5. EMPLOYEE FIRM MEMBERSHIP ---
+File: src/app/api/auth/signup/route.ts:43-53 (owner signup)
+
+Owner signup sets:
+  firm_id: userData.user.id   // owner's firm_id = their own ID
+
+File: src/app/api/team/invite/route.ts:100-104 (invite employee)
+
+Employee invite sets:
+  firm_id: profile.firm_id || user.id   // = owner's user ID
+
+So employees always have firm_id pointing to the owner.
+
+--- 6. RLS POLICY ON user_subscriptions ---
+File: outofwork2/supabase/admin-schema.sql:104
+
+  for select using (auth.uid() = user_id)
+
+Users can only see their OWN subscription row. Employees cannot
+even read the owner's subscription row via RLS.
+
+============================================================
+THE INCONSISTENCY (BUG)
+============================================================
+
++-------------------+------------------------+------------------+
+| Layer             | Checks via             | Employee inherits|
++-------------------+------------------------+------------------+
+| Middleware        | user_subscriptions     | NO — blocked     |
+| (access gate)     | .user_id = current user|                  |
++-------------------+------------------------+------------------+
+| API limits        | profiles.firm_id →     | YES — shares     |
+| (case/storage/    | owner's user_id →      | owner's limits   |
+|  user/AI limits)  | user_subscriptions     |                  |
++-------------------+------------------------+------------------+
+
+RESULT: Even with an active owner subscription, ALL employees
+are redirected to /subscription-required on every page load
+because the middleware doesn't inherit via firm_id.
+
+============================================================
+WHAT HAPPENS TODAY (Step by Step)
+============================================================
+
+1. Owner signs up → creates subscription row for owner's user_id
+2. Owner invites employee → employee gets firm_id = owner's ID
+3. Employee logs in → middleware checks user_subscriptions for
+   employee's own user_id → NO ROW FOUND → redirect to
+   /subscription-required
+4. Employee sees plan selection page, cannot access the app
+5. Owner's subscription status is irrelevant — employees are
+   always blocked at the middleware level
+
+When owner's subscription expires:
+- Owner: middleware finds expired/no row → redirected
+- Employees: middleware already found no row → already redirected
+- Net effect: same as before, everyone is blocked
+
+============================================================
+THE FIX
+============================================================
+The middleware at src/lib/supabase/middleware.ts:116-129 should
+use the same firm_id-based lookup that getPlanLimits() uses:
+
+  1. Look up the user's profile.firm_id
+  2. Use firm_id (or user.id if no firm) as the lookup ID
+  3. Query user_subscriptions with .eq("user_id", lookupId)
+  4. Also check the subscription status (active/trialing)
+
+This would make employees inherit the owner's subscription
+status at the access-control level, matching the API limits
+behavior.
+
+Additionally, the subscription-required page should show which
+firm owner's subscription is expired so employees know who to
+contact.
+
+============================================================
+FILES INVOLVED
+============================================================
+- src/middleware.ts                    : Top-level rate limiting
+- src/lib/supabase/middleware.ts       : Auth + subscription check (THE BUG)
+- src/app/api/subscriptions/route.ts   : Subscription creation
+- src/app/api/subscriptions/expire-trials/route.ts : Cron job
+- src/lib/subscription-limits.ts       : Plan limits (correct inheritance)
+- src/app/subscription-required/page.tsx : Redirect target
+- src/app/api/auth/signup/route.ts     : Owner signup (firm_id assignment)
+- src/app/api/team/invite/route.ts     : Employee invite (firm_id assignment)
+- outofwork2/supabase/admin-schema.sql : user_subscriptions table + RLS
+
+============================================================
+END OF ANALYSIS
+============================================================

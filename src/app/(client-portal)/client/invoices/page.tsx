@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Receipt, Download, Loader2 } from "lucide-react";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import toast from "react-hot-toast";
+import { useUser } from "@/hooks/use-user";
 
 interface Invoice {
   id: string;
@@ -22,19 +23,19 @@ interface Invoice {
 }
 
 export default function ClientInvoicesPage() {
+  const { user: appUser } = useUser();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
   useEffect(() => {
     async function loadInvoices() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!appUser) return;
 
       const { data } = await supabase
         .from("invoices")
         .select("*, case:cases(case_number, title)")
-        .eq("client_id", user.id)
+        .eq("client_id", appUser?.uuid)
         .order("created_at", { ascending: false });
 
       if (data) {

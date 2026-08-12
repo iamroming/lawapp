@@ -1,0 +1,136 @@
+======================================================================
+ PLAN: Landing Page + Auth-Aware Navbar + Employee Dashboard
+======================================================================
+
+CURRENT STATE:
+- casefiles-website/ has a static HTML marketing site (dark theme, orange accent)
+- src/app/(marketing)/page.tsx serves at "/" - another marketing page
+- src/app/home/page.tsx - duplicate marketing page (unused)
+- Sidebar shows ALL nav items to all roles, filtered only by role
+- No separate employee vs owner dashboard layout
+
+======================================================================
+ TASK 1: MAKE casefiles-website THE LANDING PAGE
+======================================================================
+
+APPROACH: Convert the static HTML into a Next.js page at src/app/page.tsx.
+
+- Create src/app/page.tsx (root route) - renders the casefiles-website content as a React component
+- Use the EXACT same dark theme, orange accent, sections from index.html
+- Add auth-aware navbar: check Firebase auth state
+  - NOT logged in: show "Sign In" -> /login and "Get Started Free" -> /signup
+  - LOGGED IN: show "Go to Dashboard" -> /dashboard
+- Keep all existing sections: Hero, Stats, Product, Solution, Pricing, Testimonials, CTA, Footer
+- All CTAs link to /signup or /login
+- Remove the old src/app/(marketing)/page.tsx content (or redirect to /)
+
+FILES:
+  CREATE: src/app/page.tsx (new root landing page)
+  MODIFY: src/app/(marketing)/page.tsx (redirect to /)
+  KEEP: casefiles-website/ folder as reference (don't delete)
+
+======================================================================
+ TASK 2: OWNER/FIRM DASHBOARD - SHOW FIRM TRANSACTIONS
+======================================================================
+
+APPROACH: Enhance existing dashboard page to show firm financial overview.
+
+The current dashboard at src/app/(dashboard)/dashboard/page.tsx shows basic stats.
+Update it to show:
+
+  - Revenue summary (total invoiced, collected, outstanding)
+  - Recent transactions list (payments received)
+  - Monthly revenue chart or summary
+  - Active cases count
+  - Upcoming hearings
+  - Team activity
+
+This is mostly an enhancement to the EXISTING dashboard page, not a new page.
+
+FILES:
+  MODIFY: src/app/(dashboard)/dashboard/page.tsx
+
+======================================================================
+ TASK 3: EMPLOYEE DASHBOARD (REDUCED SIDEBAR)
+======================================================================
+
+APPROACH: Create a separate layout for employee roles with a reduced sidebar.
+
+EMPLOYEE ROLES (non-owner, non-partner):
+  - senior_associate, associate, junior_associate, paralegal, intern, office_admin
+
+EMPLOYEE DASHBOARD: Shows only what employees need:
+  - My Cases (cases assigned to them)
+  - Calendar (hearings)
+  - Tasks
+  - Documents
+  - Messages
+  - Notifications
+
+EMPLOYEE SIDEBAR (reduced):
+  - Dashboard (their personal overview)
+  - My Cases
+  - Calendar
+  - Tasks
+  - Documents
+  - Messages
+  - Notifications
+  - Settings
+
+REMOVED FOR EMPLOYEES:
+  - Billing, Quotations, Expenses (owner/partner only)
+  - Reports (owner/partner only)
+  - AI Tools (owner/partner only - or keep if plan allows)
+  - CRM (owner only)
+  - Branches (owner/partner only)
+  - Subscription (owner only)
+  - Admin section
+
+IMPLEMENTATION:
+  Option A: Use the SAME sidebar but filter more aggressively based on plan + role
+  Option B: Create a separate EmployeeSidebar component + EmployeeLayout
+
+  RECOMMENDED: Option A - modify existing sidebar.tsx to:
+  1. Check if user role is employee (not owner/partner)
+  2. Show reduced nav items for employees
+  3. Employee dashboard shows personal metrics, not firm-wide
+
+FILES:
+  MODIFY: src/components/sidebar.tsx (add employee-specific nav filtering)
+  MODIFY: src/app/(dashboard)/dashboard/page.tsx (show different content for employees)
+
+======================================================================
+ SUMMARY OF ALL FILES
+======================================================================
+
+  CREATE:
+    src/app/page.tsx                     - Root landing page (from casefiles-website)
+
+  MODIFY:
+    src/app/(marketing)/page.tsx         - Redirect to /
+    src/components/sidebar.tsx           - Employee reduced sidebar
+    src/app/(dashboard)/dashboard/page.tsx - Owner sees firm transactions, employee sees personal
+
+  NO CHANGE:
+    casefiles-website/ folder            - Keep as reference
+    All API routes                       - No changes needed
+    ProfileGuard                         - Already works for all roles
+
+======================================================================
+ DEPENDENCIES
+======================================================================
+
+None. All changes are independent of the SQL migrations.
+The landing page works without auth. Dashboard changes work with existing schema.
+
+======================================================================
+ ESTIMATED EFFORT
+======================================================================
+
+Task 1 (Landing Page): ~30 min - Convert HTML to React, add auth buttons
+Task 2 (Firm Transactions Dashboard): ~20 min - Enhance existing dashboard
+Task 3 (Employee Sidebar): ~15 min - Filter sidebar by role
+
+Total: ~65 min
+
+======================================================================

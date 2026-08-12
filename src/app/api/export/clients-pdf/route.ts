@@ -1,0 +1,41 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
+import { generateClientsPDF } from "@/lib/pdf-export";
+
+export async function GET(req: NextRequest) {
+  const supabase = await createClient();
+  const user = await verifySessionFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { data: profile } = await supabase.from("profiles").select("firm_id, firm_name").eq("id", user.uuid).single();
+  const firmId = profile?.firm_id || user.uuid;
+
+  const { data: clients } = await supabase
+    .from("clients")
+    .select("id, full_name, email, phone")
+    .eq("firm_id", firmId)
+    .is("deleted_at", null)
+    .order("full_name");
+
+  // Get case counts per client
+  const clientsWithCounts = await Promise.all(
+    (clients || []).map(async (c) => {
+      const { count } = await supabase
+        .from("cases")
+        .select("id", { count: "exact", head: true })
+        .eq("client_id", c.id)
+        .is("deleted_at", null);
+      return { ...c, case_count: count || 0 };
+    })
+  );
+
+  const blob = generateClientsPDF(clientsWithCounts, profile?.firm_name || "CaseFiles");
+
+  return new Response(blob, {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="clients-report-${new Date().toISOString().slice(0, 10)}.pdf"`,
+    },
+  });
+}

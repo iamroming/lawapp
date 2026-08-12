@@ -1,0 +1,204 @@
+======================================================================
+              FINAL BUG REPORT — CASEFILES APP
+======================================================================
+Date: August 7, 2026
+Total Bugs Found: 50
+Critical: 7 | High: 14 | Medium: 18 | Low: 11
+
+======================================================================
+CRITICAL BUGS (Fix Immediately)
+======================================================================
+
+#1 Payment Verification Bypass
+  File: src/app/api/payments/verify/route.ts
+  Bug: If Razorpay payments.fetch() fails, the catch block does NOT
+       return. Execution continues and activates the subscription
+       without valid payment.
+  Impact: Users get free subscriptions by triggering payment errors.
+  Fix: Add return after the catch block.
+
+#2 Payment Signature Timing Attack
+  File: src/app/api/payments/verify/route.ts
+  Bug: Signature comparison uses !== instead of crypto.timingSafeEqual.
+  Impact: Attacker can guess signature character by character.
+  Fix: Use crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b)).
+
+#3 Coupon Race Condition
+  File: src/app/api/coupons/apply/route.ts
+  Bug: current_uses increment is not atomic. Two concurrent requests
+       can both pass the lt check and both increment.
+  Impact: Extra coupon uses beyond max_uses limit.
+  Fix: Use UPDATE ... WHERE current_uses < max_uses RETURNING id.
+
+#4 Invoice Number Race Condition
+  File: src/app/api/invoices/route.ts
+  Bug: Invoice number generation reads last number, computes next,
+       then inserts — not atomic. Concurrent requests = duplicates.
+  Impact: Duplicate invoice numbers.
+  Fix: Use database sequence or atomic RPC function.
+
+#5 Free Coupon Subscription Bypass
+  File: src/app/api/payments/create-order/route.ts
+  Bug: Free coupon activation doesn't check for existing active
+       subscription. User can apply multiple free coupons.
+  Impact: Unlimited free subscriptions.
+  Fix: Deactivate existing subscription before creating new one.
+
+#6 Share Route IDOR
+  File: src/app/api/share/route.ts
+  Bug: Share route fetches records by ID without firm_id check.
+       Any user can share any other firm's data by guessing UUIDs.
+  Impact: Cross-firm data leak.
+  Fix: Add .eq("firm_id", firmId) to all queries.
+
+#7 Admin Setup Endpoint Still Accessible
+  File: src/app/api/admin-setup/route.ts
+  Bug: Returns 410 Gone but file still exists. Could be re-enabled.
+  Impact: Potential super admin bootstrap exploitation.
+  Fix: Delete the file entirely.
+
+======================================================================
+HIGH SEVERITY BUGS
+======================================================================
+
+#8 Missing CSRF Protection on All Mutation Endpoints
+  Bug: CSRF token library exists but is never used in any API route.
+  Fix: Add CSRF middleware or validate tokens per route.
+
+#9 Account Deletion Fails Silently
+  File: src/app/api/account/delete/route.ts
+  Bug: Uses supabase.auth.admin.deleteUser() which requires service
+       role key, but route uses user session client (anon key).
+  Fix: Use service role client for admin operations.
+
+#10 Signup No Rate Limiting
+  File: src/app/api/auth/signup/route.ts
+  Bug: No rate limit on signup endpoint. Unlimited accounts.
+  Fix: Add rate limiting in middleware for /api/auth/signup.
+
+#11 Dashboard Invoices Not Firm-Scoped
+  File: src/app/api/dashboard/route.ts
+  Bug: Invoices filtered by issued_by: user.id for ALL users.
+       Owners should see all firm invoices.
+  Fix: Check role, query by firm_id for owners/partners.
+
+#12 Dashboard Documents Not Firm-Scoped
+  File: src/app/api/dashboard/route.ts
+  Bug: Same as #11 — documents filtered by uploaded_by for owners.
+  Fix: Same fix — firm_id for owners/partners.
+
+#13 Collections No Firm Scoping
+  File: src/app/api/collections/route.ts
+  Bug: Filtered only by user_id. Owners can't see team collections.
+  Fix: Add firm_id scoping based on role.
+
+#14 Time Entries No Firm Scoping
+  File: src/app/api/time-entries/route.ts
+  Bug: Filtered only by lawyer_id. No firm_id column on table.
+  Fix: Add firm_id column and scope queries.
+
+#15 Employee Invite Role Hierarchy Bypass
+  File: src/app/api/team/invite/route.ts
+  Bug: super_admin role check only looks at profiles table, not
+       super_admins table. Any user with role=super_admin in
+       profiles can bypass hierarchy.
+  Fix: Check super_admins table, not profiles.role.
+
+#16 Firm Context OR Syntax May Be Wrong
+  File: src/lib/firm-context.ts
+  Bug: OR filter syntax may not match Supabase expected format.
+  Fix: Verify and correct Supabase OR syntax.
+
+#17 Tags No Firm Scoping
+  File: src/app/api/tags/route.ts
+  Bug: Tags filtered by created_by. Firm-level sharing broken.
+  Fix: Add firm_id and scope by firm for owners.
+
+#18 Client Portal No Firm Scoping
+  File: src/app/api/client-portal/route.ts
+  Bug: GET filtered by created_by. Owners miss partner's clients.
+  Fix: Add firm_id scoping.
+
+======================================================================
+MEDIUM SEVERITY BUGS
+======================================================================
+
+#19 Empty Catch Blocks (9 instances)
+  Files: sidebar.tsx, documents/page.tsx, dashboard/page.tsx, etc.
+  Bug: Silent error swallowing. No user feedback.
+  Fix: Log errors, show toast messages.
+
+#20 Signup Password Validation Inconsistency
+  File: src/app/api/auth/signup/route.ts
+  Bug: Only checks length >= 8, but validator requires uppercase
+       + number. API doesn't use the validator schema.
+  Fix: Apply signupSchema validation in API route.
+
+#21 Rate Limiter Race Condition
+  File: src/lib/rate-limit.ts
+  Bug: Delete-then-count-then-insert is not atomic.
+  Fix: Use database-level atomic operations.
+
+#22 XSS in Email Templates
+  File: src/app/api/reminders/route.ts
+  Bug: User data interpolated into HTML without escaping.
+  Fix: Sanitize/escape all user data in HTML templates.
+
+#23 N+1 Query in Analytics
+  File: src/app/api/analytics/route.ts
+  Bug: Individual queries per client/case for LTV and profit calc.
+  Fix: Use batch queries or database views.
+
+#24 Subscription Route No Duplicate Prevention
+  File: src/app/api/subscriptions/route.ts
+  Bug: No check for existing active subscription before insert.
+  Fix: Check for existing active sub before creating.
+
+#25 Salary POST No Input Validation
+  File: src/app/api/salary/route.ts
+  Bug: No validation on employee_id, period_start, period_end.
+  Fix: Add zod validation schema.
+
+#26 Salary Settings No Bounds Checking
+  File: src/app/api/salary/settings/route.ts
+  Bug: PF/ESI/TDS rates accepted without min/max bounds.
+  Fix: Add range validation (e.g., 0-100%).
+
+#27 Subscription Webhook No firm_id Propagation
+  File: src/app/api/subscriptions/webhook/route.ts
+  Bug: plan_id never set from notes, firm_id never propagated.
+  Fix: Parse notes, set plan_id, propagate firm_id.
+
+#28 Documents SQL Injection Pattern
+  File: src/app/api/documents/route.ts
+  Bug: String interpolation into Supabase OR filter.
+  Fix: Use array-based filtering instead.
+
+#29 Delete-Cloudinary Weak Firm Verification
+  File: src/app/api/documents/delete-cloudinary/route.ts
+  Bug: Uses cs (contains) substring match for URL matching.
+  Fix: Parse exact public_id and compare.
+
+#30 Missing firm_id on Multiple Tables
+  Tables: time_entries, tags, notifications
+  Bug: Some inserts don't set firm_id.
+  Fix: Add firm_id to inserts.
+
+======================================================================
+LOW SEVERITY BUGS
+======================================================================
+
+#31 console.log in Production Code
+#32 Hardcoded Values (30-day expiry, 1-year free, etc.)
+#33 Inconsistent Error Response Formats
+#34 Missing updated_at on Client PUT
+#35 Razorpay Key Exposed (public key, low risk)
+#36 Missing max_length on String Fields
+#37 Weak Type Usage (any) Throughout
+#38 Missing TypeScript Strict Mode
+#39 log_activity RPC Fire-and-Forget
+#40 Inconsistent Catch Block Handling
+
+======================================================================
+                         END OF REPORT
+======================================================================

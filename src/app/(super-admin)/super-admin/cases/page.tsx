@@ -1,13 +1,12 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getSuperAdminCases } from "@/app/actions/super-admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatDate, getStatusColor, unwrap } from "@/lib/utils";
+import { formatDate, getStatusColor } from "@/lib/utils";
 import { Briefcase, Search } from "lucide-react";
-import Link from "next/link";
 import type { CaseWithDetails } from "@/types/database";
 
 export default function SuperAdminCasesPage() {
@@ -15,14 +14,12 @@ export default function SuperAdminCasesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const supabase = createClient();
 
   useEffect(() => { fetchCases(); }, []);
 
   const fetchCases = async () => {
-    const { data } = await supabase.from("cases").select("*, client:clients(full_name), assigned:profiles(full_name)").order("created_at", { ascending: false });
-    const formatted = (data || []).map((c) => ({ ...c, client: unwrap(c.client), assigned: unwrap(c.assigned) }));
-    setCases(formatted);
+    const data = await getSuperAdminCases();
+    setCases((data as CaseWithDetails[]) || []);
     setLoading(false);
   };
 
@@ -46,15 +43,14 @@ export default function SuperAdminCasesPage() {
         </div>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="h-10 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm">
           <option value="all">All Status</option>
-          {["pending", "active", "in-progress", "under-trial", "won", "lost", "settled", "closed"].map((s) => <option key={s} value={s}>{s}</option>)}
+          {["pending", "active", "in-progress", "under-trial", "won", "lost", "settled", "closed", "adjourned", "dismissed"].map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
       </div>
 
       {loading ? <div className="text-center py-12 text-[var(--text-secondary)]">Loading...</div> : (
         <div className="grid gap-3">
           {filtered.map((c) => (
-            <Link key={c.id} href={`/cases/${c.id}`}>
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <Card key={c.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="min-w-0">
@@ -74,7 +70,6 @@ export default function SuperAdminCasesPage() {
                   </div>
                 </CardContent>
               </Card>
-            </Link>
           ))}
         </div>
       )}

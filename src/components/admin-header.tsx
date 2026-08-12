@@ -1,20 +1,31 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getFirebaseAuth } from "@/lib/firebase/config";
 import { Avatar } from "@/components/ui/avatar";
-import { User } from "@supabase/supabase-js";
+
+interface FirebaseUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+}
 
 export function AdminHeader() {
-  const [user, setUser] = useState<User | null>(null);
-  const supabase = createClient();
+  const [user, setUser] = useState<FirebaseUser | null>(null);
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+      const auth = getFirebaseAuth();
+      const firebaseUser = auth.currentUser;
+      if (firebaseUser) {
+        setUser({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+        });
+      }
     };
     getUser();
-  }, [supabase]);
+  }, []);
 
   return (
     <header className="h-14 lg:h-16 border-b border-gray-200 bg-white flex items-center justify-between pl-14 lg:pl-6 pr-3 lg:pr-4">
@@ -29,7 +40,7 @@ export function AdminHeader() {
           <p className="text-xs text-gray-500">Owner</p>
         </div>
         <Avatar
-          name={user?.user_metadata?.full_name || user?.email || "O"}
+          name={user?.displayName || user?.email || "O"}
           size="md"
         />
       </div>

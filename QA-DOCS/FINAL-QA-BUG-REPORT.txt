@@ -1,0 +1,378 @@
+======================================================================
+       FINAL QA BUG REPORT — CASEFILES APP
+======================================================================
+Date: August 7, 2026
+Tested As: New User (Complete Fresh Experience)
+Build: PASSED (Next.js 16.2.10, 208 pages)
+Total Bugs Found: 120+ across all modules
+Previously Fixed: 81 bugs (2 rounds)
+
+======================================================================
+CRITICAL BUGS (Security / Data Loss / Crash)
+======================================================================
+
+#1 Employee Signup Completely Broken
+  File: src/app/api/auth/signup/route.ts:79-81
+  Bug: API always rejects non-owner signups with 400 error.
+       Frontend offers "I'm a Team Member" mode but API blocks it.
+  Impact: Employee onboarding is dead code. New team members cannot
+          sign up even with valid invite codes.
+
+#2 Zombie Users on Profile Failure
+  File: src/app/api/auth/signup/route.ts:59-97
+  Bug: createUser() succeeds at line 59, then profiles upsert at
+       line 84 may fail. User gets 500 but auth account exists.
+  Impact: Zombie auth users with no profile. Can never complete
+          onboarding. Duplicate signup attempts create more zombies.
+
+#3 Billing Pages Infinite Re-Render
+  Files: billing/new/page.tsx:28, billing/outstanding/page.tsx:38
+  Bug: createClient() called inside component body on every render.
+       New object reference causes useEffect to re-run infinitely.
+  Impact: CRASH. Both billing pages are completely unusable.
+
+#4 New Case/Client Forms Missing firm_id
+  Files: cases/new/page.tsx:183-205, clients/new/page.tsx:88-91
+  Bug: inserts have no firm_id. Cases/clients created without firm
+       association. Owners filter by firm_id so they're invisible.
+  Impact: Data orphaned. Created records vanish from owner's view.
+
+#5 Case Detail IDOR (Insecure Direct Object Reference)
+  File: src/app/(dashboard)/cases/[id]/page.tsx:82-86
+  Bug: No firm_id filter on case fetch. Any authenticated user can
+       view any case by navigating to /cases/{arbitrary-id}.
+  Impact: Cross-firm data leak. Firm A can see Firm B's cases.
+
+#6 AI Research Imports Server-Side Code
+  File: src/app/(dashboard)/ai/research/page.tsx:10
+  Bug: searchLegalResearch from @/lib/ai/service accesses
+       process.env.AI_API_KEY — a server-only secret.
+  Impact: Research feature always falls back to hardcoded results.
+          AI_API_KEY is always undefined in the browser.
+
+#7 AI Research No Usage Tracking
+  File: src/app/(dashboard)/ai/research/page.tsx:40-54
+  Bug: Unlike all other AI pages, research has no useAiUsage().
+       No isAtLimit check. No rate limiting.
+  Impact: Free plan users get unlimited research queries,
+          bypassing all plan restrictions.
+
+#8 Calendar Data localStorage Only
+  File: src/app/(dashboard)/calendar/page.tsx:187-195
+  Bug: Court rules and events stored in localStorage, not DB.
+       Lost on browser clear, device switch, or different browser.
+  Impact: Data loss for SaaS product. Not shared with team.
+
+#9 Subscription Query Missing Status Filter
+  File: src/app/(dashboard)/subscription/page.tsx:82-89
+  Bug: Fetches most recent subscription regardless of status.
+       Could return cancelled/expired instead of active.
+  Impact: User sees wrong plan. Upgrade/downgrade buttons incorrect.
+
+#10 Documents Crash for Employees
+   File: src/app/api/documents/route.ts:34
+   Bug: .or() filter with empty caseIds array produces
+        case_id.in.() — invalid PostgREST filter = 400 error.
+   Impact: Employees with no assigned cases cannot list documents.
+
+======================================================================
+HIGH BUGS (Functional / Data Integrity)
+======================================================================
+
+#11 New Case Client Dropdown No Firm Scoping
+    File: src/app/(dashboard)/cases/new/page.tsx:84
+    Bug: Fetches ALL clients with no firm_id filter.
+    Impact: Firm A can attach Firm B's clients to cases.
+
+#12 Case Detail No Role-Based Access Control
+    File: src/app/(dashboard)/cases/[id]/page.tsx:220-244
+    Bug: Delete, Edit, Status buttons visible to ALL users.
+    Impact: Junior associates can delete cases or mark them won.
+
+#13 Client Delete Cascade N+1 Queries
+    File: src/app/(dashboard)/clients/[id]/page.tsx:109-115
+    Bug: 4 queries per case × N cases. 20 cases = 80+ sequential
+         DB queries. Individual errors silently ignored.
+    Impact: Slow deletion. Partial failures leave orphaned data.
+
+#14 Pagination Doesn't Reset on Filter Change
+    Files: cases/page.tsx:99, clients/page.tsx:73
+    Bug: User on page 5 types search with 2 results → sees 0.
+         Page state never resets when search/filter changes.
+    Impact: Users think search is broken when results exist.
+
+#15 Conflicting Success/Error Toasts on Case Create
+    File: src/app/(dashboard)/cases/new/page.tsx:267-274
+    Bug: Partial upload failures show error toast AND success
+         toast, then redirect. User confused about outcome.
+    Impact: Users don't know if case was created or not.
+
+#16 Invoice Creation Missing Firm Scoping
+    File: src/app/api/invoices/route.ts:40-44
+    Bug: Client lookup has no firm_id filter. Users can create
+         invoices for clients from other firms.
+    Impact: Cross-firm invoice creation possible.
+
+#17 Duplicate Subscription Race Condition
+    File: src/app/api/payments/verify/route.ts:73
+    Bug: No check for existing active subscription before insert.
+         Same Razorpay payment can be verified repeatedly.
+    Impact: Duplicate subscription records from same payment.
+
+#18 Collections POST No Invoice Firm Check
+    File: src/app/api/collections/route.ts:63-86
+    Bug: Creates collection log for any invoice_id without
+         verifying invoice belongs to user's firm.
+    Impact: Cross-firm collection log creation.
+
+#19 Expenses PATCH/DELETE Fails for Users Without Firm
+    File: src/app/api/expenses/route.ts:136,161
+    Bug: .eq("firm_id", undefined) matches nothing when user
+         has no firm_id. Employees can't manage own expenses.
+    Impact: Expense management broken for solo employees.
+
+#20 Time Entries No Case Ownership Check
+    File: src/app/api/time-entries/route.ts:59
+    Bug: POST inserts with any case_id without verifying the
+         case belongs to the user's firm.
+    Impact: Time entries can reference wrong firm's cases.
+
+#21 AI Analyzes Deleted Cases
+    File: src/app/api/ai/analyze/route.ts:48-53
+    Bug: No .is("deleted_at", null) filter on case query.
+    Impact: AI can analyze soft-deleted cases.
+
+#22 AI Quota Consumed on Failure
+    Files: api/ai/analyze/route.ts:82, api/ai/chat/route.ts:105
+    Bug: logAiQuery called even when analysis/chat fails.
+    Impact: Failed requests consume daily quota unfairly.
+
+#23 AI Chat Returns 200 for Unconfigured AI
+    File: src/app/api/ai/chat/route.ts:70-78
+    Bug: Returns HTTP 200 with text message when AI_API_KEY
+         missing instead of 503 Service Unavailable.
+    Impact: Clients can't detect AI is unavailable.
+
+#24 Invoices No Zod Schema Validation
+    File: src/app/api/invoices/route.ts:82
+    Bug: Raw body fields destructured and inserted directly.
+    Impact: Malformed data passes to database.
+
+#25 Expenses No Zod Schema Validation
+    File: src/app/api/expenses/route.ts:63-64
+    Bug: Same issue. No schema validation on POST or PATCH.
+    Impact: Malformed data passes to database.
+
+#26 Invoices Race Condition on Fallback Number
+    File: src/app/api/invoices/route.ts:72
+    Bug: Date.now().toString().slice(-4) can collide under
+         concurrent requests producing duplicate invoice numbers.
+    Impact: Duplicate invoice numbers possible.
+
+#27 Subscriptions plan_id Always Null
+    File: src/app/api/subscriptions/route.ts:183
+    Bug: plan_id is hardcoded to null. Plan slug only in JSON
+         notes field, making it unqueryable.
+    Impact: Plan-gating features break. Can't query by plan.
+
+#28 Documents Storage Bypass When file_size=0
+    File: src/app/api/documents/route.ts:79-80
+    Bug: fileSize=0 or null skips storage limit check.
+    Impact: Users can upload unlimited zero-size documents.
+
+#29 Settings Save Partial Failure
+    File: src/app/(super-admin)/super-admin/settings/page.tsx
+    Bug: For-loop saves. If 3rd of 10 fails, first 2 committed.
+    Impact: Inconsistent platform configuration.
+
+#30 Subscription Override Creates Without plan_id
+    File: src/app/api/admin/subscription-override/route.ts:46-50
+    Bug: New subscription created without plan_id.
+    Impact: Active subscription with no plan breaks features.
+
+======================================================================
+MEDIUM BUGS (UX / Behavior)
+======================================================================
+
+#31 Signup Invite Code No Debounce (8 API calls per code)
+#32 Login Loading State Stuck if Popup Blocked
+#33 Reset Password 3s Timeout False Expiry on Slow Networks
+#34 Confirm Email No Rate Limiting on Resend
+#35 Confirm Email Email Bombing via URL Params
+#36 Client Detail firmId Falls Back to user.id
+#37 Case Detail No Firm Scoping on Related Records
+#38 Case Detail Inconsistent confirm() vs ConfirmDialog
+#39 Case Detail Profit Share Can Exceed 100%
+#40 Dashboard No Error Retry Mechanism
+#41 Cases List Query Error Completely Ignored
+#42 Clients List Query Error Completely Ignored
+#43 New Case client_id Query Param Never Read
+#44 New Case Conflicting Act/Section Selection
+#45 Document Templates Download as .txt Not .docx
+#46 Document Templates Hardcoded Not Firm-Scoped
+#47 Documents No File Type Validation
+#48 Documents No File Size Validation Before Upload
+#49 Billing New Invoice Unstyled select/textarea Elements
+#50 Billing Outstanding >90 Days Bucket Computed But Hidden
+#51 Billing Outstanding Client Filter No Firm Scoping
+#52 Calendar toggleComplete No Firm Scoping
+#53 Calendar Today Becomes Stale After Midnight
+#54 Calendar Delete Rules/Events No Confirmation
+#55 Calendar Hardcoded gray-* Colors Break Dark Mode
+#56 AI Hub Circular Imports of Sub-Pages
+#57 AI Research Saved Notes Ephemeral (No Persistence)
+#58 AI Research .replace("_"," ") Only Replaces First
+#59 AI Summarize Reuses Analyze Endpoint (Wrong Data Shape)
+#60 AI Summarize keyPoints === legalIssues (Duplicate)
+#61 AI Summarize deadlines/parties Always Empty
+#62 AI Drafting Jurisdiction Optional (Legally Invalid)
+#63 AI Drafting Loading State Shows No Text
+#64 AI Chat Array Index as React Key
+#65 AI Chat Height Hardcoded (Fragile)
+#66 Subscription Plans Hardcoded in Frontend
+#67 Subscription JSON.parse on Notes Can Crash
+#68 Subscription Razorpay Script Appended Repeatedly
+#69 Subscription Payment Verification Fire-and-Forget
+#70 Settings Team Limit Off-by-One for Non-Owners
+#71 Settings Free Plan Button Always Disabled
+#72 Super Admin Users N+1 Queries (500 for 100 users)
+#73 Super Admin Users No Pagination
+#74 Super Admin Users No Error Handling
+#75 Super Admin Users Search Placeholder Wrong
+#76 Super Admin Cases No Pagination
+#77 Super Admin Cases No Error Handling
+#78 Super Admin Clients No Pagination
+#79 Super Admin Clients Link Goes to Firm Route
+#80 Super Admin Documents No Pagination
+#81 Super Admin Documents Delete "Can Be Undone" Misleading
+#82 Super Admin Subscriptions Status Dropdown No Confirmation
+#83 Super Admin Coupons Dynamic Tailwind Classes Broken
+#84 Super Admin Coupons max_uses=0 Becomes Unlimited
+#85 Super Admin Revenue No Error Handling
+#86 Super Admin Activity Logs UniqueActions Computed From Partial Data
+#87 Super Admin Settings 50 Individual UPDATE Queries
+#88 Super Admin Settings Toggle No Accessibility
+
+======================================================================
+LOW BUGS (Code Quality / Minor)
+======================================================================
+
+#89 Module-Level Supabase Client in 7+ Pages
+#90 Dashboard Unused Imports (Clock, ArrowUpRight, BookOpen)
+#91 Dashboard Naive Tomorrow Calculation (DST Issues)
+#92 Client Detail escapeHtml + dangerouslySetInnerHTML Redundant
+#93 Client Detail Delete Confirmation Omits Invoices Mention
+#94 GST Validation Only Checks Length (Not Format)
+#95 Storage Usage User-Scoped Not Firm-Scoped
+#96 generateCaseNumber() Collision Risk (Math.random)
+#97 confirm-email "Sign Up Again" May Create Duplicates
+#98 Password Policy No Lowercase Requirement
+#99 Password HTML minLength=6 Contradicts JS minLength=8
+#100 No autocomplete Attributes on Auth Forms
+#101 Password Toggle Buttons No aria-label
+#102 No CSRF Protection on Auth Forms
+#103 x-forwarded-for Not Parsed for Multi-IP Chains
+#104 Google OAuth Window.location.origin Crash Risk in SSR
+#105 Billing Export Button No Error Handling
+#106 Billing Tab Navigation No Accessibility Attributes
+#107 Billing Stage Detection Logic Order-Independent
+#108 Document Templates Empty State Missing
+#109 Calendar Export Timer-Based Completion (2s Timeout)
+#110 Calendar Click-Outside Closes Both Dropdowns
+#111 AI Chat Error Messages Mix With Real Responses
+#112 AI Pages No Abort/Unfetch Cleanup
+#113 AI refreshUsage Not Called on Failure
+#114 Subscription Annual Savings Can Show 0%
+#115 Super Admin Layout useEffect Re-Runs Infinitely
+#116 Super Admin Users Search Only name/email (Not Phone)
+#117 Super Admin Users Stats Flash In After Load
+#118 Super Admin Clients Phone Search No Formatting
+#119 Super Admin Activity Duplicate Entries on Refresh
+#120 Super Admin Settings Changes Lost Without Save
+
+======================================================================
+CROSS-CUTTING / ARCHITECTURAL ISSUES
+======================================================================
+
+A. Zero API Routes for Super Admin (All Client-Side)
+   All super admin operations depend entirely on RLS.
+   No server-side auth, audit logging, or input validation.
+
+B. N+1 Query Patterns
+   - Users page: 500 queries for 100 users
+   - Analytics: Fixed (batch queries)
+   - Client delete cascade: 80+ sequential queries
+
+C. No Pagination on Super Admin Pages
+   Users, cases, clients, documents all load entire tables.
+
+D. Inconsistent firm_id Handling
+   - Some pages: firm_id from profile
+   - Some pages: firm_id falls back to user.id
+   - Some pages: no firm_id at all
+   - New inserts: many missing firm_id
+
+E. In-Memory Rate Limiter Ineffective
+   Serverless functions get fresh Maps on each invocation.
+
+F. DB Migrations Still Needed
+   - next_invoice_number RPC function
+   - coupon_uses(coupon_id,user_id) unique constraint
+   - firm_id columns on collection_logs and time_entries
+
+======================================================================
+PREVIOUSLY FIXED BUGS (81 total across 2 rounds)
+======================================================================
+
+Round 1 (Admin QA): 38 bugs fixed
+  - Open redirect, privilege escalation, firm scoping bypasses
+  - Client portal wrong key, calendar missing fields
+  - AI chat injection, RBAC on collections/tags
+  - Sidebar missing items, super_admin role consistency
+
+Round 2 (Super Admin QA): 43 bugs fixed
+  - Razorpay 12x overcharging, coupon slugs vs UUIDs
+  - User detail wrong roles, document deletion security
+  - Platform settings validation, analytics N+1 queries
+  - Webhook plan_id propagation, idempotency
+  - eCourts firm scoping, bulk operations status filter
+  - User management guards, super admin UI/UX
+
+======================================================================
+FIX PRIORITY RECOMMENDATION
+======================================================================
+
+Phase 1 (IMMEDIATE — App Breaking):
+  #1 Employee signup broken
+  #3 Billing pages infinite re-render
+  #4 New case/client missing firm_id
+  #5 Case detail IDOR
+  #10 Documents crash for employees
+
+Phase 2 (This Week — Security):
+  #2 Zombie users on profile failure
+  #6 AI research imports server code
+  #7 AI research no usage tracking
+  #16 Invoice creation cross-firm
+  #17 Duplicate subscription race condition
+  #18-20 Cross-firm data leaks
+
+Phase 3 (Next Sprint — Functionality):
+  #9 Subscription status filter
+  #11-15 Case/client form issues
+  #21-28 API validation and error handling
+  #29-30 Super admin settings
+
+Phase 4 (Backlog — UX Polish):
+  #31-120 Medium and low priority items
+
+======================================================================
+BUILD STATUS: PASSED
+======================================================================
+✓ Compiled successfully in 24.3s
+✓ 208 pages generated
+✓ No TypeScript errors in modified files
+
+======================================================================
+                         END OF REPORT
+======================================================================

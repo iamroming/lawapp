@@ -225,7 +225,7 @@ function generateClassic(invoice: InvoiceData, client: ClientData | null, caseDa
 
   const fy = ph - 15;
   doc.setDrawColor(...primary); doc.setLineWidth(0.3); doc.line(14, fy, pw - 14, fy);
-  doc.setFontSize(7); doc.setTextColor(140); doc.text("Powered by LawXP Legal Practice Management.", pw / 2, fy + 5, { align: "center" });
+  doc.setFontSize(7); doc.setTextColor(140); doc.text("Powered by CaseFiles Legal Practice Management.", pw / 2, fy + 5, { align: "center" });
 
   return doc.output("blob");
 }
@@ -328,7 +328,7 @@ function generateModern(invoice: InvoiceData, client: ClientData | null, caseDat
 
   const fy = ph - 15;
   doc.setDrawColor(5, 150, 105); doc.setLineWidth(0.3); doc.line(14, fy, pw - 14, fy);
-  doc.setFontSize(7); doc.setTextColor(140); doc.text("Powered by LawXP Legal Practice Management.", pw / 2, fy + 5, { align: "center" });
+  doc.setFontSize(7); doc.setTextColor(140); doc.text("Powered by CaseFiles Legal Practice Management.", pw / 2, fy + 5, { align: "center" });
 
   return doc.output("blob");
 }
@@ -415,7 +415,7 @@ function generateMinimal(invoice: InvoiceData, client: ClientData | null, caseDa
 
   if (s.show_footer_notes && s.footer_notes) { doc.setFontSize(6); doc.setTextColor(140); doc.text(s.footer_notes, 14, ph - 14); }
 
-  doc.setFontSize(6); doc.setTextColor(160); doc.text("Powered by LawXP", pw / 2, ph - 10, { align: "center" });
+  doc.setFontSize(6); doc.setTextColor(160); doc.text("Powered by CaseFiles", pw / 2, ph - 10, { align: "center" });
 
   return doc.output("blob");
 }
@@ -524,7 +524,7 @@ function generateProfessional(invoice: InvoiceData, client: ClientData | null, c
   if (s.show_footer_notes && s.footer_notes) { doc.setFontSize(7); doc.setTextColor(100); doc.text(s.footer_notes, 14, y); }
 
   doc.setFillColor(30, 58, 95); doc.rect(0, ph - 12, pw, 12, "F");
-  doc.setFontSize(7); doc.setTextColor(200); doc.text("Powered by LawXP Legal Practice Management", pw / 2, ph - 5, { align: "center" });
+  doc.setFontSize(7); doc.setTextColor(200); doc.text("Powered by CaseFiles Legal Practice Management", pw / 2, ph - 5, { align: "center" });
 
   return doc.output("blob");
 }

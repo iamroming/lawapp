@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
-async function checkSuperAdmin(supabase: any) {
-  const { data: { user } } = await supabase.auth.getUser();
+async function checkSuperAdmin(request: NextRequest, supabase: any) {
+  const user = await verifySessionFromRequest(request);
   if (!user) return { error: "Unauthorized", status: 401 };
-  const { data } = await supabase.from("super_admins").select("id").eq("id", user.id).single();
+  const { data } = await supabase.from("super_admins").select("id").eq("id", user.uuid).single();
   if (!data) return { error: "Forbidden", status: 403 };
   return { user };
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const supabase = await createClient();
-  const auth = await checkSuperAdmin(supabase);
+  const auth = await checkSuperAdmin(request, supabase);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const { data, error } = await supabase
@@ -32,11 +33,15 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
-  const auth = await checkSuperAdmin(supabase);
+  const auth = await checkSuperAdmin(request, supabase);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const body = await request.json();
-  const { code, plan_id, discount_type, discount_value, max_uses, valid_from, valid_until, description } = body;
+  const {
+    code, plan_id, discount_type, discount_value,
+    max_uses, max_per_user, billing_cycle,
+    valid_from, valid_until, description,
+  } = body;
 
   if (!code || !discount_type) {
     return NextResponse.json({ error: "Code and discount_type are required" }, { status: 400 });
@@ -62,10 +67,12 @@ export async function POST(request: NextRequest) {
       discount_type,
       discount_value: discount_value || 0,
       max_uses: max_uses ?? -1,
+      max_per_user: max_per_user ?? 1,
+      billing_cycle: billing_cycle || "both",
       valid_from: valid_from || new Date().toISOString(),
       valid_until: valid_until || null,
       description: description || null,
-      created_by: auth.user.id,
+      created_by: auth.user.uuid,
     })
     .select()
     .single();

@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { getFirebaseAuth } from '@/lib/firebase/config';
+import { firebaseUidToUuid } from "@/lib/firebase/uid";
 import { PermissionCode, UserRole } from '@/types/database';
 import { DEFAULT_ROLE_PERMISSIONS } from '@/lib/permissions';
 
@@ -28,7 +30,8 @@ export function usePermissions(): UsePermissionsReturn {
       setError(null);
       const supabase = createClient();
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const auth = getFirebaseAuth();
+      const user = auth.currentUser;
       if (!user) {
         setPermissions([]);
         setUserRole(null);
@@ -38,7 +41,7 @@ export function usePermissions(): UsePermissionsReturn {
       const { data: profile } = await supabase
         .from('profiles')
         .select('role, firm_id')
-        .eq('id', user.id)
+        .eq('id', firebaseUidToUuid(user.uid))
         .single();
 
       const role = (profile?.role || 'associate') as UserRole;
@@ -56,7 +59,7 @@ export function usePermissions(): UsePermissionsReturn {
             .from('firm_members')
             .select('role_id')
             .eq('firm_id', profile.firm_id)
-            .eq('user_id', user.id)
+            .eq('user_id', firebaseUidToUuid(user.uid))
             .eq('is_active', true)
             .single();
 
@@ -83,13 +86,14 @@ export function usePermissions(): UsePermissionsReturn {
       console.error('Error fetching permissions:', errorMsg);
 
       try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const auth = getFirebaseAuth();
+        const user = auth.currentUser;
         if (user) {
+          const supabase = createClient();
           const { data: profile } = await supabase
             .from('profiles')
             .select('role')
-            .eq('id', user.id)
+            .eq('id', firebaseUidToUuid(user.uid))
             .single();
 
           if (profile) {

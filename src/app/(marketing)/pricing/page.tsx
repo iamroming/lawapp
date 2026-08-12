@@ -3,33 +3,17 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Check, X, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/hooks/use-user";
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 const plans = [
-  {
-    name: "Free",
-    slug: "free",
-    monthlyPrice: 0,
-    annualPrice: 0,
-    description: "For individual advocates just getting started.",
-    highlighted: false,
-    features: [
-      { text: "1 user", included: true },
-      { text: "3 active cases", included: true },
-      { text: "100 MB storage", included: true },
-      { text: "Basic case tracking", included: true },
-      { text: "Court calendar", included: true },
-      { text: "Basic documents", included: true },
-      { text: "5 AI queries/month", included: true },
-      { text: "Client portal", included: false },
-      { text: "Invoicing", included: false },
-      { text: "AI drafting", included: false },
-    ],
-    cta: "Get Started Free",
-    extraUserPrice: null,
-  },
   {
     name: "Solo",
     slug: "solo",
@@ -41,7 +25,8 @@ const plans = [
       { text: "1 user", included: true },
       { text: "20 active cases", included: true },
       { text: "1 GB storage", included: true },
-      { text: "Everything in Free", included: true },
+      { text: "Basic case tracking", included: true },
+      { text: "Court calendar", included: true },
       { text: "E-filing integration", included: true },
       { text: "Court tracking", included: true },
       { text: "Invoice generation", included: true },
@@ -61,8 +46,8 @@ const plans = [
     highlighted: true,
     features: [
       { text: "Up to 3 users included", included: true },
-      { text: "Unlimited active cases", included: true },
-      { text: "5 GB storage", included: true },
+      { text: "Up to 50 active cases", included: true },
+      { text: "3 GB storage", included: true },
       { text: "Everything in Solo", included: true },
       { text: "Full client portal", included: true },
       { text: "GST invoicing + payment links", included: true },
@@ -86,8 +71,8 @@ const plans = [
     highlighted: false,
     features: [
       { text: "Up to 10 users included", included: true },
-      { text: "Unlimited active cases", included: true },
-      { text: "20 GB storage", included: true },
+      { text: "Up to 100 active cases", included: true },
+      { text: "7 GB storage", included: true },
       { text: "Everything in Professional", included: true },
       { text: "Unlimited AI queries", included: true },
       { text: "Admin controls", included: true },
@@ -106,21 +91,21 @@ const plans = [
     slug: "enterprise",
     monthlyPrice: 4999,
     annualPrice: 49999,
-    description: "For large firms needing full customization.",
+    description: "For large firms and organizations with unlimited needs.",
     highlighted: false,
     features: [
-      { text: "Unlimited users", included: true },
-      { text: "Unlimited cases", included: true },
-      { text: "Unlimited storage", included: true },
+      { text: "Up to 50 users", included: true },
+      { text: "Up to 500 active cases", included: true },
+      { text: "20 GB storage", included: true },
       { text: "Everything in Firm", included: true },
-      { text: "API access", included: true },
+      { text: "150 AI queries/month", included: true },
       { text: "Dedicated account manager", included: true },
       { text: "Custom integrations", included: true },
-      { text: "SLA guarantee", included: true },
       { text: "White-label options", included: true },
-      { text: "Multi-firm management", included: true },
-      { text: "Phone + email support", included: true },
-      { text: "Data migration assistance", included: true },
+      { text: "SSO / SAML", included: true },
+      { text: "SLA guarantee", included: true },
+      { text: "On-premise deployment", included: true },
+      { text: "Training & onboarding", included: true },
     ],
     cta: "Start 14-Day Free Trial",
     extraUserPrice: null,
@@ -128,30 +113,34 @@ const plans = [
 ];
 
 const comparison = [
-  { feature: "Users Included", free: "1", solo: "1", professional: "3", firm: "10", enterprise: "Unlimited" },
-  { feature: "Active Cases", free: "3", solo: "20", professional: "Unlimited", firm: "Unlimited", enterprise: "Unlimited" },
-  { feature: "Storage", free: "100 MB", solo: "1 GB", professional: "5 GB", firm: "20 GB", enterprise: "Unlimited" },
-  { feature: "Client Portal", free: "—", solo: "Read-only", professional: "Full Access", firm: "Full Access", enterprise: "Full Access" },
-  { feature: "Invoicing", free: "—", solo: "Basic", professional: "GST + Payments", firm: "GST + Payments", enterprise: "GST + Payments" },
-  { feature: "AI Queries", free: "5/mo", solo: "50/mo", professional: "200/mo", firm: "Unlimited", enterprise: "Unlimited" },
-  { feature: "E-filing", free: "—", solo: "✓", professional: "✓", firm: "✓", enterprise: "✓" },
-  { feature: "Court Tracking", free: "—", solo: "✓", professional: "✓", firm: "✓", enterprise: "✓" },
-  { feature: "AI Drafting", free: "—", solo: "—", professional: "✓", firm: "✓", enterprise: "✓" },
-  { feature: "Team Collaboration", free: "—", solo: "—", professional: "✓", firm: "✓", enterprise: "✓" },
-  { feature: "Expense Tracking", free: "—", solo: "—", professional: "✓", firm: "✓", enterprise: "✓" },
-  { feature: "Custom Branding", free: "—", solo: "—", professional: "—", firm: "✓", enterprise: "✓" },
-  { feature: "Admin Controls", free: "—", solo: "—", professional: "—", firm: "✓", enterprise: "✓" },
-  { feature: "Custom Reports", free: "—", solo: "—", professional: "—", firm: "✓", enterprise: "✓" },
-  { feature: "API Access", free: "—", solo: "—", professional: "—", firm: "✓", enterprise: "✓" },
-  { feature: "Support", free: "Community", solo: "Email", professional: "Priority Email", firm: "Priority Support", enterprise: "Phone + Email" },
+  { feature: "Users Included", solo: "1", professional: "3", firm: "10", enterprise: "50" },
+  { feature: "Active Cases", solo: "20", professional: "50", firm: "100", enterprise: "500" },
+  { feature: "Storage", solo: "1 GB", professional: "3 GB", firm: "7 GB", enterprise: "20 GB" },
+  { feature: "Client Portal", solo: "Read-only", professional: "Full Access", firm: "Full Access", enterprise: "Full Access" },
+  { feature: "Invoicing", solo: "Basic", professional: "GST + Payments", firm: "GST + Payments", enterprise: "GST + Payments" },
+  { feature: "AI Queries", solo: "50/mo", professional: "200/mo", firm: "Unlimited", enterprise: "150/mo" },
+  { feature: "E-filing", solo: "✓", professional: "✓", firm: "✓", enterprise: "✓" },
+  { feature: "Court Tracking", solo: "✓", professional: "✓", firm: "✓", enterprise: "✓" },
+  { feature: "AI Drafting", solo: "—", professional: "✓", firm: "✓", enterprise: "✓" },
+  { feature: "Team Collaboration", solo: "—", professional: "✓", firm: "✓", enterprise: "✓" },
+  { feature: "Expense Tracking", solo: "—", professional: "✓", firm: "✓", enterprise: "✓" },
+  { feature: "Custom Branding", solo: "—", professional: "—", firm: "✓", enterprise: "✓" },
+  { feature: "Admin Controls", solo: "—", professional: "—", firm: "✓", enterprise: "✓" },
+  { feature: "Custom Reports", solo: "—", professional: "—", firm: "✓", enterprise: "✓" },
+  { feature: "API Access", solo: "—", professional: "—", firm: "✓", enterprise: "✓" },
+  { feature: "SSO / SAML", solo: "—", professional: "—", firm: "—", enterprise: "✓" },
+  { feature: "Dedicated Account Manager", solo: "—", professional: "—", firm: "—", enterprise: "✓" },
+  { feature: "Custom Integrations", solo: "—", professional: "—", firm: "—", enterprise: "✓" },
+  { feature: "SLA Guarantee", solo: "—", professional: "—", firm: "—", enterprise: "✓" },
+  { feature: "Support", solo: "Email", professional: "Priority Email", firm: "Priority Support", enterprise: "Dedicated Manager" },
 ];
 
 const addOns = [
-  { name: "Extra Storage", price: "₹200/mo", detail: "Per 50 GB bundle" },
-  { name: "Extra AI Credits", price: "₹300", detail: "Per 500 queries" },
-  { name: "WhatsApp Reminders", price: "₹199/mo", detail: "Per firm" },
-  { name: "SMS Reminders", price: "₹99/mo", detail: "Per firm" },
-  { name: "Priority Support", price: "₹499/mo", detail: "Per firm" },
+  { name: "Extra Storage", price: "Rs 200/mo", detail: "Per 50 GB bundle" },
+  { name: "Extra AI Credits", price: "Rs 300", detail: "Per 500 queries" },
+  { name: "WhatsApp Reminders", price: "Rs 199/mo", detail: "Per firm" },
+  { name: "SMS Reminders", price: "Rs 99/mo", detail: "Per firm" },
+  { name: "Priority Support", price: "Rs 499/mo", detail: "Per firm" },
 ];
 
 const faqs = [
@@ -194,21 +183,19 @@ function formatPrice(amount: number): string {
 }
 
 export default function PricingPage() {
+  const { user: appUser } = useUser();
   const [annual, setAnnual] = useState(true);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectingPlan, setSelectingPlan] = useState<string | null>(null);
   const router = useRouter();
-  const supabase = createClient();
-
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setIsLoggedIn(!!user);
-    });
-  }, []);
+    setIsLoggedIn(!!appUser);
+  }, [appUser]);
 
   const handleSelectPlan = async (planSlug: string, planPrice: number) => {
     if (!isLoggedIn) {
+      document.cookie = `selected_plan=${planSlug}; path=/; max-age=604800`;
       router.push("/signup");
       return;
     }
@@ -216,44 +203,88 @@ export default function PricingPage() {
     setSelectingPlan(planSlug);
 
     try {
-      // Free plan - create subscription directly
-      if (planPrice === 0) {
-        const res = await fetch("/api/subscriptions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ planSlug, billingCycle: "monthly" }),
-        });
-        const data = await res.json();
-        if (data.error) {
-          toast.error(data.error);
-        } else {
-          toast.success("Free plan activated!");
-          router.push("/dashboard");
-        }
-        setSelectingPlan(null);
-        return;
-      }
-
-      // Paid plan - go to Razorpay
+      // Paid plan - Razorpay Checkout
       const billingCycle = annual ? "annual" : "monthly";
-      const res = await fetch("/api/subscriptions", {
+
+      const orderRes = await fetch("/api/payments/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ planSlug, billingCycle }),
       });
-      const data = await res.json();
-      if (data.error) {
-        toast.error(data.error);
-      } else if (data.short_url) {
-        window.location.href = data.short_url;
-      } else {
-        toast.success("Subscription created!");
-        router.push("/dashboard");
+      const orderData = await orderRes.json();
+
+      if (orderData.error) {
+        toast.error(orderData.error);
+        setSelectingPlan(null);
+        return;
       }
+
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => openRazorpayCheckout(orderData, planSlug, billingCycle);
+      script.onerror = () => {
+        toast.error("Failed to load payment gateway");
+        setSelectingPlan(null);
+      };
+      document.body.appendChild(script);
     } catch {
-      toast.error("Failed to start subscription");
+      toast.error("Failed to start payment");
+      setSelectingPlan(null);
     }
-    setSelectingPlan(null);
+  };
+
+  const openRazorpayCheckout = (orderData: any, planSlug: string, billingCycle: string) => {
+    const options = {
+      key: orderData.keyId,
+      amount: orderData.amount,
+      currency: orderData.currency,
+      name: "CaseFiles",
+      description: `${orderData.planName} Plan (${billingCycle})`,
+      order_id: orderData.orderId,
+      handler: async (response: any) => {
+        try {
+          const verifyRes = await fetch("/api/payments/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              planSlug,
+              billingCycle,
+            }),
+          });
+          const verifyData = await verifyRes.json();
+
+          if (verifyData.success) {
+            toast.success("Payment successful! Subscription activated.");
+            router.push("/dashboard");
+          } else {
+            toast.error(verifyData.error || "Payment verification failed");
+          }
+        } catch {
+          toast.error("Payment verification failed. Contact support.");
+        }
+        setSelectingPlan(null);
+      },
+      prefill: {
+        name: "",
+        email: "",
+        contact: "",
+      },
+      theme: {
+        color: "#4f46e5",
+      },
+      modal: {
+        ondismiss: () => {
+          setSelectingPlan(null);
+          toast.error("Payment cancelled");
+        },
+      },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.open();
   };
 
   return (
@@ -299,7 +330,7 @@ export default function PricingPage() {
       {/* Plans */}
       <section className="py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {plans.map((plan) => {
               const price = annual ? plan.annualPrice : plan.monthlyPrice;
               const monthlyEquiv = annual
@@ -409,27 +440,25 @@ export default function PricingPage() {
           </h2>
           <div className="mt-10 overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="py-3 pr-4 font-semibold text-gray-900">Feature</th>
-                  <th className="px-4 py-3 font-semibold text-gray-900">Free</th>
-                  <th className="px-4 py-3 font-semibold text-gray-900">Solo</th>
-                  <th className="px-4 py-3 font-semibold text-indigo-600">Professional</th>
-                  <th className="px-4 py-3 font-semibold text-gray-900">Firm</th>
-                  <th className="pl-4 py-3 font-semibold text-gray-900">Enterprise</th>
-                </tr>
-              </thead>
-              <tbody>
-                {comparison.map((row) => (
-                  <tr key={row.feature} className="border-b border-gray-100">
-                    <td className="py-3 pr-4 text-gray-700 font-medium">{row.feature}</td>
-                    <td className="px-4 py-3 text-gray-600">{row.free}</td>
-                    <td className="px-4 py-3 text-gray-600">{row.solo}</td>
-                    <td className="px-4 py-3 text-gray-600 font-medium">{row.professional}</td>
-                    <td className="px-4 py-3 text-gray-600">{row.firm}</td>
-                    <td className="pl-4 py-3 text-gray-600">{row.enterprise}</td>
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="py-3 pr-4 font-semibold text-gray-900">Feature</th>
+                    <th className="px-4 py-3 font-semibold text-gray-900">Solo</th>
+                    <th className="px-4 py-3 font-semibold text-indigo-600">Professional</th>
+                    <th className="px-4 py-3 font-semibold text-gray-900">Firm</th>
+                    <th className="pl-4 py-3 font-semibold text-gray-900">Enterprise</th>
                   </tr>
-                ))}
+                </thead>
+                <tbody>
+                  {comparison.map((row) => (
+                    <tr key={row.feature} className="border-b border-gray-100">
+                      <td className="py-3 pr-4 text-gray-700 font-medium">{row.feature}</td>
+                      <td className="px-4 py-3 text-gray-600">{row.solo}</td>
+                      <td className="px-4 py-3 text-gray-600 font-medium">{row.professional}</td>
+                      <td className="px-4 py-3 text-gray-600">{row.firm}</td>
+                      <td className="pl-4 py-3 text-gray-600">{row.enterprise}</td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>

@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { formatDate, formatCurrency } from "@/lib/utils"
+import { useUser } from "@/hooks/use-user";
 
 interface Stats {
   activeCases: number
@@ -37,6 +38,7 @@ interface Hearing {
 }
 
 export default function ClientDashboardPage() {
+  const { user: appUser } = useUser();
   const [clientName, setClientName] = useState("Client")
   const [stats, setStats] = useState<Stats>({ activeCases: 0, pendingPayments: 0, totalDocuments: 0 })
   const [recentCases, setRecentCases] = useState<CaseUpdate[]>([])
@@ -47,47 +49,46 @@ export default function ClientDashboardPage() {
   useEffect(() => {
     async function loadDashboard() {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
+        if (!appUser) return
 
         const { data: profile } = await supabase
           .from("profiles")
           .select("full_name")
-          .eq("id", user.id)
+          .eq("id", appUser?.uuid)
           .single()
         if (profile?.full_name) setClientName(profile.full_name.split(" ")[0])
 
         const { data: cases } = await supabase
           .from("cases")
           .select("id, case_number, title, status, updated_at")
-          .eq("client_id", user.id)
+          .eq("client_id", appUser?.uuid)
           .order("updated_at", { ascending: false })
 
         if (cases) {
           setStats((s) => ({
             ...s,
-            activeCases: cases.filter((c) => c.status !== "closed").length,
+            activeCases: cases.filter((c: { status: string }) => c.status !== "closed").length,
           }))
           setRecentCases(cases.slice(0, 5))
         }
 
         const { count: docCount } = await supabase
           .from("documents")
-          .select("id, case:cases!inner(client_id)", { count: "exact", head: true })
-          .eq("case.client_id", user.id)
-        if (docCount !== null) setStats((s) => ({ ...s, totalDocuments: docCount }))
+          .select("id", { count: "exact", head: true })
+          .eq("uploaded_by", appUser?.uuid);
+        if (docCount !== null) setStats((s) => ({ ...s, totalDocuments: docCount }));
 
         const { count: payCount } = await supabase
           .from("invoices")
           .select("id", { count: "exact", head: true })
-          .eq("client_id", user.id)
+          .eq("client_id", appUser?.uuid)
           .eq("status", "pending")
         if (payCount !== null) setStats((s) => ({ ...s, pendingPayments: payCount }))
 
         const { data: hearings } = await supabase
           .from("hearings")
           .select("id, case:cases!inner(title, client_id), hearing_date, court")
-          .eq("case.client_id", user.id)
+          .eq("case.client_id", appUser?.uuid)
           .gte("hearing_date", new Date().toISOString())
           .order("hearing_date", { ascending: true })
           .limit(5)

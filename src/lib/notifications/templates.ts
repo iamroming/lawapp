@@ -14,7 +14,7 @@ export const emailTemplates: Record<NotificationType, EmailTemplate> = {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #2563eb; color: white; padding: 20px; text-align: center;">
-          <h1 style="margin: 0;">LawXP</h1>
+          <h1 style="margin: 0;">CaseFiles</h1>
           <p style="margin: 5px 0 0;">Hearing Reminder</p>
         </div>
         <div style="padding: 20px; background: #f9fafb;">
@@ -30,7 +30,7 @@ export const emailTemplates: Record<NotificationType, EmailTemplate> = {
           <p>Please prepare all necessary documents and arrive at court on time.</p>
         </div>
         <div style="padding: 15px; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>This is an automated reminder from LawXP.</p>
+          <p>This is an automated reminder from CaseFiles.</p>
         </div>
       </div>
     `,
@@ -64,7 +64,7 @@ export const emailTemplates: Record<NotificationType, EmailTemplate> = {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #dc2626; color: white; padding: 20px; text-align: center;">
-          <h1 style="margin: 0;">LawXP</h1>
+          <h1 style="margin: 0;">CaseFiles</h1>
           <p style="margin: 5px 0 0;">Payment Due Alert</p>
         </div>
         <div style="padding: 20px; background: #f9fafb;">
@@ -79,7 +79,7 @@ export const emailTemplates: Record<NotificationType, EmailTemplate> = {
           <p>Please ensure timely payment to avoid any delays.</p>
         </div>
         <div style="padding: 15px; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>This is an automated reminder from LawXP.</p>
+          <p>This is an automated reminder from CaseFiles.</p>
         </div>
       </div>
     `,
@@ -112,7 +112,7 @@ export const emailTemplates: Record<NotificationType, EmailTemplate> = {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #16a34a; color: white; padding: 20px; text-align: center;">
-          <h1 style="margin: 0;">LawXP</h1>
+          <h1 style="margin: 0;">CaseFiles</h1>
           <p style="margin: 5px 0 0;">Payment Received</p>
         </div>
         <div style="padding: 20px; background: #f9fafb;">
@@ -126,7 +126,7 @@ export const emailTemplates: Record<NotificationType, EmailTemplate> = {
           </div>
         </div>
         <div style="padding: 15px; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>This is an automated notification from LawXP.</p>
+          <p>This is an automated notification from CaseFiles.</p>
         </div>
       </div>
     `,
@@ -158,7 +158,7 @@ export const emailTemplates: Record<NotificationType, EmailTemplate> = {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #7c3aed; color: white; padding: 20px; text-align: center;">
-          <h1 style="margin: 0;">LawXP</h1>
+          <h1 style="margin: 0;">CaseFiles</h1>
           <p style="margin: 5px 0 0;">Case Update</p>
         </div>
         <div style="padding: 20px; background: #f9fafb;">
@@ -170,7 +170,7 @@ export const emailTemplates: Record<NotificationType, EmailTemplate> = {
           </div>
         </div>
         <div style="padding: 15px; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>This is an automated notification from LawXP.</p>
+          <p>This is an automated notification from CaseFiles.</p>
         </div>
       </div>
     `,
@@ -200,7 +200,7 @@ export const emailTemplates: Record<NotificationType, EmailTemplate> = {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #0891b2; color: white; padding: 20px; text-align: center;">
-          <h1 style="margin: 0;">LawXP</h1>
+          <h1 style="margin: 0;">CaseFiles</h1>
           <p style="margin: 5px 0 0;">Document Uploaded</p>
         </div>
         <div style="padding: 20px; background: #f9fafb;">
@@ -212,7 +212,7 @@ export const emailTemplates: Record<NotificationType, EmailTemplate> = {
           </div>
         </div>
         <div style="padding: 15px; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>This is an automated notification from LawXP.</p>
+          <p>This is an automated notification from CaseFiles.</p>
         </div>
       </div>
     `,
@@ -242,7 +242,7 @@ export const emailTemplates: Record<NotificationType, EmailTemplate> = {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #ea580c; color: white; padding: 20px; text-align: center;">
-          <h1 style="margin: 0;">LawXP</h1>
+          <h1 style="margin: 0;">CaseFiles</h1>
           <p style="margin: 5px 0 0;">Deadline Alert</p>
         </div>
         <div style="padding: 20px; background: #f9fafb;">
@@ -255,7 +255,7 @@ export const emailTemplates: Record<NotificationType, EmailTemplate> = {
           <p>Please take necessary action before the deadline.</p>
         </div>
         <div style="padding: 15px; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>This is an automated reminder from LawXP.</p>
+          <p>This is an automated reminder from CaseFiles.</p>
         </div>
       </div>
     `,
@@ -286,7 +286,7 @@ export const emailTemplates: Record<NotificationType, EmailTemplate> = {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #4b5563; color: white; padding: 20px; text-align: center;">
-          <h1 style="margin: 0;">LawXP</h1>
+          <h1 style="margin: 0;">CaseFiles</h1>
           <p style="margin: 5px 0 0;">System Notification</p>
         </div>
         <div style="padding: 20px; background: #f9fafb;">
@@ -295,7 +295,7 @@ export const emailTemplates: Record<NotificationType, EmailTemplate> = {
           </div>
         </div>
         <div style="padding: 15px; text-align: center; color: #6b7280; font-size: 12px;">
-          <p>This is an automated notification from LawXP.</p>
+          <p>This is an automated notification from CaseFiles.</p>
         </div>
       </div>
     `,

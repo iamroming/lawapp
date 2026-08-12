@@ -26,7 +26,7 @@ export async function sendWhatsAppMessage(msg: WhatsAppMessage): Promise<{ succe
       {
         method: "POST",
         headers: {
-          Authorization: `Basic ${Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString("base64")}`,
+          Authorization: `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
           "Content-Type": "application/x-www-form-urlencoded",
         },
         body: new URLSearchParams({
@@ -90,7 +90,7 @@ This is a reminder that your case:
 
 Please ensure all documents are prepared.
 
-_This is an automated reminder from LawXP_`;
+_This is an automated reminder from CaseFiles_`;
 }
 
 export function formatCaseUpdate(caseNumber: string, caseTitle: string, update: string): string {
@@ -100,7 +100,7 @@ Case: *${caseNumber}* - ${caseTitle}
 
 📝 Update: ${update}
 
-_This is an automated update from LawXP_`;
+_This is an automated update from CaseFiles_`;
 }
 
 export function formatPaymentReminder(clientName: string, amount: number, invoiceNumber: string, dueDate: string): string {
@@ -118,5 +118,5 @@ Please make the payment at your earliest convenience.
 
 _Pay via UPI/Card/NetBanking through the client portal_
 
-_This is an automated reminder from LawXP_`;
+_This is an automated reminder from CaseFiles_`;
 }

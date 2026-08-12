@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { dbWrite } from "@/lib/db-write";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +10,10 @@ import { Input } from "@/components/ui/input";
 import { formatDate, getStatusColor, formatCurrency } from "@/lib/utils";
 import { ArrowLeft, Calendar, User, Scale, FileText, Edit, Trash2, RefreshCw, ExternalLink, Download, Search, Bell, BellOff, CheckCircle, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ShareDialog } from "@/components/share-dialog";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { useUser } from "@/hooks/use-user";
 
 interface CaseDetail {
   id: string;
@@ -46,6 +49,7 @@ interface Hearing {
 }
 
 export default function CaseDetailPage() {
+  const { user: appUser } = useUser();
   const params = useParams();
   const router = useRouter();
   const [caseData, setCaseData] = useState<CaseDetail | null>(null);
@@ -74,14 +78,32 @@ export default function CaseDetailPage() {
   const [caseLawsLoading, setCaseLawsLoading] = useState(false);
   const [caseLawsSource, setCaseLawsSource] = useState<string>("");
   const [expandedLaw, setExpandedLaw] = useState<number | null>(null);
+  const [firmId, setFirmId] = useState<string>("");
   const supabase = createClient();
+
+  const [userRole, setUserRole] = useState<string>("");
+  const canEditOrDelete = ["owner", "partner", "senior_associate"].includes(userRole);
 
   useEffect(() => {
     const fetchCase = async () => {
+      if (!appUser) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("firm_id, role")
+        .eq("id", appUser?.uuid)
+        .single();
+
+      if (profile) {
+        setUserRole(profile.role || "");
+        setFirmId(profile.firm_id || "");
+      }
+
       const { data } = await supabase
         .from("cases")
         .select("*, client:clients(id, full_name, phone, email)")
         .eq("id", params.id)
+        .eq("firm_id", profile?.firm_id)
         .single();
 
       if (data) {
@@ -90,13 +112,14 @@ export default function CaseDetailPage() {
           .from("hearings")
           .select("*")
           .eq("case_id", params.id)
+          .eq("firm_id", profile?.firm_id)
           .order("hearing_date", { ascending: false });
         setHearings(hearingsData || []);
 
         const [hearingsCount, docsCount, timeCount] = await Promise.all([
-          supabase.from("hearings").select("id", { count: "exact", head: true }).eq("case_id", params.id),
-          supabase.from("documents").select("id", { count: "exact", head: true }).eq("case_id", params.id),
-          supabase.from("time_entries").select("id", { count: "exact", head: true }).eq("case_id", params.id),
+          supabase.from("hearings").select("id", { count: "exact", head: true }).eq("case_id", params.id).eq("firm_id", profile?.firm_id),
+          supabase.from("documents").select("id", { count: "exact", head: true }).eq("case_id", params.id).eq("firm_id", profile?.firm_id),
+          supabase.from("time_entries").select("id", { count: "exact", head: true }).eq("case_id", params.id).eq("firm_id", profile?.firm_id),
         ]);
         setRelatedCounts({
           hearings: hearingsCount.count || 0,
@@ -113,16 +136,16 @@ export default function CaseDetailPage() {
         setCaseTeam(teamData || []);
 
         // Fetch employees for add form
-        const { data: profile } = await supabase
+        const { data: caseCreatorProfile } = await supabase
           .from("profiles")
           .select("firm_id")
           .eq("id", data.created_by)
           .single();
-        if (profile?.firm_id) {
+        if (caseCreatorProfile?.firm_id) {
           const { data: emps } = await supabase
             .from("profiles")
             .select("id, full_name, role")
-            .eq("firm_id", profile.firm_id)
+            .eq("firm_id", caseCreatorProfile.firm_id)
             .not("role", "eq", "owner");
           setEmployees(emps || []);
         }
@@ -131,7 +154,7 @@ export default function CaseDetailPage() {
         const { data: alertData } = await supabase
           .from("case_alerts")
           .select("*")
-          .eq("user_id", (await supabase.auth.getUser()).data.user?.id || "")
+          .eq("user_id", appUser?.uuid || "")
           .eq("case_id", params.id)
           .single();
         setCaseAlert(alertData);
@@ -219,24 +242,38 @@ export default function CaseDetailPage() {
   const handleDelete = async () => {
     setDeleting(true);
     const now = new Date().toISOString();
-    await supabase.from("hearings").update({ deleted_at: now }).eq("case_id", params.id);
-    await supabase.from("time_entries").update({ deleted_at: now }).eq("case_id", params.id);
-    await supabase.from("documents").update({ deleted_at: now }).eq("case_id", params.id);
-    await supabase.from("invoices").update({ status: "cancelled" }).eq("case_id", params.id);
-    const { error } = await supabase.from("cases").update({ deleted_at: now }).eq("id", params.id);
-    setDeleting(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      const { error: hearingsErr } = await dbWrite("hearings", "update", { deleted_at: now }, { case_id: params.id, firm_id: firmId });
+      if (hearingsErr) console.error("Failed to soft-delete hearings:", hearingsErr);
+
+      const { error: timeEntriesErr } = await dbWrite("time_entries", "update", { deleted_at: now }, { case_id: params.id, firm_id: firmId });
+      if (timeEntriesErr) console.error("Failed to soft-delete time entries:", timeEntriesErr);
+
+      const { error: docsErr } = await dbWrite("documents", "update", { deleted_at: now }, { case_id: params.id, firm_id: firmId });
+      if (docsErr) console.error("Failed to soft-delete documents:", docsErr);
+
+      const { error: invoicesErr } = await dbWrite("invoices", "update", { status: "cancelled" }, { case_id: params.id, firm_id: firmId });
+      if (invoicesErr) console.error("Failed to cancel invoices:", invoicesErr);
+
+      const { error } = await dbWrite("cases", "update", { deleted_at: now }, { id: params.id, firm_id: firmId });
+      setDeleting(false);
+      if (error) {
+        toast.error(error);
+        return;
+      }
+      toast.success("Case and all related records deleted");
+      router.push("/cases");
+    } catch (err) {
+      console.error("Unexpected error during case deletion:", err);
+      setDeleting(false);
+      toast.error("Failed to delete case");
     }
-    toast.success("Case and all related records deleted");
-    router.push("/cases");
   };
 
   const updateStatus = async (newStatus: string) => {
-    const { error } = await supabase.from("cases").update({ status: newStatus }).eq("id", params.id);
+    const { error } = await dbWrite("cases", "update", { status: newStatus }, { id: params.id, firm_id: firmId });
     if (error) {
-      toast.error(error.message);
+      toast.error(error);
       return;
     }
     setCaseData((prev) => (prev ? { ...prev, status: newStatus } : null));
@@ -334,17 +371,22 @@ export default function CaseDetailPage() {
           </div>
           <p className="text-[var(--text-secondary)] text-sm">{caseData.case_number}</p>
         </div>
-        <div className="flex gap-2 flex-shrink-0">
-          <Link href={`/cases/${caseData.id}/edit`}>
-            <Button variant="outline" size="sm">
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
+        <div className="flex gap-2 flex-shrink-0 flex-wrap">
+          <ShareDialog type="case" id={caseData.id} />
+          {canEditOrDelete && (
+            <Link href={`/cases/${caseData.id}/edit`}>
+              <Button variant="outline" size="sm">
+                <Edit className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+            </Link>
+          )}
+          {canEditOrDelete && (
+            <Button variant="destructive" size="sm" onClick={() => setShowDeleteDialog(true)}>
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
             </Button>
-          </Link>
-          <Button variant="destructive" size="sm" onClick={() => setShowDeleteDialog(true)}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete
-          </Button>
+          )}
         </div>
       </div>
 
@@ -404,6 +446,7 @@ export default function CaseDetailPage() {
           </Card>
 
           {/* Status Update */}
+          {canEditOrDelete && (
           <Card>
             <CardHeader>
               <CardTitle>Update Status</CardTitle>
@@ -425,6 +468,7 @@ export default function CaseDetailPage() {
               </div>
             </CardContent>
           </Card>
+          )}
 
           {/* Case Team */}
           <Card>

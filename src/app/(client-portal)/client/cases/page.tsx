@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/client"
 import { formatDate } from "@/lib/utils"
+import { useUser } from "@/hooks/use-user";
 
 interface Case {
   id: string
@@ -20,6 +21,7 @@ interface Case {
 }
 
 export default function ClientCasesPage() {
+  const { user: appUser } = useUser();
   const [cases, setCases] = useState<Case[]>([])
   const [filtered, setFiltered] = useState<Case[]>([])
   const [search, setSearch] = useState("")
@@ -29,13 +31,12 @@ export default function ClientCasesPage() {
   useEffect(() => {
     async function loadCases() {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
+        if (!appUser) return
 
         const { data } = await supabase
           .from("cases")
           .select("id, case_number, title, status, next_hearing, court_name, created_at")
-          .eq("client_id", user.id)
+          .eq("client_id", appUser?.uuid)
           .order("created_at", { ascending: false })
 
         if (data) {

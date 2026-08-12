@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
 // GET — list all alerts for the current user
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from("case_alerts")
       .select("*, cases(id, title, case_number, court_name, status)")
-      .eq("user_id", user.id)
+      .eq("user_id", user.uuid)
       .order("created_at", { ascending: false });
 
     if (caseId) {
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
     if (!case_id) return NextResponse.json({ error: "case_id is required" }, { status: 400 });
 
     // Verify the case exists and belongs to user's firm
-    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.id).single();
+    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.uuid).single();
     const firmId = profile?.firm_id;
 
     const { data: caseData, error: caseError } = await supabase
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
     const { data: existing } = await supabase
       .from("case_alerts")
       .select("id, is_active")
-      .eq("user_id", user.id)
+      .eq("user_id", user.uuid)
       .eq("case_id", case_id)
       .single();
 
@@ -98,7 +99,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from("case_alerts")
       .insert({
-        user_id: user.id,
+        user_id: user.uuid,
         case_id,
         ecourts_case_id: ecourtsCase?.id || null,
         channels: channels || ["in_app", "email", "whatsapp"],
@@ -119,7 +120,7 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
@@ -130,7 +131,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "id or case_id is required" }, { status: 400 });
     }
 
-    let query = supabase.from("case_alerts").delete().eq("user_id", user.id);
+    let query = supabase.from("case_alerts").delete().eq("user_id", user.uuid);
 
     if (alertId) {
       query = query.eq("id", alertId);

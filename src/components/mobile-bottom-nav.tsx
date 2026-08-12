@@ -36,7 +36,7 @@ export function MobileBottomNav({ onMoreClick }: { onMoreClick?: () => void }) {
   };
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 safe-area-bottom shadow-lg">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[var(--surface)] border-t border-[var(--border)] safe-area-bottom shadow-lg">
       <div className="flex items-center justify-around h-16 px-1">
         {primaryNav.map((item) => {
           const active = isActive(item.href);
@@ -49,7 +49,7 @@ export function MobileBottomNav({ onMoreClick }: { onMoreClick?: () => void }) {
                 onClick={onMoreClick}
                 className={cn(
                   "flex flex-col items-center justify-center gap-0.5 flex-1 h-full min-w-0",
-                  "text-gray-400 hover:text-gray-600 transition-colors"
+                  "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
                 )}
               >
                 <item.icon className="h-5 w-5" />
@@ -66,7 +66,7 @@ export function MobileBottomNav({ onMoreClick }: { onMoreClick?: () => void }) {
                 "flex flex-col items-center justify-center gap-0.5 flex-1 h-full min-w-0 transition-colors",
                 active
                   ? "text-[var(--accent)]"
-                  : "text-gray-400 hover:text-gray-600"
+                  : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
               )}
             >
               <item.icon className="h-5 w-5" />

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
 import { formatDate, formatCurrency } from "@/lib/utils"
 import { RazorpayButton } from "@/components/payment/razorpay-button"
+import { useUser } from "@/hooks/use-user";
 
 interface Invoice {
   id: string
@@ -19,6 +20,7 @@ interface Invoice {
 }
 
 export default function ClientPaymentsPage() {
+  const { user: appUser } = useUser();
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
@@ -26,13 +28,12 @@ export default function ClientPaymentsPage() {
   useEffect(() => {
     async function loadInvoices() {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
+        if (!appUser) return
 
         const { data } = await supabase
           .from("invoices")
           .select("id, amount, status, description, due_date, created_at, case_title")
-          .eq("client_id", user.id)
+          .eq("client_id", appUser?.uuid)
           .order("created_at", { ascending: false })
 
         if (data) setInvoices(data)

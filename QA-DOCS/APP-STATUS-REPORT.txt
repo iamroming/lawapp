@@ -1,0 +1,190 @@
+============================================================
+CASEFILES SaaS — APP STATUS REPORT
+============================================================
+Date: 2026-08-05
+
+============================================================
+WHAT'S BUILT & WORKING
+============================================================
+
+AUTH & ROLES
+- Email/password signup & login
+- Role-based access: owner, partner, senior_associate, associate, junior_associate, paralegal, intern, office_admin
+- Super admin panel with platform-wide access
+- Firm owner sees firm-wide data; employees see scoped data
+- Subscription-gated middleware (redirects to /subscription-required)
+
+DASHBOARD
+- Welcome banner with greeting
+- Stats cards: Active Cases, Clients, Hearings, Revenue
+- Quick actions, recent cases, upcoming hearings
+- Financial summary, alerts timeline
+- Case limit indicator on stats card
+
+CASE MANAGEMENT
+- Create/list/view/edit cases
+- Case types, courts, priorities, statuses
+- Acts, sections, clauses for legal research
+- File attachments (Cloudinary)
+- Case timeline, notes, documents
+- Calendar view with hearing scheduling
+- Client→case selection flow for hearings
+
+CLIENT MANAGEMENT
+- Create/list/view/edit clients
+- Client portal (separate login)
+- Client feedback system
+
+BILLING & INVOICING
+- Invoice generation with 4 PDF templates (Classic, Modern, Minimal, Professional)
+- GST compliance (CGST/SGST/IGST, HSN/SAC, reverse charge)
+- Payment tracking (advance, outstanding, collections)
+- Razorpay payment links
+- Billing tabbed view: Overview, Outstanding, Collections
+
+COURT TRACKING
+- eCourts integration (District Court + High Court)
+- Cause list fetching
+- Court service API (graceful fallback when unreachable)
+- Case status tracking
+
+AI FEATURES
+- AI legal research (Indian Kanoon)
+- AI contract drafting
+- AI case analysis
+- AI chatbot
+- Engagement letter generation
+- AI usage tracking & limits
+
+NOTIFICATIONS
+- Email reminders (Resend)
+- WhatsApp reminders (Twilio)
+- Case alerts & deadline tracking
+- Notification preferences
+
+TEAM MANAGEMENT
+- Team invite by email
+- Invite code generation
+- Role-based permissions
+- User limit enforcement per plan
+
+SUBSCRIPTIONS (5 plans)
+- Free: 3 cases, 1 user, 50MB, Rs 0
+- Solo: 20 cases, 1 user, 1GB, Rs 299/mo
+- Professional: 50 cases, 3 users, 5GB, Rs 799/mo
+- Firm: 100 cases, 10 users, 15GB, Rs 1999/mo
+- Enterprise: 500 cases, 30 users, 25GB, Rs 4999/mo
+- Razorpay subscription billing
+- Trial expiry cron job
+- Coupon/discount system
+
+SUPER ADMIN PANEL
+- Platform-wide dashboard
+- User management (list, activate/deactivate, roles)
+- Subscription management & overrides
+- Revenue overview
+- Document management
+- Activity audit logs
+- Platform settings
+- Coupon management
+
+SETTINGS
+- Profile, notifications, billing, team, subscription tabs
+- Invoice template settings
+- Invoice settings (GST, payment details)
+
+MOBILE
+- Mobile-first responsive design (Tailwind)
+- Mobile bottom navigation component
+- Responsive grids and flex layouts
+
+============================================================
+WHAT'S MISSING / INCOMPLETE
+============================================================
+
+HIGH PRIORITY (user requested)
+---------------------------------
+[ ] STRIPE INTEGRATION — Currently Razorpay only. No Stripe code exists.
+    Need: Stripe checkout, subscription billing, webhook handler.
+
+[ ] 3 PLANS — Currently 5 plans. User wants only 3.
+    Need: Decide which 3 to keep (likely Solo, Professional, Firm)
+    and remove the others.
+
+[ ] QUOTATION/PROPOSAL GENERATION — Does not exist.
+    Need: Quotation template, create/send quotations to clients.
+
+[ ] WHATSAPP SHARING (wa.me links) — Backend Twilio only.
+    Need: Client-facing "Share on WhatsApp" buttons for:
+    - Share invoice PDF
+    - Share case details
+    - Share quotation
+    - Share documents
+    Using wa.me deep links (no Twilio needed for sharing).
+
+[ ] EXCEL/CSV EXPORT — Does not exist.
+    Need: Export cases, clients, invoices, reports to Excel.
+    Library: xlsx or exceljs.
+
+MEDIUM PRIORITY
+---------------------------------
+[ ] PDF EXPORT FOR ALL DATA — Invoices have PDF, but:
+    - Case details PDF export
+    - Client list PDF export
+    - Reports PDF export
+    - Quotation PDF export
+
+[ ] PWA / MOBILE APP — Web only, no manifest.json, no service worker.
+
+[ ] TIME TRACKING TIMER — time_entries exist but no live stopwatch UI.
+
+[ ] CALENDAR SYNC — No Google Calendar / Outlook integration.
+
+[ ] DATA IMPORT — No bulk import for cases/clients from CSV.
+
+[ ] MULTI-LANGUAGE UI — LanguageSwitcher exists but translations incomplete.
+
+LOW PRIORITY
+---------------------------------
+[ ] E-SIGNATURE — No DocuSign/PandaDoc integration.
+[ ] TRUST ACCOUNT MANAGEMENT — Not implemented.
+[ ] CONFLICT OF INTEREST CHECK — Not implemented.
+[ ] DOCUMENT VERSIONING — Upload/delete only, no version history.
+[ ] AUTOMATED RECURRING INVOICING — Manual only.
+[ ] SMS NOTIFICATIONS — Type defined but no provider configured.
+
+============================================================
+RECOMMENDED NEXT STEPS
+============================================================
+
+1. STRIPE INTEGRATION (if replacing Razorpay)
+   - Install stripe npm package
+   - Create /api/payments/stripe route
+   - Stripe checkout session for subscriptions
+   - Stripe webhook handler
+   - Update pricing page checkout flow
+
+2. REDUCE TO 3 PLANS
+   - Keep: Solo (Rs 299), Professional (Rs 799), Firm (Rs 1999)
+   - Remove: Free (or keep as trial-only), Enterprise
+   - Update PLANS constant, pricing page, subscription page
+
+3. QUOTATION GENERATION
+   - New DB table: quotations
+   - Quotation builder UI (case details, fees, terms)
+   - PDF export for quotations
+   - WhatsApp share button (wa.me link)
+
+4. WHATSAPP SHARING (wa.me)
+   - Add share buttons on: invoice detail, case detail, quotation
+   - wa.me link format: https://wa.me/?text=...&attachment=...
+   - For PDF sharing: upload to temporary URL, share link
+
+5. EXCEL EXPORT
+   - Install xlsx library
+   - Add export buttons on: cases list, clients list, billing, reports
+   - Server-side generation for large datasets
+
+============================================================
+END OF REPORT
+============================================================

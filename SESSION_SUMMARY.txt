@@ -1,0 +1,77 @@
+======================================================================
+ CASEFILES - SESSION SUMMARY (Aug 12, 2026)
+======================================================================
+
+COMPLETED WORK:
+----------------------------------------------------------------------
+
+1. SUBSCRIPTION GATE (After Onboarding)
+----------------------------------------------------------------------
+- /api/auth/profile now returns subscription status alongside profile
+- ProfileGuard checks for active subscription on every dashboard page
+- No subscription → redirected to /subscription-required
+- Flow: Onboarding → Subscription Plans → Dashboard
+
+2. BRANCH LIMITS (Firm & Enterprise Only)
+----------------------------------------------------------------------
+Updated max_branches per plan:
+  Solo:           0 (no branches)
+  Professional:   0 (no branches)
+  Firm:           3 branches
+  Enterprise:    10 branches
+
+Sidebar now hides Branches nav for Solo/Professional plans.
+Branches page banner updated: "Upgrade to Firm plan and above"
+
+3. LANDING PAGE (www.casefiles.in)
+----------------------------------------------------------------------
+- Created src/app/page.tsx — full marketing site at root "/"
+- Dark theme with orange accent (matching casefiles-website)
+- Auth-aware navbar:
+  * Not logged in: "Sign In" + "Get Started Free"
+  * Logged in: "Go to Dashboard"
+- Sections: Hero, Stats, Features, Solutions, How It Works,
+  Pricing (monthly/annual toggle), Testimonials, CTA, Footer
+- Old (marketing)/page.tsx now redirects to /
+
+4. DASHBOARD ENHANCEMENTS
+----------------------------------------------------------------------
+- Added "Recent Transactions" card (owners only)
+  * Shows last 5 payments with client name, invoice #, amount, date
+- Employee welcome banner shows "My Overview" instead of "Firm Overview"
+
+5. EMPLOYEE SIDEBAR (Reduced)
+----------------------------------------------------------------------
+Added ownerOnly flag to these nav items:
+  - Billing
+  - Quotations
+  - Expenses
+  - AI Tools
+  - Reports
+  - CRM
+
+Employee roles: senior_associate, associate, junior_associate,
+paralegal, intern, office_admin
+
+Employee sidebar shows:
+  Dashboard, Cases, Clients, Calendar, Court Tracking,
+  Documents, Tasks, Messages, Subscription, Settings
+
+Owner/Partner sidebar shows everything including admin tools.
+
+----------------------------------------------------------------------
+FILES MODIFIED:
+----------------------------------------------------------------------
+  src/app/page.tsx                              NEW - Root landing page
+  src/app/(marketing)/page.tsx                  Modified - redirect to /
+  src/app/api/auth/profile/route.ts             Modified - returns subscription
+  src/components/profile-guard.tsx              Modified - subscription check
+  src/app/(dashboard)/dashboard/page.tsx        Modified - transactions, employee view
+  src/components/sidebar.tsx                    Modified - employee filtering
+  src/app/api/subscriptions/route.ts            Modified - branch limits
+  src/app/(admin)/admin/branches/page.tsx       Modified - banner text
+  src/components/sidebar.tsx                    Modified - Branches nav for firm+
+
+----------------------------------------------------------------------
+DEPLOYED TO: https://www.casefiles.in
+----------------------------------------------------------------------

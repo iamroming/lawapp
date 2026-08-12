@@ -1,0 +1,60 @@
+======================================================================
+     USER ISOLATION AUDIT — DATA LEAK & ACCESS CONTROL REPORT
+======================================================================
+Date: August 7, 2026
+Scope: All API routes (42 files across 10 directories)
+
+======================================================================
+CRITICAL ISSUES (Fix immediately)
+======================================================================
+
+#1 documents/delete-cloudinary — ANY user can delete ANY Cloudinary file
+  File: src/app/api/documents/delete-cloudinary/route.ts
+  Impact: Any authenticated user can delete any file from the app's
+          Cloudinary account by guessing public IDs. No firm check,
+          no ownership check, no database verification.
+
+#2 cases/team — No firm_id verification on ALL operations
+  File: src/app/api/cases/team/route.ts
+  Impact: Cross-firm data leak. User in Firm A can read/create/update/
+          delete case team records for cases in Firm B.
+
+----------------------------------------------------------------------
+HIGH ISSUES (Fix soon)
+----------------------------------------------------------------------
+
+#3 hearings POST — No firm check on case, no firm_id set
+  File: src/app/api/hearings/route.ts
+  Impact: Employee can create hearings linked to cases in other firms.
+
+#4 clients/communications POST — No firm check on client_id
+  File: src/app/api/clients/communications/route.ts
+  Impact: Employee can create communication records linked to clients
+          in other firms.
+
+#5 documents POST — firm_id not set on insert
+  File: src/app/api/documents/route.ts
+  Impact: Documents are invisible in firm-wide queries and undeletable.
+
+----------------------------------------------------------------------
+MEDIUM ISSUES
+----------------------------------------------------------------------
+
+#6  hearings GET — Employees see ALL firm hearings (no role scoping)
+#7  documents/[id]/download — No firm-level verification
+#8  ecourts POST — No firm check on case
+#9  ecourts/sync POST — No firm/ownership check on specific case
+#10 payments/razorpay/verify — Payment insert missing firm_id
+
+----------------------------------------------------------------------
+LOW ISSUES (Design/Consistency)
+----------------------------------------------------------------------
+
+#11 clients/tags — User-scoped, not firm-scoped
+#12 clients/communications GET — Owner can't see employee comms
+#13 payments/razorpay POST — Invoice update missing firm_id check
+#14 No subscription limits for clients, tasks, invoices, hearings
+
+======================================================================
+                         END OF REPORT
+======================================================================

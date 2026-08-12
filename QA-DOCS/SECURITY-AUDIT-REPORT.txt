@@ -1,0 +1,289 @@
+======================================================================
+       SECURITY AUDIT REPORT — CASEFILES APP
+======================================================================
+Date: August 7, 2026
+Auditor: Automated Security Analysis
+Scope: Full application (Auth, API, Payments, AI, Config)
+Total Vulnerabilities: 68
+
+======================================================================
+EXECUTIVE SUMMARY
+======================================================================
+
+| Severity | Count | Status |
+|----------|-------|--------|
+| CRITICAL | 14 | Immediate fix required |
+| HIGH | 20 | Fix within 1 week |
+| MEDIUM | 22 | Fix within 1 month |
+| LOW | 12 | Backlog |
+| **TOTAL** | **68** | |
+
+Top Risks:
+1. Payment amount tampering — users can claim any plan after paying minimal amount
+2. SSRF via court service — attacker can probe internal networks
+3. Prompt injection — AI can be hijacked to leak system prompts
+4. Client-side auth bypass — all server-side protections circumvented
+5. Cross-tenant data leaks — firm scoping gaps in multiple API routes
+
+======================================================================
+CRITICAL VULNERABILITIES (14)
+======================================================================
+
+#C1 Payment Amount Not Verified Against Plan
+  File: src/app/api/payments/verify/route.ts:62-70
+  Risk: User pays ₹299 (Solo) but claims Enterprise (₹4999)
+  Impact: Complete subscription plan bypass. Free premium access.
+
+#C2 SSRF via pdf_url Parameter
+  File: src/app/api/courts/download-pdf/route.ts:11,17
+  Risk: Attacker sends pdf_url=http://169.254.169.254/metadata
+  Impact: Cloud metadata exposure, internal network probing.
+
+#C3 SSRF via courtServiceFetch
+  File: src/lib/court-service.ts:8
+  Risk: No URL validation on court service requests
+  Impact: Server-side request forgery to any host.
+
+#C4 Unvalidated External API Response
+  File: src/lib/ecourts/api.ts:64-103
+  Risk: eCourts API response trusted without schema validation
+  Impact: Stored XSS, data injection, malicious URLs.
+
+#C5 Prompt Injection in AI Service
+  File: src/lib/ai/service.ts:29-44,216-220,286-294
+  Risk: User input interpolated into AI prompts unsanitized
+  Impact: System prompt leak, AI role hijacking, data exfiltration.
+
+#C6 Prompt Injection in AI Chat
+  File: src/app/api/ai/chat/route.ts:62-68
+  Risk: "system" role in ALLOWED_ROLES lets users inject system prompts
+  Impact: Complete AI assistant takeover.
+
+#C7 Service Role Key in Client Module
+  File: src/lib/supabase/client.ts:26-35
+  Risk: createServiceRoleClient() exported from browser module
+  Impact: Accidental RLS bypass if mis-imported.
+
+#C8 Live Secrets in .env.local
+  File: .env.local
+  Risk: Real production keys on disk (Supabase, Razorpay, AI, Cloudinary)
+  Impact: Full service compromise if leaked.
+
+#C9 CSRF_SECRET Not Defined
+  File: src/lib/csrf.ts:4-8
+  Risk: CSRF token system throws 500 on every call
+  Impact: CSRF protection non-functional.
+
+#C10 Account Enumeration via Signup
+  File: src/app/api/auth/signup/route.ts:108-109
+  Risk: Supabase error reveals "User already registered"
+  Impact: Email harvesting for credential stuffing.
+
+#C11 Account Enumeration via Login
+  File: src/app/(auth)/login/page.tsx:35-36
+  Risk: Different errors for invalid email vs invalid password
+  Impact: Confirms email existence for targeted attacks.
+
+#C12 Client-Side Auth Bypass
+  Files: login/page.tsx:20, signup/page.tsx:30
+  Risk: Supabase client called directly from browser
+  Impact: All server-side rate limiting and CSRF bypassed.
+
+#C13 No Role Check on Client PUT/DELETE
+  File: src/app/api/clients/[id]/route.ts:25-73
+  Risk: Any authenticated user can modify any client
+  Impact: Data destruction by low-privilege users.
+
+#C14 No Role Check on Expense PATCH/DELETE
+  File: src/app/api/expenses/route.ts:139-204
+  Risk: Any user can modify financial records
+  Impact: Expense tampering, fraud.
+
+======================================================================
+HIGH VULNERABILITIES (20)
+======================================================================
+
+#H1 No Rate Limiting on Payment Endpoints
+  File: src/middleware.ts
+  Risk: Brute-force coupon codes, payment verification spam
+
+#H2 No Server-Side File Type Validation
+  File: src/app/api/documents/route.ts:53-173
+  Risk: Malicious file upload, storage exhaustion
+
+#H3 Client-Controlled file_size Bypasses Storage Quota
+  File: src/app/api/documents/route.ts:82
+  Risk: Unlimited file uploads by setting file_size: 0
+
+#H4 Unsigned Cloudinary Upload Preset
+  File: src/lib/cloudinary.ts:2,18
+  Risk: Anyone can upload files directly to Cloudinary
+
+#H5 Coupon Race Condition
+  File: src/app/api/payments/create-order/route.ts:104-118
+  Risk: Double-redeem coupons under concurrency
+
+#H6 Download Route Missing Firm Access Check
+  File: src/app/api/documents/[id]/download/route.ts:42-56
+  Risk: Cross-firm document access
+
+#H7 No Password Complexity Server-Side
+  File: src/app/api/auth/signup/route.ts:43-55
+  Risk: Weak passwords like "Password1" accepted
+
+#H8 Invite Code Endpoint Unauthenticated
+  File: src/app/api/team/redeem-code/route.ts:114-142
+  Risk: Brute-force invite codes, enumerate firms
+
+#H9 In-Memory Rate Limiter Bypass
+  File: src/app/api/auth/signup/route.ts:6-25
+  Risk: Rate limiting ineffective in serverless
+
+#H10 IP Spoofing via x-forwarded-for
+  File: src/app/api/auth/signup/route.ts:29
+  Risk: All IP-based rate limiting circumvented
+
+#H11 Weak CSRF Protection
+  File: src/lib/supabase/middleware.ts:5-20
+  Risk: Origin-only check, no CSRF tokens
+
+#H12 No Security Headers
+  File: next.config.ts
+  Risk: Missing CSP, X-Frame-Options, HSTS, etc.
+
+#H13 TypeScript Errors Ignored in Build
+  File: next.config.ts:4-5
+  Risk: Type-safety violations ship to production
+
+#H14 No Rate Limit on Account Deletion
+  File: src/app/api/account/delete/route.ts
+  Risk: Abuse via repeated account creation/deletion
+
+#H15 Invoice POST Has No Role Check
+  File: src/app/api/invoices/route.ts:5-169
+  Risk: Any user can issue invoices
+
+#H16 Free Subscription Creation Possible
+  File: src/app/api/subscriptions/route.ts:119-139
+  Risk: Free plan abuse via price=0 bypass
+
+#H17 Subscription Check Skipped for All API Routes
+  File: src/middleware.ts:128-168
+  Risk: Expired users access all API endpoints
+
+#H18 API Key Exported as Public Constant
+  File: src/lib/ai/service.ts:3
+  Risk: AI API key accessible from any importing module
+
+#H19 CNR Injection in eCourts
+  File: src/lib/ecourts/api.ts:55
+  Risk: No validation in library function
+
+#H20 Account Deletion Doesn't Invalidate Sessions
+  File: src/app/api/account/delete/route.ts:42-47
+  Risk: Stale sessions remain valid after deletion
+
+======================================================================
+MEDIUM VULNERABILITIES (22)
+======================================================================
+
+#M1 Stored XSS Risk — file_url in Documents
+#M2 Stored XSS Risk — Multiple Text Fields (systemic)
+#M3 SSRF Risk — Cloudinary Destroy URL
+#M4 No Rate Limiting on Data Mutation Endpoints
+#M5 Information Leakage via Error Messages
+#M6 No Session Rotation After Password Change
+#M7 Cookie Security Configuration Not Visible
+#M8 Race Condition in Invite Code Redemption
+#M9 Error Messages Leak Supabase Internals
+#M10 No CAPTCHA/Bot Protection
+#M11 Client-Side Password Validation Bypass
+#M12 Profile Lookup Failure Drops firm_id Filter
+#M13 Expense DELETE Has No Ownership Check
+#M14 Admin Routes Lack Middleware Protection
+#M15 Time Entries POST Has No Role Check
+#M16 Payment Amount Not Validated Against Plan Price
+#M17 Share Route Exposes Raw Cloudinary URLs
+#M18 Webhook Stores plan Slug in UUID Column
+#M19 getPlanLimits Queries by Wrong ID
+#M20 Percent Coupon Discount Can Go Negative
+#M21 No Idempotency Key on Order Creation
+#M22 Middleware Makes 3-5 DB Queries Per Request
+
+======================================================================
+LOW VULNERABILITIES (12)
+======================================================================
+
+#L1 Soft-Delete Inconsistency
+#L2 CSRF Protection Only Checks Origin
+#L3 No Input Sanitization on Text Fields
+#L4 No Logout Endpoint
+#L5 No Account Lockout Mechanism
+#L6 Timing Attack on Invite Code
+#L7 No Content-Security-Policy Headers
+#L8 No .env.example File
+#L9 Admin Setup Returns 410 (Info Leak)
+#L10 Razorpay Test Keys in .env.local
+#L11 Signed URL Uses Wrong Resource Type
+#L12 Webhook Errors Log Full DB Objects
+
+======================================================================
+POSITIVE SECURITY FINDINGS
+======================================================================
+
+| Practice | Status |
+|----------|--------|
+| SQL Injection | PROTECTED — Supabase parameterized queries |
+| Authentication | PRESENT — getUser() checked on routes |
+| Firm Isolation | PRESENT — Most routes filter by firm_id |
+| RBAC | PARTIAL — Cases have role checks, others missing |
+| CSRF | PARTIAL — Origin check exists, tokens broken |
+| Input Validation | PARTIAL — Cases/Clients use Zod, others don't |
+| Soft Deletes | PRESENT — deleted_at pattern used |
+| Audit Logging | PRESENT — log_activity RPC on mutations |
+| Command Injection | N/A — No exec/spawn/eval usage |
+| Path Traversal | N/A — No filesystem operations on user input |
+| XXE | N/A — No XML parsing |
+
+======================================================================
+IMMEDIATE ACTIONS REQUIRED
+======================================================================
+
+1. VERIFY PAYMENT AMOUNT — Cross-check payment.amount against plan price
+2. FIX SSRF — Allowlist trusted domains for court service requests
+3. FIX PROMPT INJECTION — Remove "system" from ALLOWED_ROLES, sanitize inputs
+4. MOVE SERVICE ROLE — Extract from client module to server-only module
+5. ADD SECURITY HEADERS — CSP, X-Frame-Options, HSTS in next.config.ts
+6. ROTATE SECRETS — All keys in .env.local if repo was ever pushed
+7. ADD CSRF_SECRET — Enable token-based CSRF protection
+8. NORMALIZE ERROR MESSAGES — Return generic errors, log details server-side
+9. ADD RATE LIMITING — All payment and mutation endpoints
+10. FIX ROLE CHECKS — Add to clients, expenses, invoices, time-entries
+
+======================================================================
+RECOMMENDED SECURITY HEADERS (next.config.ts)
+======================================================================
+
+headers: async () => [
+  {
+    source: "/(.*)",
+    headers: [
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+      { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+      { key: "Content-Security-Policy", value: "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.razorpay.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; font-src 'self' https:; connect-src 'self' https://*.supabase.co https://api.cloudinary.com; frame-src https://js.razorpay.com;" },
+    ],
+  },
+],
+
+======================================================================
+BUILD STATUS: PASSED
+======================================================================
+✓ Compiled successfully in 21.9s
+✓ 208 pages generated
+
+======================================================================
+                         END OF REPORT
+======================================================================

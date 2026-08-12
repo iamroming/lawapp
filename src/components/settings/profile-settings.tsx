@@ -1,6 +1,8 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { dbWrite } from "@/lib/db-write";
+import { getFirebaseAuth } from "@/lib/firebase/config";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +10,8 @@ import { Avatar } from "@/components/ui/avatar";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { User, Lock, Camera, Save } from "lucide-react";
 import toast from "react-hot-toast";
+import { updatePassword } from "firebase/auth";
+import { firebaseUidToUuid } from "@/lib/firebase/uid";
 
 interface Profile {
   id: string;
@@ -45,15 +49,14 @@ export function ProfileSettings() {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const auth = getFirebaseAuth();
+      const user = auth.currentUser;
 
       if (user) {
         const { data } = await supabase
           .from("profiles")
           .select("*")
-          .eq("id", user.id)
+          .eq("id", firebaseUidToUuid(user.uid))
           .single();
 
         if (data) {
@@ -76,23 +79,19 @@ export function ProfileSettings() {
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const auth = getFirebaseAuth();
+      const user = auth.currentUser;
       if (!user) return;
 
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          full_name: formData.full_name,
-          phone: formData.phone,
-          firm_name: formData.firm_name,
-        })
-        .eq("id", user.id);
+      const { error } = await dbWrite("profiles", "update", {
+        full_name: formData.full_name,
+        phone: formData.phone,
+        firm_name: formData.firm_name,
+      }, { id: firebaseUidToUuid(user.uid) });
 
       if (error) {
-        console.error("Error saving profile:", error.message || JSON.stringify(error));
-        toast.error(error.message || "Failed to save profile");
+        console.error("Error saving profile:", error);
+        toast.error(error || "Failed to save profile");
       } else {
         toast.success("Profile saved!");
         fetchProfile();
@@ -105,24 +104,23 @@ export function ProfileSettings() {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert("Passwords do not match");
+      toast.error("Passwords do not match");
       return;
     }
 
     setSaving(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: passwordData.newPassword,
-      });
+      const auth = getFirebaseAuth();
+      const user = auth.currentUser;
+      if (!user) return;
 
-      if (error) {
-        console.error("Error changing password:", error.message || JSON.stringify(error));
-        toast.error(error.message || "Failed to change password");
-      } else {
-        toast.success("Password updated successfully!");
-        setChangingPassword(false);
-        setPasswordData({ newPassword: "", confirmPassword: "" });
-      }
+      await updatePassword(user, passwordData.newPassword);
+      toast.success("Password updated successfully!");
+      setChangingPassword(false);
+      setPasswordData({ newPassword: "", confirmPassword: "" });
+    } catch (error: any) {
+      console.error("Error changing password:", error.message || JSON.stringify(error));
+      toast.error(error.message || "Failed to change password");
     } finally {
       setSaving(false);
     }
@@ -133,12 +131,9 @@ export function ProfileSettings() {
     if (!file || !profile) return;
 
     try {
-      const result = await uploadToCloudinary(file, "LawXP/avatars");
+      const result = await uploadToCloudinary(file, "CaseFiles/avatars");
 
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ avatar_url: result.secure_url })
-        .eq("id", profile.id);
+      const { error: updateError } = await dbWrite("profiles", "update", { avatar_url: result.secure_url }, { id: profile.id });
 
       if (updateError) {
         toast.error("Failed to update profile");

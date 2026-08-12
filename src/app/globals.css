@@ -1,49 +1,30 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
-
 :root {
-  /* Professional vibrant palette */
-  --background: #F8F9FA;
-  --foreground: #111827;
+  /* Refined light theme */
+  --background: #FAFBFD;
+  --foreground: #1A1D2E;
   --surface: #FFFFFF;
-  --surface-warm: #F3F4F6;
-  --surface-subtle: #F9FAFB;
-  --surface-accent: #EEF2FF;
-  --text-primary: #111827;
-  --text-secondary: #4B5563;
-  --text-tertiary: #9CA3AF;
-  --border: #E5E7EB;
-  --border-strong: #D1D5DB;
-  --ring: #6366F1;
-  --accent: #4F46E5;
+  --surface-warm: #F4F6FA;
+  --surface-subtle: #F0F3F8;
+  --surface-accent: #EEF1FB;
+  --text-primary: #1A1D2E;
+  --text-secondary: #5A6078;
+  --text-tertiary: #8B91A8;
+  --text-accent: #5046E5;
+  --border: #E2E6F0;
+  --border-strong: #C8CED9;
+  --ring: #635BFF;
+  --accent: #5046E5;
   --accent-hover: #4338CA;
-  --accent-light: #818CF8;
+  --accent-light: #8178FF;
   --danger: #DC2626;
   --success: #059669;
   --warning: #D97706;
-  color-scheme: light dark;
-}
-
-.dark {
-  --background: #0F172A;
-  --foreground: #F1F5F9;
-  --surface: #1E293B;
-  --surface-warm: #1E293B;
-  --surface-subtle: #334155;
-  --surface-accent: #312E81;
-  --text-primary: #F1F5F9;
-  --text-secondary: #94A3B8;
-  --text-tertiary: #64748B;
-  --border: #334155;
-  --border-strong: #475569;
-  --ring: #818CF8;
-  --accent: #818CF8;
-  --accent-hover: #A5B4FC;
-  --accent-light: #C7D2FE;
-  --danger: #F87171;
-  --success: #34D399;
-  --warning: #FBBF24;
+  --shadow-sm: 0 1px 2px 0 rgb(30 33 60 / 0.04);
+  --shadow-md: 0 2px 8px -2px rgb(30 33 60 / 0.06), 0 1px 3px -1px rgb(30 33 60 / 0.04);
+  --shadow-lg: 0 8px 24px -4px rgb(30 33 60 / 0.08), 0 2px 6px -2px rgb(30 33 60 / 0.04);
+  color-scheme: light;
 }
 
 html,
@@ -66,7 +47,6 @@ body {
   box-sizing: border-box;
 }
 
-/* Safe area insets for notched phones */
 .safe-area-top {
   padding-top: env(safe-area-inset-top);
 }
@@ -75,7 +55,6 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Mobile touch targets - minimum 44px */
 @media (max-width: 1023px) {
   button,
   a,
@@ -93,7 +72,6 @@ body {
   }
 }
 
-/* Prevent horizontal scroll on mobile */
 @media (max-width: 1023px) {
   body {
     overflow-x: hidden;
@@ -114,7 +92,6 @@ body {
   }
 }
 
-/* Mobile-optimized font sizes */
 @media (max-width: 1023px) {
   html {
     font-size: 16px;
@@ -133,34 +110,30 @@ body {
   }
 }
 
-/* Bottom nav spacing for mobile */
 @media (max-width: 1023px) {
   .mobile-content-area {
     padding-bottom: 4rem;
   }
 }
 
-/* Smooth scrolling */
 html {
   scroll-behavior: smooth;
 }
 
-/* Focus visible for keyboard navigation */
 :focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
-/* Remove default focus outline for mouse users */
 :focus:not(:focus-visible) {
   outline: none;
 }
 
-/* Subtle card shadow utility */
 .card-shadow {
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .card-shadow-hover:hover {
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+  box-shadow: var(--shadow-md);
 }

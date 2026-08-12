@@ -6,7 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Mail, MessageSquare, Bell, Smartphone } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { dbWrite } from "@/lib/db-write";
 import toast from "react-hot-toast";
+import { useUser } from "@/hooks/use-user";
 
 interface Preferences {
   email: boolean;
@@ -31,6 +33,7 @@ const defaultPreferences: Preferences = {
 };
 
 export default function NotificationPreferencesPage() {
+  const { user: appUser } = useUser();
   const [preferences, setPreferences] = useState<Preferences>(defaultPreferences);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -39,12 +42,11 @@ export default function NotificationPreferencesPage() {
   useEffect(() => {
     const fetchPreferences = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
+        if (appUser) {
           const { data, error } = await supabase
             .from("notification_preferences")
             .select("*")
-            .eq("user_id", user.id)
+            .eq("user_id", appUser?.uuid)
             .single();
 
           if (error && error.code !== "PGRST116") {
@@ -74,10 +76,9 @@ export default function NotificationPreferencesPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { error } = await supabase.from("notification_preferences").upsert({
-        user_id: user.id,
+    if (appUser) {
+      const { error } = await dbWrite("notification_preferences", "upsert", {
+        user_id: appUser?.uuid,
         email: preferences.email,
         sms: preferences.sms,
         whatsapp: preferences.whatsapp,
@@ -89,7 +90,7 @@ export default function NotificationPreferencesPage() {
       });
 
       if (error) {
-        toast.error(error.message);
+        toast.error(error);
       } else {
         toast.success("Preferences saved!");
       }

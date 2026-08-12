@@ -1,21 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 import { generateInvoicePDF, type InvoiceTemplateId } from "@/lib/invoices/templates";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
 
-  const { data: profile } = await supabase.from("profiles").select("firm_id, firm_name, full_name, address, phone, email, gstin, bank_name, bank_account, bank_ifsc, upi_id, invoice_template, invoice_settings").eq("id", user.id).single();
+  const { data: profile } = await supabase.from("profiles").select("firm_id, firm_name, full_name, address, phone, email, gstin, bank_name, bank_account, bank_ifsc, upi_id, invoice_template, invoice_settings").eq("id", user.uuid).single();
   const firmId = profile?.firm_id;
 
   const { data: invoice, error: invoiceError } = await supabase

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/client"
 import { formatDate } from "@/lib/utils"
+import { useUser } from "@/hooks/use-user";
 
 interface Document {
   id: string
@@ -18,6 +19,7 @@ interface Document {
 }
 
 export default function ClientDocumentsPage() {
+  const { user: appUser } = useUser();
   const [documents, setDocuments] = useState<Document[]>([])
   const [filtered, setFiltered] = useState<Document[]>([])
   const [cases, setCases] = useState<{ id: string; title: string }[]>([])
@@ -29,13 +31,12 @@ export default function ClientDocumentsPage() {
   useEffect(() => {
     async function loadDocuments() {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
+        if (!appUser) return
 
         const { data: docs } = await supabase
           .from("documents")
           .select("id, title, file_url, file_type, case_title, created_at")
-          .eq("client_id", user.id)
+          .eq("client_id", appUser?.uuid)
           .order("created_at", { ascending: false })
 
         if (docs) {
@@ -46,7 +47,7 @@ export default function ClientDocumentsPage() {
         const { data: caseList } = await supabase
           .from("cases")
           .select("id, title")
-          .eq("client_id", user.id)
+          .eq("client_id", appUser?.uuid)
 
         if (caseList) setCases(caseList)
       } catch {

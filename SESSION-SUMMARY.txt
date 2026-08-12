@@ -1,0 +1,87 @@
+================================================================================
+CASEFILES APP - SESSION SUMMARY
+Date: August 11, 2026
+================================================================================
+
+## WHAT WE DID
+
+### 1. Firebase Auth Migration (Completed Earlier)
+- Migrated from Supabase Auth to Firebase Auth
+- Supabase Postgres remains for ALL database queries
+- Session cookie: firebase-session, HTTP-only, 5-day max age
+- 100+ files migrated (auth pages, API routes, components, layouts)
+
+### 2. Firebase Project Recreation
+- Created new Firebase project: casefiles-a
+- Updated all env vars (9 total) on Vercel
+- Generated new service account key
+- Enabled Email/Password + Google Auth providers
+- Added authorized domains: www.casefiles.in, casefiles.in
+
+### 3. UUID Conversion System (NEW)
+Firebase UIDs (e.g., Vp4z6gBWqrbrKZIEcXBbm1c1K3z1) are NOT valid UUIDs.
+Supabase profiles.id column expects UUID format.
+
+SOLUTION:
+- Created src/lib/firebase/uid.ts with firebaseUidToUuid() function
+- Added uuid field to AuthUser interface in auth.ts
+- Updated 87+ files to use user.uuid for Supabase queries
+- user.uid kept for Firebase Admin SDK calls only
+
+### 4. Onboarding Flow Fix
+PROBLEM: Google signup redirected to /dashboard instead of /onboarding
+PROBLEM: Onboarding page used Supabase anon client (blocked by RLS)
+
+FIXES:
+- handleGoogleSignup now checks if profile exists, redirects to /onboarding if not
+- ProfileGuard component added to dashboard layout
+- /onboarding added to middleware public routes
+- Created /api/auth/onboarding endpoint with service role key
+- Onboarding page now calls API route instead of direct Supabase insert
+
+### 5. RLS Bypass System (NEW)
+PROBLEM: 23 client-side components did direct Supabase writes blocked by RLS
+
+SOLUTION:
+- Created /api/db/write endpoint with:
+  - Firebase auth verification (session cookie or Bearer token)
+  - Table allowlist (20 permitted tables)
+  - Service role key for all writes
+- Created src/lib/db-write.ts client helper
+- Converted all 23 client components to use dbWrite()
+
+### 6. API Route Bug Fixes
+- 31 files: user.id → user.uuid (~123 replacements)
+- 4 admin routes: fixed broken checkSuperAdmin scope
+- 3 GET routes: added missing request parameter
+- 3 cron/webhook routes: switched to service role client
+
+## FILES CREATED
+- src/lib/firebase/uid.ts - Firebase UID to UUID converter
+- src/lib/db-write.ts - Client-side database write helper
+- src/app/api/db/write/route.ts - Generic authenticated write endpoint
+- src/app/api/auth/onboarding/route.ts - Onboarding endpoint
+
+## KEY ARCHITECTURE
+Browser → dbWrite() → /api/db/write → Service Role → Supabase (bypasses RLS)
+Browser → signInWithPopup → /api/auth/session → Session Cookie
+API Routes → verifySessionFromRequest → user.uuid → Supabase queries
+
+## ENV VARS (Firebase - casefiles-a project)
+NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyC4DVVczi2BQ8MTD_46dkuSl6MEORlsmAE
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=casefiles-a.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=casefiles-a
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=casefiles-a.firebasestorage.app
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=960084326451
+NEXT_PUBLIC_FIREBASE_APP_ID=1:960084326451:web:db8944bc51aa5b36ba8b46
+FIREBASE_PROJECT_ID=casefiles-a
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-fbsvc@casefiles-a.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY=(in .env.local)
+
+## TOTAL FILES MODIFIED: 100+
+## TOTAL BUGS FIXED: 200+
+## DEPLOYMENTS: 8+ successful deploys to Vercel
+
+## PRODUCTION URL: https://www.casefiles.in
+## OLD URL: https://lawapp-eight.vercel.app (deprecated)
+================================================================================

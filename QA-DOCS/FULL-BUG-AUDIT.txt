@@ -1,0 +1,424 @@
+CASEFILES - COMPREHENSIVE BUG AUDIT REPORT
+==========================================
+Generated: 2026-08-09
+Scope: Entire app (API routes, pages, lib files, components)
+
+================================================================================
+SUMMARY
+================================================================================
+
+CRITICAL:  10 bugs (security/data leaks, broken core features)
+HIGH:      18 bugs (broken features, crashes, wrong behavior)
+MEDIUM:    20 bugs (logic errors, performance, wrong data)
+LOW:        8 bugs (minor issues, UX, dead code)
+
+TOTAL:     56 bugs found
+
+================================================================================
+CRITICAL BUGS
+================================================================================
+
+C1. SERVICE ROLE KEY EXPOSED IN CLIENT BUNDLE
+  Files: All super-admin and admin pages using createServiceRoleClient()
+  Problem: createServiceRoleClient() embeds SUPABASE_SERVICE_ROLE_KEY into
+  client-side JavaScript. Anyone can extract it from DevTools → Sources.
+  Impact: Full database admin access bypasses ALL RLS policies.
+  Fix: Move ALL service-role queries to API routes or Server Actions.
+
+C2. ADMIN PAGES WILL NEVER LOAD (getUser with Service Role Client)
+  Files: admin/users/page.tsx:37, admin/users/[id]/page.tsx:74
+  Problem: createServiceRoleClient().auth.getUser() returns null because
+  the service role client has no authenticated session.
+  Impact: Admin users page shows "Loading users..." forever. Never loads.
+  Fix: Use createClient() for user auth, service role only for data queries.
+
+C3. CROSS-TENANT DATA LEAK — Documents Download
+  File: documents/[id]/download/route.ts:32
+  Problem: Document query has no firm_id filter. Any user can download
+  any document by guessing the UUID.
+  Impact: Firm A downloads Firm B's confidential documents.
+  Fix: Add .eq("firm_id", firmId) to the query.
+
+C4. CROSS-TENANT DATA LEAK — Quotations
+  File: quotations/[id]/route.ts:10-60
+  Problem: GET, PUT, DELETE all lack firm_id filtering.
+  Impact: Any user can read/modify/delete any quotation.
+  Fix: Add firm_id check to all operations.
+
+C5. STORAGE LIMIT CHECK IS DEAD CODE
+  File: documents/route.ts:96
+  Problem: allowedFields.file_size = 0 forces size to 0, so the entire
+  storage limit check (lines 103-163) never executes.
+  Impact: Users upload unlimited files regardless of plan.
+  Fix: Remove the forced file_size = 0 line.
+
+C6. DEADLINE REMINDERS NEVER FIRE VIA CRON
+  File: deadlines/check/route.ts:38
+  Problem: When called via cron, userId is null. Query .eq("created_by",
+  null) matches nothing in PostgreSQL (NULL != NULL).
+  Impact: Automated deadline reminders are completely broken.
+  Fix: Skip created_by filter for cron calls.
+
+C7. CAUSE LIST SYNC NEVER WORKS VIA CRON
+  File: cause-list/sync/route.ts:29
+  Problem: Same null userId bug as C6.
+  Impact: Cause list entries never sync automatically.
+  Fix: Same as C6.
+
+C8. DUPLICATE checkSuperAdminAccess FUNCTION
+  Files: actions/super-admin.ts:6 AND actions/check-super-admin.ts:6
+  Problem: Both files export identical checkSuperAdminAccess functions.
+  Impact: Import ambiguity, dead code, maintenance hazard.
+  Fix: Remove from super-admin.ts.
+
+C9. isRazorpayConfigured CRASHES IF ENV VAR MISSING
+  File: lib/env.ts:45-51
+  Problem: .includes() called on undefined RAZORPAY_KEY_ID throws TypeError.
+  Impact: Server crash if Razorpay env var not set.
+  Fix: Guard: if (!process.env.RAZORPAY_KEY_ID) return false;
+
+C10. HEARINGS POST DOESN'T SET firm_id
+  File: api/hearings/route.ts:63-65
+  Problem: Hearing insert doesn't include firm_id. If column has no default,
+  hearings are created without firm scoping.
+  Impact: Hearings invisible in firm-wide views, daily digest shows none.
+  Fix: Add firm_id: profile?.firm_id || user.id to the insert.
+
+================================================================================
+HIGH BUGS
+================================================================================
+
+H1. SOLO USERS CAN'T UPDATE/DELETE TASKS
+  File: api/tasks/route.ts:114,139
+  Problem: .eq("firm_id", firmId) where firmId is null. SQL NULL != NULL.
+  Impact: Solo users always get error on task update/delete.
+  Fix: Use .eq("user_id", user.id) as fallback when firmId is null.
+
+H2. INFINITE RE-RENDER LOOP IN ADMIN PAGES
+  Files: admin/employees/page.tsx:83, admin/performance/page.tsx:52,
+  super-admin/users/[id]/page.tsx:59
+  Problem: useEffect depends on supabase client which is new every render.
+  Impact: Browser freezes, excessive API calls.
+  Fix: Memoize supabase client with useMemo or remove from deps.
+
+H3. BROKEN NAVIGATION — Admin Dashboard "View All" Link
+  File: admin/page.tsx:185
+  Problem: Links to /clients instead of /admin/users.
+  Impact: Admin clicks "View All" and gets 404.
+  Fix: Change to /admin/users.
+
+H4. BROKEN NAVIGATION — Super Admin Clients Link
+  File: super-admin/clients/page.tsx:51
+  Problem: Links to /clients/{id} which is client portal, not super admin.
+  Impact: Super admin gets 404 when clicking a client.
+  Fix: Link to /super-admin/users/{creator_id} or create detail page.
+
+H5. JSON.parse CRASH ON SUBSCRIPTION PLANS
+  File: admin/subscriptions/page.tsx:222
+  Problem: JSON.parse(plan.features) without try/catch. If features is
+  already an array or malformed JSON, component crashes.
+  Impact: Plans tab renders white screen.
+  Fix: Wrap in try/catch.
+
+H6. CLIENT MESSAGES BROKEN (no firm_id)
+  File: client-portal/client/messages/page.tsx:86-103
+  Problem: Client portal users aren't in profiles table. Profile query
+  returns null, so firm_id is always null.
+  Impact: Client messages invisible to law firm.
+  Fix: Look up firm_id through case → firm relationship.
+
+H7. SUPER ADMIN DELETE USER DOESN'T REMOVE AUTH ACCOUNT
+  File: super-admin/users/[id]/page.tsx:92
+  Problem: Only deletes from profiles table. Supabase Auth account remains.
+  Impact: "Deleted" user can still log in.
+  Fix: Call Supabase Admin API to delete auth user.
+
+H8. QUOTATION ITEMS NULL CRASH
+  File: api/quotations/route.ts:46
+  Problem: items.reduce() crashes if items is null (not just empty array).
+  Impact: 500 error when creating quotation without items.
+  Fix: Add Array.isArray(items) check.
+
+H9. TASKS ROUTE — FIRM_ID FILTER FOR SOLO USERS
+  File: api/tasks/route.ts:114
+  Problem: .eq("firm_id", null) matches nothing.
+  Impact: Solo users can't update tasks.
+  Fix: Use user_id fallback.
+
+H10. SUBSCRIPTION CHANGE — NO VALIDATION ON billingCycle
+  File: api/subscriptions/change/route.ts:56
+  Problem: plan[undefined] is undefined, billing.razorpayPlanId throws TypeError.
+  Impact: Plan change crashes with 500.
+  Fix: Validate billingCycle before use.
+
+H11. CASE NUMBER NULL IF RPC FAILS
+  File: api/cases/route.ts:81
+  Problem: No null check on caseNumber.data after RPC call.
+  Impact: Cases created without case numbers.
+  Fix: Add error check before insert.
+
+H12. DEAD CODE — CASES/[ID]/SIMILAR FIRM CHECK
+  File: api/cases/[id]/similar/route.ts:44
+  Problem: firm_id check fails for solo users with edge cases.
+  Impact: Solo users may not see similar cases.
+  Fix: Add created_by/assigned_to fallback.
+
+H13. ADMIN EMPLOYEE DELETION — STILL SHOWS IN LIST
+  File: admin/employees/page.tsx:125-138
+  Problem: Sets is_active: false but list query doesn't filter by is_active.
+  Impact: "Deleted" employees still appear.
+  Fix: Filter out inactive employees or remove from local state.
+
+H14. SUPER ADMIN SETTINGS — HARDCODED SYSTEM INFO
+  File: super-admin/settings/page.tsx:153-157
+  Problem: Version, framework, region are hardcoded strings.
+  Impact: Shows outdated info.
+  Fix: Fetch from platform_info table or env vars.
+
+H15. ADMIN ACTIVITY PAGE — NO FIRM_ID FILTER
+  File: admin/activity/page.tsx:74-78
+  Problem: No firm_id filter on activity_logs query.
+  Impact: Admin sees activities from ALL firms.
+  Fix: Add .eq("firm_id", firmId).
+
+H16. EMPTY empIds CRASHES OR() QUERY
+  File: admin/performance/page.tsx:78
+  Problem: .or("assigned_to.in.(),created_by.in.()") with empty array
+  may cause PostgREST error.
+  Impact: Performance page shows error with no employees.
+  Fix: Check if empIds is empty before querying.
+
+H17. SUBSCRIPTIONS ROUTE — MISSING DELETED_AT FILTER
+  File: api/subscriptions/route.ts
+  Problem: No .is("deleted_at", null) on subscription queries.
+  Impact: Deleted subscriptions may appear.
+  Fix: Add deleted_at filter.
+
+H18. SUPER ADMIN SUBSCRIPTIONS — NO ERROR CHECK ON UPDATE
+  File: super-admin/subscriptions/page.tsx:56
+  Problem: Shows "Status updated" even if update failed.
+  Impact: Admin thinks status changed when it didn't.
+  Fix: Check error after update.
+
+================================================================================
+MEDIUM BUGS
+================================================================================
+
+M1. ANALYTICS — MISSING deleted_at FILTER
+  File: api/analytics/route.ts:293,302
+  Problem: adjournment_rate and hearings_per_case include deleted cases.
+  Impact: Statistics inflated by ghost cases.
+  Fix: Add .is("deleted_at", null).
+
+M2. DOCUMENT DOWNLOAD — ACCESS CHECK IGNORES FIRM
+  File: documents/[id]/download/route.ts:43-56
+  Problem: Access checked by uploader/case assignee, not firm membership.
+  Impact: Cross-firm access through case assignments.
+  Fix: Add firm_id check.
+
+M3. HTML INJECTION IN CLIENT PORTAL EMAIL
+  File: client-portal/route.ts:65
+  Problem: firmName and client.full_name injected into HTML without escaping.
+  Impact: Email XSS in invitation emails.
+  Fix: Escape with escapeHtml().
+
+M4. DAILY DIGEST — HEARINGS QUERY USES WRONG COLUMN
+  File: daily-digest/route.ts:50-53
+  Problem: queries hearings.firm_id but hearings POST doesn't set it (C10).
+  Impact: Daily digest shows 0 hearings.
+  Fix: Fix C10 first, or query via cases table.
+
+M5. DOUBLE PROFILE FETCH IN DOCUMENTS
+  File: documents/route.ts:99,166
+  Problem: Profile fetched twice for same user.
+  Impact: Extra DB round trip on every upload.
+  Fix: Reuse first fetch.
+
+M6. COUPONS APPLY — plan.price MAY NOT EXIST
+  File: coupons/apply/route.ts:85
+  Problem: plan.price from DB may not match the column name.
+  Impact: Wrong discount calculation.
+  Fix: Use PLANS[plan.slug].monthly.price.
+
+M7. TEAM REDEEM CODE — NO AUTH ON GET ENDPOINT
+  File: team/redeem-code/route.ts:114-142
+  Problem: GET endpoint doesn't check authentication.
+  Impact: Unauthenticated users can probe invite codes.
+  Fix: Add getUser() check.
+
+M8. SUPER ADMIN CASES — WRONG FOREIGN KEY
+  File: actions/super-admin.ts:84
+  Problem: Uses profiles!cases_user_id_fkey but cases has created_by.
+  Impact: Profile join returns null.
+  Fix: Use cases_created_by_fkey.
+
+M9. SUPER ADMIN REVENUE — WRONG FOREIGN KEY
+  File: actions/super-admin.ts:114
+  Problem: Uses payments_user_id_fkey but payments has received_by.
+  Impact: Profile join fails.
+  Fix: Use payments_received_by_fkey.
+
+M10. SUPER ADMIN DOCUMENTS — WRONG FOREIGN KEY
+  File: actions/super-admin.ts:124
+  Problem: Uses documents_user_id_fkey but documents has uploaded_by.
+  Impact: Profile join fails.
+  Fix: Use documents_uploaded_by_fkey.
+
+M11. SUBSCRIPTION LIMITS — TRIALING STATUS MISSED
+  File: lib/subscription-limits.ts:34
+  Problem: .eq("status", "active") misses "trialing" subscriptions.
+  Impact: Trial users get free plan limits.
+  Fix: Change to .in("status", ["active", "trialing"]).
+
+M12. RATE LIMITER — MEMORY LEAK
+  File: lib/rate-limit.ts:17-22
+  Problem: setInterval for cleanup never clears in serverless.
+  Impact: Memory leak.
+  Fix: Use lazy cleanup on access.
+
+M13. RATE LIMITER — RACE CONDITION
+  File: lib/rate-limit.ts:40-73
+  Problem: Non-atomic delete → count → insert allows bypass.
+  Impact: Rate limiting bypassable with concurrent requests.
+  Fix: Use atomic query or database function.
+
+M14. WHATSAPP — Buffer IN EDGE RUNTIME
+  File: lib/whatsapp.ts:29
+  Problem: Buffer.from() not available in Edge Runtime.
+  Impact: Crashes in edge functions.
+  Fix: Use btoa().
+
+M15. RAZORPAY — Buffer IN EDGE RUNTIME
+  File: lib/payments/razorpay.ts:46,86
+  Problem: Same Buffer issue.
+  Impact: Crashes in edge functions.
+  Fix: Use btoa().
+
+M16. ORISSA HC STATE CODE MISMATCH
+  File: lib/india/courts.ts:26
+  Problem: Uses "OR" but Odisha code is "OD".
+  Impact: getCourtsByState("OD") won't return Orissa HC.
+  Fix: Change to "OD".
+
+M17. TDS THRESHOLD WRONG
+  File: lib/india/billing.ts:133-154
+  Problem: Uses ₹50,000 threshold for individuals, should be ₹30,000.
+  Impact: TDS not deducted on ₹30k-₹49k payments (compliance violation).
+  Fix: Change to 30000.
+
+M18. SUBSCRIPTION LIMITS — max_ai_queries IGNORED
+  File: lib/subscription-limits.ts:46
+  Problem: Always uses DEFAULT_PLAN.max_ai_queries.
+  Impact: All plans get 5 AI queries regardless of config.
+  Fix: Use plan.max_ai_queries ?? DEFAULT_PLAN.max_ai_queries.
+
+M19. LOGIN — ALWAYS REDIRECTS TO /dashboard
+  File: login/page.tsx:40
+  Problem: Super admins, owners, partners all go to /dashboard.
+  Impact: Poor UX, manual navigation needed.
+  Fix: Fetch role after login, redirect to appropriate panel.
+
+M20. RESET PASSWORD — SAME REDIRECT ISSUE
+  File: reset-password/page.tsx:90
+  Problem: Same as M19.
+  Fix: Same as M19.
+
+================================================================================
+LOW BUGS
+================================================================================
+
+L1. SUPER ADMIN USERS — N+1 QUERY
+  File: super-admin/users/page.tsx:52-68
+  Problem: 5 queries per user. With 100 users = 500 queries.
+  Impact: Slow page load.
+  Fix: Use batch queries or RPC.
+
+L2. SUPER ADMIN REVENUE — ALL PAYMENTS IN MEMORY
+  File: super-admin/page.tsx:54
+  Problem: Fetches ALL payment records to sum them.
+  Impact: Memory exhaustion with many payments.
+  Fix: Use database aggregate.
+
+L3. ADMIN PERFORMANCE — N+1 QUERIES
+  File: admin/performance/page.tsx:102-138
+  Problem: 4 queries per employee.
+  Impact: Slow for larger teams.
+  Fix: Batch queries.
+
+L4. CSS VARIABLE MISMATCH — SIGNUP
+  File: signup/page.tsx:186
+  Problem: Uses --text-accent instead of --accent.
+  Impact: Link color may be invisible.
+  Fix: Change to --accent.
+
+L5. COURTS SC/RECENT — RETURNS 200 WITH ERROR
+  File: api/courts/sc/recent/route.ts:54
+  Problem: Error returned with status 200.
+  Impact: Client won't know it's an error.
+  Fix: Use status 500.
+
+L6. HEARINGS ROUTE — LEAKS SUPABASE ERROR
+  File: api/hearings/route.ts:35
+  Problem: Returns raw error.message to client.
+  Impact: Internal DB details exposed.
+  Fix: Use generic message.
+
+L7. DUPLICATE LEGAL_DOCUMENT_TYPES EXPORT
+  Files: lib/ai/drafting.ts:4 AND lib/ai/drafting-constants.ts:1
+  Problem: Identical constants exported from two files.
+  Impact: Dead code, maintenance drift.
+  Fix: Remove from drafting.ts, import from drafting-constants.ts.
+
+L8. FINANCIAL YEAR — DEAD IMPORTS
+  File: lib/india/financial-year.ts:1
+  Problem: Imports unused date-fns functions.
+  Impact: Tree-shaking inefficiency.
+  Fix: Remove unused imports.
+
+================================================================================
+FIXES APPLIED IN THIS SESSION
+================================================================================
+
+The following bugs were already fixed before this audit:
+
+1. cases/[id]/page.tsx:137 — Duplicate const profile variable (SyntaxError)
+2. cases/[id]/edit/page.tsx:68 — Added firm_id filter on clients query
+3. timesheets/new/page.tsx:25 — Added firm_id filter on cases query
+4. tasks/new/page.tsx:29 — Added firm_id filter on cases/clients/employees
+5. dashboard/page.tsx:459 — Fixed "Add Employee" link from /team to /settings
+6. timesheets/page.tsx:61 — Changed .single() to .maybeSingle() for timers
+7. expenses/new/page.tsx — Changed to use API route instead of direct insert
+8. quotations/new/page.tsx — Fixed dropdown data format and client filtering
+9. All 28 form pages — Added missing firm_id/user_id to direct Supabase inserts
+10. All super-admin pages — Switched to service-role client
+11. All admin pages — Added firm_id scoping
+
+================================================================================
+RECOMMENDED PRIORITY ORDER FOR FIXES
+================================================================================
+
+IMMEDIATE (before production):
+1. C1 — Move service-role to API routes (security)
+2. C2 — Fix admin pages getUser (completely broken)
+3. C3, C4 — Add firm_id to documents/quotations (data leak)
+4. C5 — Fix storage limit check (abuse)
+5. C6, C7 — Fix cron jobs (broken automation)
+6. H2 — Fix infinite re-render loops (browser freeze)
+
+NEXT SPRINT:
+7. H1, H9 — Fix solo user task flows
+8. H3, H4 — Fix broken navigation links
+9. H5 — Fix JSON.parse crash
+10. H6 — Fix client portal messaging
+11. H10, H11 — Fix null crashes
+12. M11 — Fix trial subscription limits
+
+LATER:
+13. M19, M20 — Fix login redirects
+14. M12, M13 — Fix rate limiter
+15. L1, L2, L3 — Fix performance issues
+16. All remaining medium/low bugs
+
+================================================================================
+END OF REPORT
+================================================================================

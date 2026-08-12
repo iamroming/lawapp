@@ -158,6 +158,6 @@ test.describe('P0/P1 Fix - Auth Flows', () => {
     await screenshot(page, '43-landing-page');
 
     const pageContent = await page.textContent('body');
-    expect(pageContent).toContain('LawXP');
+    expect(pageContent).toContain('CaseFiles');
   });
 });

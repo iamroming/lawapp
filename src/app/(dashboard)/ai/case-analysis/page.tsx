@@ -13,8 +13,14 @@ import {
   Lightbulb,
   XCircle,
   TrendingUp,
+  Copy,
+  Download,
+  Lock,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import jsPDF from "jspdf";
+import { useAiUsage } from "@/hooks/use-ai-usage";
+import Link from "next/link";
 
 interface Precedent {
   id: string;
@@ -67,6 +73,7 @@ export default function AICaseAnalysisPage() {
   const [caseType, setCaseType] = useState("civil");
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const { usage, isAtLimit, isUnlimited, refreshUsage } = useAiUsage();
 
   useEffect(() => {
     fetch("/api/cases")
@@ -130,6 +137,7 @@ export default function AICaseAnalysisPage() {
 
       setResult(data.data);
       toast.success("Analysis complete!");
+      refreshUsage();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to analyze case");
     } finally {
@@ -147,6 +155,190 @@ export default function AICaseAnalysisPage() {
       case "critical": return "bg-red-200 text-red-900";
       default: return "bg-[var(--border)] text-[var(--text-primary)]";
     }
+  };
+
+  const copyToClipboard = () => {
+    if (!result) return;
+    const lines = [
+      `CASE ANALYSIS REPORT`,
+      `Generated: ${new Date().toLocaleDateString("en-IN")}`,
+      ``,
+      `Case: ${result.caseTitle}`,
+      `Summary: ${result.summary}`,
+      ``,
+      `STRENGTH: ${result.strength}% (${getStrengthLabel(result.strength)})`,
+      `RISK LEVEL: ${result.riskLevel}`,
+      `ESTIMATED DURATION: ${result.estimatedDuration}`,
+      `POTENTIAL OUTCOME: ${result.potentialOutcome}`,
+      ``,
+      `KEY ISSUES`,
+      ...result.keyIssues.map((issue, i) => `  ${i + 1}. ${issue}`),
+      ``,
+      `RECOMMENDED STRATEGIES`,
+      ...result.suggestedStrategies.map((s, i) => [
+        `  ${i + 1}. ${s.title} (${s.probability}% success)`,
+        `     ${s.description}`,
+        s.estimatedCost ? `     Est. Cost: ${s.estimatedCost}` : "",
+        s.benefits.length > 0 ? `     Benefits: ${s.benefits.join(", ")}` : "",
+      ].filter(Boolean).join("\n")),
+      ``,
+      `NEXT STEPS`,
+      ...result.nextSteps.map((step, i) => `  ${i + 1}. ${step}`),
+      ``,
+      `RELEVANT PRECEDENTS`,
+      ...result.relevantPrecedents.map((p, i) => [
+        `  ${i + 1}. ${p.caseName}`,
+        `     ${p.citation} - ${p.court} (${p.year})`,
+        `     ${p.summary}`,
+      ].join("\n")),
+    ];
+    navigator.clipboard.writeText(lines.join("\n"));
+    toast.success("Analysis copied to clipboard!");
+  };
+
+  const exportPDF = () => {
+    if (!result) return;
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 15;
+
+    // Header
+    doc.setFillColor(79, 70, 229);
+    doc.rect(0, 0, pageWidth, 30, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("AI Case Analysis Report", 15, 15);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Generated: ${new Date().toLocaleDateString("en-IN")} | CaseFiles`, 15, 23);
+
+    y = 40;
+    doc.setTextColor(0, 0, 0);
+
+    // Case title
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text(result.caseTitle, 15, y);
+    y += 8;
+
+    // Summary
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(80, 80, 80);
+    const summaryLines = doc.splitTextToSize(result.summary, pageWidth - 30);
+    doc.text(summaryLines, 15, y);
+    y += summaryLines.length * 5 + 6;
+
+    // Stats
+    doc.setFillColor(245, 245, 245);
+    doc.rect(15, y - 3, pageWidth - 30, 12, "F");
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Strength: ${result.strength}% (${getStrengthLabel(result.strength)})`, 20, y + 3);
+    doc.text(`Risk: ${result.riskLevel}`, 80, y + 3);
+    doc.text(`Duration: ${result.estimatedDuration}`, 120, y + 3);
+    y += 18;
+
+    // Key Issues
+    if (result.keyIssues.length > 0) {
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(200, 100, 0);
+      doc.text("KEY ISSUES", 15, y);
+      y += 6;
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(60, 60, 60);
+      for (const issue of result.keyIssues) {
+        const lines = doc.splitTextToSize(`• ${issue}`, pageWidth - 35);
+        doc.text(lines, 20, y);
+        y += lines.length * 4 + 2;
+      }
+      y += 4;
+    }
+
+    // Strategies
+    if (result.suggestedStrategies.length > 0) {
+      if (y > 250) { doc.addPage(); y = 20; }
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(200, 150, 0);
+      doc.text("RECOMMENDED STRATEGIES", 15, y);
+      y += 6;
+      for (const s of result.suggestedStrategies) {
+        if (y > 260) { doc.addPage(); y = 20; }
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0, 0, 0);
+        doc.text(`${s.title} (${s.probability}% success)`, 20, y);
+        y += 5;
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(80, 80, 80);
+        const descLines = doc.splitTextToSize(s.description, pageWidth - 40);
+        doc.text(descLines, 20, y);
+        y += descLines.length * 4 + 4;
+      }
+      y += 4;
+    }
+
+    // Next Steps
+    if (result.nextSteps.length > 0) {
+      if (y > 250) { doc.addPage(); y = 20; }
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(79, 70, 229);
+      doc.text("NEXT STEPS", 15, y);
+      y += 6;
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(60, 60, 60);
+      for (let i = 0; i < result.nextSteps.length; i++) {
+        const lines = doc.splitTextToSize(`${i + 1}. ${result.nextSteps[i]}`, pageWidth - 40);
+        doc.text(lines, 20, y);
+        y += lines.length * 4 + 2;
+      }
+      y += 4;
+    }
+
+    // Precedents
+    if (result.relevantPrecedents.length > 0) {
+      if (y > 240) { doc.addPage(); y = 20; }
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(128, 0, 128);
+      doc.text("RELEVANT PRECEDENTS", 15, y);
+      y += 6;
+      for (const p of result.relevantPrecedents) {
+        if (y > 260) { doc.addPage(); y = 20; }
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0, 0, 0);
+        doc.text(p.caseName, 20, y);
+        y += 4;
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100, 100, 100);
+        doc.text(`${p.citation} - ${p.court} (${p.year})`, 20, y);
+        y += 4;
+        const sumLines = doc.splitTextToSize(p.summary, pageWidth - 40);
+        doc.text(sumLines, 20, y);
+        y += sumLines.length * 4 + 4;
+      }
+    }
+
+    // Footer
+    const totalPages = doc.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(7);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`CaseFiles AI Analysis | Page ${i}/${totalPages}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 8, { align: "center" });
+    }
+
+    doc.save(`case-analysis-${result.caseTitle.replace(/[^a-zA-Z0-9]/g, "-").substring(0, 30)}-${new Date().toISOString().slice(0, 10)}.pdf`);
+    toast.success("PDF downloaded!");
   };
 
   return (
@@ -209,11 +401,16 @@ export default function AICaseAnalysisPage() {
               rows={6}
             />
           </div>
-          <Button onClick={handleAnalyze} disabled={analyzing} className="w-full">
+          <Button onClick={handleAnalyze} disabled={analyzing || isAtLimit} className="w-full">
             {analyzing ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Analyzing Case...
+              </>
+            ) : isAtLimit ? (
+              <>
+                <Lock className="h-4 w-4 mr-2" />
+                Limit Reached
               </>
             ) : (
               <>
@@ -222,6 +419,18 @@ export default function AICaseAnalysisPage() {
               </>
             )}
           </Button>
+          {usage && !isUnlimited && (
+            <p className={`text-xs mt-1 ${isAtLimit ? "text-red-600" : "text-[var(--text-secondary)]"}`}>
+              {usage.used}/{usage.limit} queries used today
+              {isAtLimit && (
+                usage.isOwnerOrPartner ? (
+                  <Link href="/subscription" className="ml-2 underline font-medium">Upgrade</Link>
+                ) : (
+                  <span className="ml-2">Contact owner to upgrade</span>
+                )
+              )}
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -382,6 +591,18 @@ export default function AICaseAnalysisPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Export Actions */}
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 border border-gray-200">
+            <Button variant="outline" onClick={copyToClipboard} className="gap-2">
+              <Copy className="h-4 w-4" />
+              Copy Analysis
+            </Button>
+            <Button variant="outline" onClick={exportPDF} className="gap-2">
+              <Download className="h-4 w-4" />
+              Export PDF
+            </Button>
+          </div>
         </div>
       )}
     </div>

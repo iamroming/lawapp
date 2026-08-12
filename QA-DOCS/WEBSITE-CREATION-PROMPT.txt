@@ -1,0 +1,261 @@
+======================================================================
+  WEBSITE CREATION PROMPT — CASEFILES LAW PRACTICE MANAGEMENT SAAS
+======================================================================
+
+Use this prompt with any AI website builder or developer to recreate
+the CaseFiles application.
+
+======================================================================
+PROMPT START
+======================================================================
+
+Build a mobile-first, beautiful UI law practice management SaaS
+called "CaseFiles" for Indian lawyers and law firms.
+
+TECH STACK:
+- Next.js 16 (App Router, Turbopack)
+- TypeScript
+- Tailwind CSS v4
+- Supabase (PostgreSQL + Auth)
+- Razorpay (payments)
+- Cloudinary (file storage)
+- OpenAI API (AI features)
+
+DESIGN:
+- Light theme only (no dark mode)
+- Clean, modern SaaS aesthetic
+- Mobile-first responsive design
+- Sidebar navigation (collapsible on mobile)
+- Bottom navigation bar on mobile
+- Gradient accents (indigo/purple theme)
+- Card-based layouts
+- Smooth transitions and animations
+
+CORE MODULES (16 main features):
+
+1. DASHBOARD
+   - Welcome banner with gradient
+   - Stats cards: active cases, pending hearings, revenue, clients
+   - Quick actions: new case, new client, new invoice
+   - Upcoming hearings timeline
+   - Financial summary (collected vs outstanding)
+   - Recent cases table
+
+2. CASES
+   - List view with search, filter, sort
+   - Auto-generated case numbers (CASE-YYYYMMDD-XXXX)
+   - Status: pending, active, in-progress, under-trial, won, lost, settled, closed
+   - Priority: low, medium, high, urgent
+   - Team assignment with roles and profit sharing
+   - Linked hearings, documents, invoices, tasks
+   - Similar case search
+
+3. CLIENTS
+   - Client database with contact details
+   - ID proof fields: Aadhaar, PAN, Passport, Voter ID
+   - Company/GST info
+   - Client tags (color-coded)
+   - Communication history (calls, emails, WhatsApp, meetings, notes)
+   - Feedback/ratings (1-5 stars)
+   - Conflict-of-interest checking
+
+4. CALENDAR
+   - AffiniPay-style calendar design
+   - Left sidebar: upcoming hearings list
+   - Main area: monthly calendar grid with event dots
+   - Hearing scheduling: date, time, court, judge, courtroom, purpose
+   - Auto-reminders at 7, 3, 1 day before
+   - Export: PDF, Excel, ICS (Google Calendar)
+
+5. COURT TRACKING
+   - Tabbed interface: eCourts | District Court | High Court | Supreme Court
+   - CNR number tracking with eCourts API
+   - District court case lookup by state/district/court
+   - High court cause list and case status
+   - Supreme Court recent judgments
+   - Case status change detection with notifications
+
+6. DOCUMENTS
+   - File upload to Cloudinary
+   - Categories: petition, affidavit, evidence, judgment, agreement, correspondence
+   - Confidential flagging
+   - Storage quota per subscription plan
+   - Document templates (Vakalatnama, Legal Notice, Affidavit in Hindi/English)
+   - Orphaned file cleanup
+
+7. BILLING & INVOICES
+   - Invoice creation with line items
+   - GST calculation (CGST/SGST/IGST)
+   - HSN codes, place of supply, reverse charge
+   - Invoice PDF generation with firm branding
+   - Payment recording (cash, bank transfer, UPI, cheque, card)
+   - Outstanding tracking
+   - Debt collection workflow (reminder → final notice → legal notice → recovery)
+   - Payment links via Razorpay
+
+8. QUOTATIONS
+   - Fee quotation/estimate creation
+   - Line items with tax and discount
+   - Status: draft, sent, accepted, rejected, expired
+   - Share via WhatsApp, email, PDF
+
+9. EXPENSES
+   - Categories: court fees, travel, filing, notary, stamp duty, postal
+   - Billable flagging
+   - Link to cases/clients/invoices
+   - Receipt upload
+   - Expense reports
+
+10. TASKS
+    - Priority: low, medium, high, urgent
+    - Status: todo, in_progress, review, done
+    - Due dates, case/client linkage
+    - Team assignment
+
+11. AI TOOLS (4 sub-tools)
+    - Case Analysis: AI-powered strengths, weaknesses, precedents
+    - Document Drafting: AI-assisted legal drafts
+    - AI Chat: Conversational legal assistant
+    - Summarize: Document summarization
+    - Usage limits per subscription plan
+    - Role-based messages (owner sees "Upgrade", employee sees "Contact owner")
+
+12. REPORTS
+    - Case reports (status distribution, resolution rates)
+    - Client reports (activity, engagement)
+    - Revenue reports (collection rates, outstanding)
+    - Financial reports (profit/loss, GST)
+    - Performance reports (team metrics)
+    - Export to PDF and Excel
+
+13. CRM
+    - Consultation booking with recurring slots
+    - Intake form builder with custom fields
+    - Form submission tracking
+    - Client conversion workflow
+
+14. CALCULATORS
+    - Stamp Duty Calculator (state-wise)
+    - Limitation Period Calculator
+    - GST Calculator
+    - Court Fees Calculator
+
+15. CLIENT PORTAL
+    - Separate client-facing portal
+    - Clients view: cases, documents, invoices
+    - Payment via Razorpay
+    - Messaging with lawyer
+    - Invitation-based access
+
+16. SETTINGS
+    - Profile management
+    - Notification preferences (email, SMS, WhatsApp, push)
+    - Invoice template customization
+    - Team management
+
+SUBSCRIPTION PLANS:
+- Free: 3 cases, 1 user, 200MB, 5 AI queries/day
+- Solo (₹299/month): 20 cases, 1 user, 1GB, 50 AI queries
+- Professional (₹799/month): 50 cases, 3 users, 3GB, 200 AI queries
+- Firm (₹1,999/month): 100 cases, 10 users, 7GB, unlimited AI
+- Enterprise (₹4,999/month): 500 cases, 50 users, 20GB, 150 AI queries
+
+COUPON SYSTEM:
+- Super admin creates coupons (percent, fixed, or free access)
+- Usage limits (total and per-user)
+- Billing cycle restriction (monthly, annual, both)
+- Plan restriction (all plans or specific)
+- Validity dates
+- Real-time price discount on subscription page
+
+PAYMENT FLOW:
+- Razorpay integration for subscriptions
+- Coupon validation before payment
+- Free coupons skip Razorpay entirely
+- Payment verification with signature check
+- Subscription activated on successful payment
+
+MULTI-TENANCY:
+- Every table has firm_id column
+- Row-Level Security (RLS) policies
+- Owner/partner see all firm data
+- Employees see only own + assigned data
+- Subscription limits inherited via firm_id
+
+ROLE-BASED ACCESS CONTROL:
+- 9 roles: owner, partner, senior_associate, associate, junior_associate, paralegal, intern, office_admin, super_admin
+- Granular permissions per module
+- Role hierarchy enforcement
+- Sidebar items hidden based on role
+
+ADMIN PANELS:
+- Firm Owner Panel: employees, salary, performance, profit sharing
+- Super Admin Panel: all users, all firms, subscriptions, coupons, revenue, activity logs
+
+INTEGRATIONS:
+- Razorpay (payments)
+- Cloudinary (file storage)
+- OpenAI (AI features)
+- eCourts API (court tracking)
+- Indian Kanoon API (legal research)
+- WhatsApp API (messaging)
+- Email API (notifications)
+
+NOTIFICATIONS:
+- In-app notification center
+- Auto-hearing reminders (7/3/1 day before)
+- Email, SMS, WhatsApp channels
+- Per-category preferences
+- Daily digest
+
+EXPORT:
+- PDF export for cases, clients, calendar, reports
+- Excel export for all data
+- ICS export for calendar (Google Calendar import)
+
+HINDI/ENGLISH:
+- Bilingual support throughout
+- Hindi document templates
+- Hindi notifications
+- Language switcher
+
+MOBILE:
+- Responsive design
+- Bottom navigation bar
+- Touch-friendly interactions
+- Mobile-optimized forms
+
+SECURITY:
+- Supabase Auth with email confirmation
+- CSRF protection
+- Rate limiting
+- Input validation with Zod
+- SQL injection prevention
+- XSS prevention
+
+MARKETING SITE:
+- Homepage with hero, features, pricing, testimonials
+- Features page
+- Pricing page with 4 plans
+- About page
+- Help center
+- Terms of service
+- Privacy policy
+
+DATABASE TABLES (55+):
+- profiles, cases, clients, hearings, documents
+- invoices, payments, expenses, timesheets, tasks
+- notifications, messages, tags, reminders
+- subscription_plans, user_subscriptions
+- coupon_codes, coupon_uses
+- ecourts_cases, ecourts_orders
+- firm_roles, firm_members, permissions
+- And 30+ more...
+
+======================================================================
+PROMPT END
+======================================================================
+
+======================================================================
+                         END OF DOCUMENT
+======================================================================

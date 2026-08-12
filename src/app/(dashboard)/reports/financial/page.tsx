@@ -13,27 +13,34 @@ export default function FinancialAnalyticsPage() {
   const [revenuePerLawyer, setRevenuePerLawyer] = useState<any[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [f, p, e, r, pm] = await Promise.all([
-        fetch("/api/analytics?type=revenue_forecast").then(r => r.json()),
-        fetch("/api/analytics?type=profit_by_case_type").then(r => r.json()),
-        fetch("/api/analytics?type=expense_ratio").then(r => r.json()),
-        fetch("/api/analytics?type=revenue_per_lawyer").then(r => r.json()),
-        fetch("/api/analytics?type=payment_methods").then(r => r.json()),
-      ]);
-      setForecast(f);
-      setProfitByType(p);
-      setExpenseRatio(e);
-      setRevenuePerLawyer(r);
-      setPaymentMethods(pm);
-      setLoading(false);
+      try {
+        const [f, p, e, r, pm] = await Promise.all([
+          fetch("/api/analytics?type=revenue_forecast").then(r => r.json()),
+          fetch("/api/analytics?type=profit_by_case_type").then(r => r.json()),
+          fetch("/api/analytics?type=expense_ratio").then(r => r.json()),
+          fetch("/api/analytics?type=revenue_per_lawyer").then(r => r.json()),
+          fetch("/api/analytics?type=payment_methods").then(r => r.json()),
+        ]);
+        setForecast(f);
+        setProfitByType(p);
+        setExpenseRatio(e);
+        setRevenuePerLawyer(r);
+        setPaymentMethods(pm);
+      } catch {
+        setError("Failed to load analytics");
+      } finally {
+        setLoading(false);
+      }
     };
     fetchAll();
   }, []);
 
   if (loading) return <div className="text-center py-12 text-[var(--text-secondary)]">Loading analytics...</div>;
+  if (error) return <div className="text-center py-12 text-red-500">{error}</div>;
 
   return (
     <div className="space-y-6">

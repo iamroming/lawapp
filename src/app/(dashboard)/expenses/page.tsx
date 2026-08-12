@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { Plus, Wallet, TrendingUp, Filter, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { dbWrite } from "@/lib/db-write";
+import { useUser } from "@/hooks/use-user";
 
 const CATEGORIES = [
   { value: "court_fees", label: "Court Fees" },
@@ -22,6 +24,7 @@ const CATEGORIES = [
 const CATEGORY_MAP = Object.fromEntries(CATEGORIES.map((c) => [c.value, c.label]));
 
 export default function ExpensesPage() {
+  const { user: appUser } = useUser();
   const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -33,17 +36,16 @@ export default function ExpensesPage() {
 
   const fetchExpenses = async () => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setLoading(false); return; }
+    if (!appUser) { setLoading(false); return; }
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("role, firm_id")
-      .eq("id", user.id)
+      .eq("id", appUser?.uuid)
       .single();
 
     const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
-    const firmId = profile?.firm_id || user.id;
+    const firmId = profile?.firm_id || appUser?.uuid;
 
     const params = new URLSearchParams();
     if (categoryFilter !== "all") params.set("category", categoryFilter);
@@ -53,7 +55,7 @@ export default function ExpensesPage() {
     if (isOwner) {
       expensesQuery = expensesQuery.eq("firm_id", firmId);
     } else {
-      expensesQuery = expensesQuery.eq("user_id", user.id);
+      expensesQuery = expensesQuery.eq("user_id", appUser?.uuid);
     }
 
     const [expensesRes, reportsRes] = await Promise.all([
@@ -69,7 +71,7 @@ export default function ExpensesPage() {
 
   const deleteExpense = async (id: string) => {
     if (!confirm("Delete this expense?")) return;
-    await supabase.from("expenses").delete().eq("id", id);
+    await dbWrite("expenses", "delete", undefined, { id });
     fetchExpenses();
   };
 

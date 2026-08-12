@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.id).single();
+  const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.uuid).single();
   const firmId = profile?.firm_id;
 
   const { data, error } = await supabase
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
@@ -53,14 +54,34 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     Object.entries(allowedFields).filter(([, v]) => v !== undefined)
   );
 
-  const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.id).single();
+  const { data: profile } = await supabase.from("profiles").select("firm_id, role").eq("id", user.uuid).single();
   const firmId = profile?.firm_id;
+  const role = profile?.role;
+
+  if (!["owner", "partner", "senior_associate"].includes(role || "")) {
+    return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
+  }
+
+  if (body.client_id) {
+    const { data: client } = await supabase
+      .from("clients")
+      .select("id")
+      .eq("id", body.client_id)
+      .eq("firm_id", firmId || "")
+      .single();
+    if (!client) {
+      return NextResponse.json({ error: "Client not found in your firm" }, { status: 404 });
+    }
+  }
 
   const { data, error } = await supabase.from("cases").update(filteredBody).eq("id", id).eq("firm_id", firmId).select().single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("Failed to update case:", error.message);
+    return NextResponse.json({ error: "Failed to update case" }, { status: 500 });
+  }
 
   await supabase.rpc("log_activity", {
-    p_user_id: user.id,
+    p_user_id: user.uuid,
     p_action: "updated",
     p_entity_type: "case",
     p_entity_id: data.id,
@@ -74,17 +95,25 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.id).single();
+  const { data: profile } = await supabase.from("profiles").select("firm_id, role").eq("id", user.uuid).single();
   const firmId = profile?.firm_id;
+  const role = profile?.role;
+
+  if (!["owner", "partner", "senior_associate"].includes(role || "")) {
+    return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
+  }
 
   const { error } = await supabase.from("cases").update({ deleted_at: new Date().toISOString() }).eq("id", id).eq("firm_id", firmId);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("Failed to delete case:", error.message);
+    return NextResponse.json({ error: "Failed to delete case" }, { status: 500 });
+  }
 
   await supabase.rpc("log_activity", {
-    p_user_id: user.id,
+    p_user_id: user.uuid,
     p_action: "deleted",
     p_entity_type: "case",
     p_entity_id: id,

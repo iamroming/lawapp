@@ -1,5 +1,5 @@
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "";
-const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "LawXP_unsigned";
+const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "CaseFiles_unsigned";
 
 export interface CloudinaryUploadResult {
   public_id: string;
@@ -11,7 +11,7 @@ export interface CloudinaryUploadResult {
 
 export async function uploadToCloudinary(
   file: File,
-  folder: string = "LawXP"
+  folder: string = "CaseFiles"
 ): Promise<CloudinaryUploadResult> {
   const formData = new FormData();
   formData.append("file", file);

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ClipboardList, Plus, Trash2, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import toast from "react-hot-toast";
+import { useUser } from "@/hooks/use-user";
 
 interface IntakeField {
   id: string;
@@ -29,15 +30,16 @@ interface IntakeForm {
 interface Submission {
   id: string;
   form_id: string;
-  submitter_name: string | null;
-  submitter_email: string | null;
-  responses: Record<string, unknown>;
+  client_name: string | null;
+  client_email: string | null;
+  data: Record<string, unknown>;
   status: string;
   created_at: string;
-  intake_forms?: { title: string } | null;
+  intake_forms?: { title: string; user_id: string } | null;
 }
 
 export default function IntakePage() {
+  const { user: appUser } = useUser();
   const [forms, setForms] = useState<IntakeForm[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,25 +59,24 @@ export default function IntakePage() {
   }, []);
 
   async function loadData() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!appUser) return;
 
     const [formsRes, subsRes] = await Promise.all([
       supabase
         .from("intake_forms")
         .select("*")
-        .eq("created_by", user.id)
+        .eq("user_id", appUser?.uuid)
         .order("created_at", { ascending: false }),
       supabase
         .from("intake_submissions")
-        .select("*, intake_forms(title)")
+        .select("*, intake_forms!inner(title, user_id)")
         .order("created_at", { ascending: false }),
     ]);
 
     setForms(formsRes.data || []);
     setSubmissions(
       (subsRes.data || []).filter(
-        (s: any) => s.intake_forms?.created_by === user.id
+        (s: any) => s.intake_forms?.user_id === appUser?.uuid
       )
     );
     setLoading(false);
@@ -357,7 +358,7 @@ export default function IntakePage() {
                     <div className="flex items-center justify-between mb-2">
                       <div>
                         <p className="font-medium">
-                          {sub.submitter_name || "Anonymous"}
+                          {sub.client_name || "Anonymous"}
                         </p>
                         <p className="text-sm text-[var(--text-secondary)]">
                           {sub.intake_forms?.title || "Unknown Form"}
@@ -372,7 +373,7 @@ export default function IntakePage() {
                       </Badge>
                     </div>
                     <div className="text-sm text-[var(--text-secondary)]">
-                      {Object.entries(sub.responses || {}).map(([key, value]) => (
+                      {Object.entries(sub.data || {}).map(([key, value]) => (
                         <p key={key}>
                           <span className="font-medium">{key}:</span>{" "}
                           {String(value)}

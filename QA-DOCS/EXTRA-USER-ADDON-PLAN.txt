@@ -1,0 +1,207 @@
+==========================================================
+   EXTRA USER ADD-ON PLAN - IMPLEMENTATION SPEC
+==========================================================
+
+1. OVERVIEW
+-----------
+Allow firm owners to purchase additional user slots beyond their
+plan's base limit. Each extra user costs Rs 299/month and includes
+a bonus of 10 additional active cases.
+
+This is a Razorpay add-on subscription billed monthly alongside
+the main plan.
+
+
+2. CURRENT PLAN LIMITS
+-----------------------
+  Plan            Base Users    Base Cases    Extra User Price
+  ~~~~~~~~~~~~~~  ~~~~~~~~~~~~  ~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~
+  Free            1             3             N/A (no team)
+  Solo            1             20            Rs 299/mo
+  Professional    3             50            Rs 299/mo
+  Firm            10            200           Rs 299/mo
+  Enterprise      Unlimited     Unlimited     N/A
+
+
+3. NEW ADD-ON PRICING
+----------------------
+Each extra user slot purchased:
+  - Cost: Rs 299 per user per month (billed via Razorpay)
+  - Bonus: +10 active cases added to the firm's limit
+  - Stackable: Buy as many as needed (no upper limit)
+
+Effective limits after add-ons:
+
+  Solo + 1 extra user  -> 2 users, 30 cases (20+10)   -> Rs 598/mo
+  Solo + 2 extra users -> 3 users, 40 cases (20+20)   -> Rs 897/mo
+
+  Professional + 1 extra  -> 4 users, 60 cases (50+10)  -> Rs 1,098/mo
+  Professional + 3 extra  -> 6 users, 80 cases (50+30)  -> Rs 1,696/mo
+
+  Firm + 1 extra  -> 11 users, 210 cases (200+10)  -> Rs 2,298/mo
+  Firm + 5 extra  -> 15 users, 250 cases (200+50)  -> Rs 3,493/mo
+
+All plans now benefit from the +10 cases bonus per extra user.
+
+
+4. DATABASE CHANGES
+-------------------
+
+4a. New table: firm_addons
+  CREATE TABLE public.firm_addons (
+    id            UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    firm_id       UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    addon_type    TEXT NOT NULL DEFAULT 'extra_user'
+                  CHECK (addon_type IN ('extra_user')),
+    quantity      INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
+    razorpay_plan_id TEXT,
+    razorpay_subscription_id TEXT,
+    status        TEXT NOT NULL DEFAULT 'active'
+                  CHECK (status IN ('active', 'cancelled', 'past_due')),
+    amount_per_unit NUMERIC(10, 2) NOT NULL DEFAULT 299,
+    starts_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at    TIMESTAMPTZ,
+    created_at    TIMESTAMPTZ DEFAULT now(),
+    updated_at    TIMESTAMPTZ DEFAULT now()
+  );
+
+  CREATE INDEX idx_firm_addons_firm_id ON public.firm_addons(firm_id);
+
+  RLS: Firm owners can view/manage their own add-ons.
+
+4b. Modify subscription_plans table - add columns:
+    addon_price       NUMERIC(10, 2) DEFAULT 0
+    addon_cases_bonus INTEGER DEFAULT 0
+    max_addons        INTEGER DEFAULT 0
+
+  Update plan rows:
+    Solo:         addon_price=299, addon_cases_bonus=10, max_addons=-1
+    Professional: addon_price=299, addon_cases_bonus=10, max_addons=-1
+    Firm:         addon_price=299, addon_cases_bonus=10, max_addons=-1
+    Free:         addon_price=0,   addon_cases_bonus=0,  max_addons=0
+    Enterprise:   addon_price=0,   addon_cases_bonus=0,  max_addons=-1
+
+
+5. LIMIT CALCULATION CHANGES
+-----------------------------
+Modify getPlanLimits() in src/lib/subscription-limits.ts:
+
+  Current flow:
+    1. Look up subscription -> get base plan limits
+    2. Return base limits
+
+  New flow:
+    1. Look up subscription -> get base plan limits
+    2. Query firm_addons WHERE firm_id=X AND status='active'
+    3. Sum addon quantities -> extraUserCount
+    4. Calculate:
+         effective_max_users = base_max_users + extraUserCount
+         effective_max_cases = base_max_cases + (extraUserCount * bonus)
+                               (only if base_max_cases != -1)
+    5. Return effective limits
+
+  Updated PlanLimits interface:
+    max_cases, max_users, max_storage_mb, max_ai_queries, plan_name
+    extra_users: number          (count of active addons)
+    effective_max_users: number  (base + extra)
+    effective_max_cases: number  (base + extra*bonus)
+
+
+6. API ROUTES
+-------------
+
+6a. POST /api/subscriptions/addons/purchase
+    Body: { addon_type: "extra_user", quantity: number }
+    Auth: Firm owner only
+    Steps:
+      1. Verify user is firm owner
+      2. Verify plan supports addons (max_addons != 0)
+      3. Check addon count < max_addons
+      4. Create Razorpay subscription for the add-on
+      5. Insert row in firm_addons with status='active'
+      6. Return checkout URL
+
+6b. POST /api/subscriptions/addons/cancel
+    Body: { addon_id: UUID }
+    Auth: Firm owner only
+    Steps:
+      1. Verify ownership
+      2. Cancel Razorpay subscription
+      3. Update firm_addons status to 'cancelled'
+      4. Limits take effect immediately (user count re-checked)
+
+6c. GET /api/subscriptions/addons
+    Auth: Firm owner only
+    Returns: List of firm's active and past addons
+
+6d. POST /api/subscriptions/webhook (update)
+    Handle Razorpay events for addon subscriptions:
+      - subscription.activated -> set addon status='active'
+      - subscription.cancelled -> set addon status='cancelled'
+      - subscription.charged -> extend addon expiry
+
+
+7. UI CHANGES
+-------------
+
+7a. Settings > Subscription tab
+    Show current plan limits + addon count:
+      "Your Plan: Solo (Rs 299/mo)
+       Users: 1 base + 2 extra = 3 total
+       Cases: 20 base + 20 bonus = 40 total
+       [Manage Add-ons]"
+
+7b. New component: AddOnManager
+    - Shows current extra user count
+    - "Add Extra User" button (+Rs 299/mo)
+    - Shows monthly cost breakdown
+    - Remove addon button (with confirmation)
+    - Progress bar: users used / effective limit
+
+7c. Team Invite page
+    When user limit reached:
+      Old: "You've reached your limit. Upgrade your plan."
+      New: "You've reached your limit. Add extra users for Rs 299/mo
+            or upgrade your plan."
+            [Add Extra User] [Upgrade Plan]
+
+7d. Pricing page
+    Add to each plan card:
+      "Add extra users: Rs 299/user/mo (+10 cases)"
+
+
+8. FILES TO MODIFY
+------------------
+  outofwork2/supabase/addon-migration.sql        (NEW - DB migration)
+  src/lib/subscription-limits.ts                 (modify getPlanLimits)
+  src/app/api/subscriptions/addons/purchase/route.ts  (NEW)
+  src/app/api/subscriptions/addons/cancel/route.ts    (NEW)
+  src/app/api/subscriptions/addons/route.ts           (NEW)
+  src/app/api/subscriptions/webhook/route.ts          (modify)
+  src/app/(dashboard)/settings/page.tsx               (modify)
+  src/components/settings/addon-manager.tsx            (NEW)
+  src/app/(marketing)/pricing/page.tsx                 (modify)
+  src/app/api/team/invite/route.ts                     (modify error msg)
+
+
+9. RAZORPAY SETUP
+-----------------
+  Create a Razorpay plan for the add-on:
+    Plan ID:   plan_addon_extra_user_299
+    Amount:    Rs 29900 (paise)
+    Period:    monthly
+    Item:      "CaseFiles - Extra User"
+
+  Each addon purchase creates a Razorpay subscription
+  linked to this plan.
+
+
+10. FLOW SUMMARY
+----------------
+  Owner clicks "Add Extra User" in Settings
+    -> Confirm: "Add 1 user for Rs 299/mo? (+10 cases)"
+    -> Razorpay checkout opens
+    -> Payment success
+    -> firm_addons row created
+    -> Limits recalculated automatically
+    -> Owner can now invite the new team member

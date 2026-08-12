@@ -146,7 +146,7 @@ export default function FeaturesPage() {
             <span className="text-indigo-600">Modern Legal Practices</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600">
-            LawXP combines all the tools you need to manage your practice efficiently —
+            CaseFiles combines all the tools you need to manage your practice efficiently —
             from case intake to final billing.
           </p>
         </div>
@@ -205,7 +205,7 @@ export default function FeaturesPage() {
       <section className="bg-indigo-600 py-16 sm:py-20">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            See LawXP in Action
+            See CaseFiles in Action
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-indigo-100">
             Experience all features with a 14-day free trial. No credit card required.

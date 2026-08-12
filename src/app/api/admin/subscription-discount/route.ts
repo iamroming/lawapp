@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
-async function checkSuperAdmin(supabase: any) {
-  const { data: { user } } = await supabase.auth.getUser();
+async function checkSuperAdmin(request: NextRequest, supabase: any) {
+  const user = await verifySessionFromRequest(request);
   if (!user) return { error: "Unauthorized", status: 401 };
-  const { data } = await supabase.from("super_admins").select("id").eq("id", user.id).single();
+  const { data } = await supabase.from("super_admins").select("id").eq("id", user.uuid).single();
   if (!data) return { error: "Forbidden", status: 403 };
   return { user };
 }
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
-  const auth = await checkSuperAdmin(supabase);
+  const auth = await checkSuperAdmin(request, supabase);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const body = await request.json();
@@ -25,9 +26,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "discount_percent must be between 0 and 100" }, { status: 400 });
   }
 
+  if (user_ids.length > 1000) {
+    return NextResponse.json({ error: "Cannot process more than 1000 user IDs at once" }, { status: 400 });
+  }
+
   const updateData: Record<string, unknown> = {
     discount_percent,
-    overridden_by: auth.user.id,
+    overridden_by: auth.user.uuid,
     overridden_at: new Date().toISOString(),
     override_reason: `Bulk discount: ${discount_percent}%`,
   };
@@ -38,12 +43,13 @@ export async function POST(request: NextRequest) {
     .from("user_subscriptions")
     .update(updateData)
     .in("user_id", user_ids)
+    .in("status", ["active", "trialing"])
     .select();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   await supabase.rpc("log_activity", {
-    p_user_id: auth.user.id,
+    p_user_id: auth.user.uuid,
     p_action: "discounted",
     p_entity_type: "subscription",
     p_entity_id: null,

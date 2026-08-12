@@ -89,7 +89,7 @@ export function RazorpayButton({
         key: orderData.keyId,
         amount: orderData.amount,
         currency: orderData.currency,
-        name: "LawXP",
+        name: "CaseFiles",
         description: `Payment for Invoice #${invoiceId}`,
         order_id: orderData.orderId,
         handler: async (response: RazorpayResponse) => {

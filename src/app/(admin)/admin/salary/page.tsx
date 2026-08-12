@@ -20,6 +20,7 @@ import {
   FileDown,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useUser } from "@/hooks/use-user";
 
 interface Employee {
   id: string;
@@ -70,6 +71,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function SalaryDashboard() {
+  const { user: appUser } = useUser();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [payments, setPayments] = useState<SalaryPayment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,13 +89,12 @@ export default function SalaryDashboard() {
 
   const fetchData = async () => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!appUser) return;
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("firm_id, role")
-      .eq("id", user.id)
+      .eq("id", appUser?.uuid)
       .single();
 
     if (!profile?.firm_id) return;

@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { dbWrite } from "@/lib/db-write";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import {
   Circle,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useUser } from "@/hooks/use-user";
 
 interface Conversation {
   clientId: string;
@@ -33,6 +35,7 @@ interface Message {
 }
 
 export default function MessagesPage() {
+  const { user: appUser } = useUser();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -46,8 +49,7 @@ export default function MessagesPage() {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) setCurrentUserId(user.id);
+      if (appUser) setCurrentUserId(appUser.uuid);
       await fetchConversations();
       setLoading(false);
     };
@@ -66,17 +68,16 @@ export default function MessagesPage() {
 
   const fetchConversations = async () => {
     // Get current user's firm members (clients created by this user or all if owner)
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!appUser) return;
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("role, firm_id")
-      .eq("id", user.id)
+      .eq("id", appUser?.uuid)
       .single();
 
     const isOwner = ["owner", "partner", "super_admin"].includes(profile?.role || "");
-    const firmId = profile?.firm_id || user.id;
+    const firmId = profile?.firm_id || appUser?.uuid;
 
     // Get all clients
     let clientsQuery = supabase
@@ -87,7 +88,7 @@ export default function MessagesPage() {
     if (isOwner) {
       clientsQuery = clientsQuery.eq("firm_id", firmId);
     } else {
-      clientsQuery = clientsQuery.eq("created_by", user.id);
+      clientsQuery = clientsQuery.eq("created_by", appUser?.uuid);
     }
 
     const { data: allClients } = await clientsQuery;
@@ -121,7 +122,7 @@ export default function MessagesPage() {
         lastMessage: lastMsg?.content || "No messages yet",
         lastMessageTime: lastMsg?.created_at || new Date().toISOString(),
         unreadCount: clientMessages.filter(
-          (m) => !m.is_read && m.sender_id !== user.id
+          (m) => !m.is_read && m.sender_id !== appUser?.uuid
         ).length,
       });
     }
@@ -150,13 +151,7 @@ export default function MessagesPage() {
 
     setMessages((data || []) as Message[]);
 
-    // Mark as read
-    await supabase
-      .from("messages")
-      .update({ is_read: true })
-      .eq("client_id", clientId)
-      .neq("sender_id", currentUserId)
-      .eq("is_read", false);
+    await dbWrite("messages", "update", { is_read: true }, { client_id: clientId, is_read: false });
   };
 
   const handleSendMessage = async () => {
@@ -164,14 +159,21 @@ export default function MessagesPage() {
 
     setSending(true);
     try {
-      const { error } = await supabase.from("messages").insert({
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("firm_id")
+        .eq("id", currentUserId)
+        .single();
+
+      const { error } = await dbWrite("messages", "insert", {
         client_id: selectedClient,
         sender_id: currentUserId,
         content: newMessage.trim(),
         is_read: false,
+        firm_id: profile?.firm_id || null,
       });
 
-      if (error) throw error;
+      if (error) throw new Error(error);
 
       setNewMessage("");
       fetchMessages(selectedClient);

@@ -23,9 +23,10 @@ export const courtHierarchy: Court[] = [
   { id: "hc_kerala", name: "Kerala High Court", nameHi: "\u0915\u0947\u0930\u0932 \u0909\u091a\u094d\u091a \u0928\u094d\u092f\u093e\u092f\u0932\u092f", level: "high_court", state: "KL" },
   { id: "hc_punjab", name: "Punjab & Haryana High Court", nameHi: "\u092a\u0902\u091c\u093e\u092c \u0914\u0930 \u0939\u0930\u093f\u092f\u093e\u0923\u093e \u0909\u091a\u094d\u091a \u0928\u094d\u092f\u093e\u092f\u0932\u092f", level: "high_court", state: "PB" },
   { id: "hc_bihar", name: "Patna High Court", nameHi: "\u092a\u091f\u0928\u093e \u0909\u091a\u094d\u091a \u0928\u094d\u092f\u093e\u092f\u0932\u092f", level: "high_court", state: "BR" },
-  { id: "hc_odisha", name: "Orissa High Court", nameHi: "\u0913\u0930\u093f\u0936\u093e \u0909\u091a\u094d\u091a \u0928\u094d\u092f\u093e\u092f\u0932\u092f", level: "high_court", state: "OR" },
+  { id: "hc_odisha", name: "Orissa High Court", nameHi: "\u0913\u0930\u093f\u0936\u093e \u0909\u091a\u094d\u091a \u0928\u094d\u092f\u093e\u092f\u0932\u092f", level: "high_court", state: "OD" },
   { id: "hc_jharkhand", name: "Jharkhand High Court", nameHi: "\u091d\u093e\u0930\u0916\u0921 \u0909\u091a\u094d\u091a \u0928\u094d\u092f\u093e\u092f\u0932\u092f", level: "high_court", state: "JH" },
   { id: "hc_assam", name: "Gauhati High Court", nameHi: "\u0917\u0941\u0939\u093e\u091f\u0940 \u0909\u091a\u094d\u091a \u0928\u094d\u092f\u093e\u092f\u0932\u092f", level: "high_court", state: "AS" },
+  { id: "hc_jk", name: "High Court of Jammu and Kashmir and Ladakh", nameHi: "\u091c\u092e\u094d\u092e\u0942 \u0914\u0930 \u0932\u0947\u0939 \u0939\u093e\u0907 \u0915\u094b\u0930\u094d\u091f \u0909\u091a\u094d\u091a \u0928\u094d\u092f\u093e\u092f\u0932\u092f", level: "high_court", state: "JK" },
 
   { id: "district", name: "District Court", nameHi: "\u091c\u093f\u0932\u093e \u0928\u094d\u092f\u093e\u092f\u0932\u092f", level: "district" },
   { id: "sessions", name: "Sessions Court", nameHi: "\u0938\u0947\u0936\u0928 \u0928\u094d\u092f\u093e\u092f\u0932\u092f", level: "sessions" },

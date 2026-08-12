@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 import crypto from "crypto";
 
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "";
@@ -24,15 +25,21 @@ export async function GET(
 ) {
   const { id } = await params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("firm_id")
+    .eq("id", user.uuid)
+    .single();
+  const firmId = profile?.firm_id;
 
   const { data: doc, error } = await supabase
     .from("documents")
     .select("id, file_url, is_confidential, uploaded_by, case_id")
     .eq("id", id)
+    .eq("firm_id", firmId)
     .single();
 
   if (error || !doc) {
@@ -40,15 +47,19 @@ export async function GET(
   }
 
   // Verify user has access (owner or case owner/assignee)
-  const hasAccess = doc.uploaded_by === user.id;
+  const hasAccess = doc.uploaded_by === user.uuid;
   if (!hasAccess && doc.case_id) {
     const { data: caseData } = await supabase
       .from("cases")
-      .select("created_by, assigned_to")
+      .select("created_by, assigned_to, firm_id")
       .eq("id", doc.case_id)
       .single();
 
-    if (!caseData || (caseData.created_by !== user.id && caseData.assigned_to !== user.id)) {
+    if (
+      !caseData ||
+      caseData.firm_id !== firmId ||
+      (caseData.created_by !== user.uuid && caseData.assigned_to !== user.uuid)
+    ) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
   } else if (!hasAccess && !doc.case_id) {

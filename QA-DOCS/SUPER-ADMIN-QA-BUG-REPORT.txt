@@ -1,0 +1,535 @@
+======================================================================
+   SUPER ADMIN QA BUG REPORT — CASEFILES APP
+======================================================================
+Date: August 7, 2026
+Tested As: Platform Super Admin (full access)
+Total Bugs Found: 90+
+Critical: 15 | High: 28 | Medium: 30 | Low: 17+
+
+======================================================================
+CRITICAL BUGS (Security / Data Integrity / Platform-Breaking)
+======================================================================
+
+#1 Razorpay Annual Billing Charges 12x Instead of 1x
+  File: src/app/api/subscriptions/route.ts:136
+  Bug: `total_count: billingCycle === "annual" ? 12 : 6`
+       For annual plans, Razorpay will charge 12 times. A ₹2,999/year
+       plan becomes ₹35,988/year. For monthly, 6 months is acceptable.
+  Impact: MASSIVE overcharging. Every annual subscriber gets charged
+          12x the intended amount. Immediate financial damage.
+
+#2 Coupon Plan Dropdown Sends Slugs Instead of UUIDs
+  File: src/app/(super-admin)/super-admin/coupons/page.tsx:292-298
+  Bug: Plan dropdown values are "solo", "professional", etc. But
+       coupon_codes.plan_id is a UUID column. Sending "solo" into
+       a UUID field will either error or create orphan references.
+  Impact: Coupon plan restriction is completely broken. All coupons
+          created with a plan restriction will fail.
+
+#3 User Detail Page Has WRONG Role Values
+  File: src/app/(super-admin)/super-admin/users/[id]/page.tsx:117
+  Bug: Role Select offers "admin", "lawyer", "paralegal", "staff".
+       Valid roles are: owner, partner, senior_associate, associate,
+       junior_associate, paralegal, intern, office_admin, super_admin.
+       Only "paralegal" overlaps. Setting invalid roles breaks RBAC.
+  Impact: Any role change from this page breaks the user's access
+          control. The app may crash or grant unexpected permissions.
+
+#4 No API Routes for Super Admin Operations
+  File: src/app/(super-admin)/super-admin/* (all pages)
+  Bug: The ENTIRE super admin section uses client-side Supabase
+       queries. There are zero API routes (src/app/api/super-admin/
+       does not exist). All mutations depend entirely on RLS.
+  Impact: If RLS is misconfigured, any authenticated user could
+          perform super admin operations from the browser console.
+
+#5 Document Deletion Bypasses All Security
+  File: src/app/(super-admin)/super-admin/documents/page.tsx:33-38
+  Bug: `supabase.from("documents").delete().eq("id", id)` — hard
+       DELETE with no firm scoping, no audit logging, no confirmation
+       beyond browser confirm(), no soft-delete pattern.
+  Impact: Super admin can permanently delete any firm's documents
+          with no audit trail. Data loss is irreversible.
+
+#6 Platform Settings Mutated Directly From Client
+  File: src/app/(super-admin)/super-admin/settings/page.tsx:35-42
+  Bug: Platform settings (maintenance_mode, allow_signups, etc.)
+       are updated via direct Supabase client writes. No server-side
+       authorization, no audit logging, no rate limiting.
+  Impact: Any authenticated user could enable maintenance mode and
+          lock out ALL users if RLS allows it.
+
+#7 Audit API Only Returns Current User's Logs
+  File: src/app/api/audit/route.ts:16
+  Bug: `.eq("user_id", user.id)` — hardcoded to current user.
+       Super admin sees only their own activity, not platform-wide.
+  Impact: Audit trail is useless for super admins. Cannot investigate
+          security incidents or user actions.
+
+#8 Activity Page Queries Wrong Table Name
+  File: src/app/(super-admin)/super-admin/activity/page.tsx:22
+  Bug: Queries `activity_logs` but audit system uses `audit_logs`.
+       If these are different tables, super admin sees wrong data.
+  Impact: Activity logs may show nothing or wrong data.
+
+#9 Reports byType Uses Wrong Field Name
+  File: src/app/api/reports/route.ts:50
+  Bug: `c.type || "Other"` — but Case type is `case_type`, not `type`.
+       Since `c.type` is always undefined, ALL cases show as "Other".
+  Impact: Case type breakdown report is completely non-functional.
+
+#10 Analytics N+1 Queries Will Timeout
+  File: src/app/api/analytics/route.ts:94-116, 195-206, 292-310
+  Bug: client_ltv, profit_by_case_type, client_retention all make
+       individual queries per client/case. 200 clients = 401 queries.
+  Impact: Analytics API will timeout on any production workload.
+
+#11 Revenue Page Shows Cross-Firm Client Payments
+  File: src/app/(super-admin)/super-admin/revenue/page.tsx:18-21
+  Bug: Queries payments and invoices tables with NO firm_id filter.
+       ALL firms' client payments are visible and intermixed.
+  Impact: Massive cross-firm data leak. Revenue of all firms visible
+          without any filtering capability.
+
+#12 Subscription Webhook Never Sets plan_id
+  File: src/app/api/subscriptions/webhook/route.ts:54-61
+  Bug: subscription.activated updates status and expires_at but
+       never sets plan_id. Subscriptions created with plan_id: null
+       stay null forever.
+  Impact: All plan-gating features break. Users can't access features
+          their plan should include.
+
+#13 Subscription DB Failure Silently Ignored
+  File: src/app/api/subscriptions/route.ts:169-171
+  Bug: If DB insert fails after Razorpay subscription is created,
+       the error is only logged. User sees success but subscription
+       record doesn't exist locally.
+  Impact: Orphaned Razorpay subscriptions with no local record.
+          Webhook will fail to find matching subscription.
+
+#14 eCourts GET Returns All Cases When No firm_id
+  File: src/app/api/ecourts/route.ts:129-137
+  Bug: If user has no firm_id, the query runs without any firm
+       filtering, returning ALL active ecourts cases across firms.
+  Impact: Cross-firm court case data leak.
+
+#15 Revenue Calculation Includes All-Time Payments
+  File: src/app/(super-admin)/super-admin/subscriptions/page.tsx:142
+  Bug: `subscriptions.reduce((sum, s) => sum + (s.amount_paid || 0))`
+       Sums all historical payments including cancelled/expired.
+       Labeled as "Revenue" which is misleading.
+  Impact: Revenue numbers are inflated and inaccurate.
+
+======================================================================
+HIGH BUGS (Functional / Data Integrity)
+======================================================================
+
+#16 User Detail Delete Has No Self-Deletion Guard
+  File: src/app/(super-admin)/super-admin/users/[id]/page.tsx:63-68
+  Bug: Super admin can delete their own account. No check for
+       `params.id === currentUser.id`.
+  Impact: Super admin locks themselves out of the platform.
+
+#17 User Detail Delete Has No Super Admin Protection
+  File: src/app/(super-admin)/super-admin/users/[id]/page.tsx:63-68
+  Bug: No check preventing deletion of other super admins.
+  Impact: Compromised super admin can delete all other super admins.
+
+#18 User Deactivation Has No Confirmation
+  File: src/app/(super-admin)/super-admin/users/page.tsx:81-85
+  Bug: Single-click deactivation with no confirmation dialog.
+       Can accidentally deactivate self or other super admins.
+  Impact: Accidental platform lockout.
+
+#19 Role Change Has No Confirmation
+  File: src/app/(super-admin)/super-admin/users/page.tsx:87-91
+  Bug: Role changes instantly with no confirmation. Can demote
+       self from super_admin to intern with one click.
+  Impact: Accidental privilege loss.
+
+#20 Role Dropdown Grants super_admin to Anyone
+  File: src/app/(super-admin)/super-admin/users/page.tsx:183
+  Bug: The role dropdown includes "super_admin" as an option.
+       Any super admin can promote any user to super admin.
+  Impact: Privilege escalation. Compromised account creates more
+          super admin accounts.
+
+#21 User Delete Only Removes Profile, Not Data
+  File: src/app/(super-admin)/super-admin/users/[id]/page.tsx:63-68
+  Bug: `supabase.from("profiles").delete()` only deletes profile
+       row. Cases, clients, documents, payments remain orphaned.
+  Impact: Orphaned data persists forever.
+
+#22 No Pagination on Users, Cases, Clients, Documents
+  Files: super-admin/users/page.tsx:47, cases/page.tsx:23,
+         clients/page.tsx:24, documents/page.tsx:22
+  Bug: All queries fetch entire tables with no limit.
+  Impact: Browser crashes on large datasets. Performance degrades
+          as platform grows.
+
+#23 N+1 Query on Users Page (501 Queries for 100 Users)
+  File: src/app/(super-admin)/super-admin/users/page.tsx:52-68
+  Bug: For EVERY user, 5 separate Supabase queries are executed.
+       100 users = 501 queries. 1000 users = 5001 queries.
+  Impact: Page takes minutes to load. Hits Supabase rate limits.
+
+#24 No Error Handling on Any Super Admin Fetch
+  Files: super-admin/page.tsx:52-60, users/page.tsx:46-71,
+         cases/page.tsx:22-27, clients/page.tsx:23-28
+  Bug: All fetches have no try/catch. Failed queries show empty
+       data with no error message. Loading spins forever.
+  Impact: Silent failures. Admin sees zero data, thinks platform
+          is empty.
+
+#25 Bulk Subscription Toggle Updates All Historical Rows
+  Files: api/admin/subscription-toggle/route.ts:39-43,
+         api/admin/subscription-discount/route.ts:37-41
+  Bug: No `.in("status", ["active", "trialing"])` filter. Updates
+       ALL subscription records for user_ids including cancelled.
+  Impact: Can resurrect cancelled subscriptions or corrupt history.
+
+#26 Subscription Override Creates Record Without plan_id
+  File: src/app/api/admin/subscription-override/route.ts:46-50
+  Bug: When creating new subscription, plan_id is only set if
+       provided. Without it, subscription has no plan.
+  Impact: Active subscription with no plan breaks feature gates.
+
+#27 Settings Save Has No Rollback on Partial Failure
+  File: src/app/(super-admin)/super-admin/settings/page.tsx:35-42
+  Bug: Settings saved in a for-loop. If 3rd of 10 fails, first 2
+       are committed. User sees "Settings saved!" for partial save.
+  Impact: Inconsistent platform configuration.
+
+#28 No Confirmation for Maintenance Mode
+  File: src/app/(super-admin)/super-admin/settings/page.tsx:100-111
+  Bug: Enabling maintenance mode blocks ALL non-super-admin users.
+       No confirmation dialog or warning.
+  Impact: Accidental click locks out entire user base.
+
+#29 eCourts Sync Double-Fetches From External API
+  File: src/app/api/ecourts/sync/route.ts:49-59
+  Bug: Calls bulkRefreshCases() then re-fetches each case
+       individually. Every case fetched twice. 50 cases = 51 calls.
+  Impact: Double the API calls, double the rate limit usage.
+
+#30 eCourts Sync Has No Firm Scoping
+  Files: api/ecourts/sync/route.ts:23-26
+  Bug: When ecourts_case_id or case_id is provided, no firm check.
+       Any authenticated user can sync any case.
+  Impact: Cross-firm court data manipulation.
+
+#31 No Audit Logging on Any Super Admin Mutation
+  Files: super-admin/users/page.tsx, documents/page.tsx,
+         settings/page.tsx, coupons/page.tsx
+  Bug: Role changes, deactivations, deletions, settings changes
+       are not logged to audit_logs table.
+  Impact: No forensic trail for security investigations.
+
+#32 Invoice Amount Not Verified Against Payment
+  File: src/app/api/payments/razorpay/verify/route.ts:24-80
+  Bug: Payment signature is verified but amount is never checked.
+       User could create ₹1 order and verify against ₹50,000 invoice.
+  Impact: Potential payment bypass for invoice amounts.
+
+#33 Firm ID Fetched Twice in Razorpay Verify
+  File: src/app/api/payments/razorpay/verify/route.ts:38-39, 67-68
+  Bug: profile and firmId declared twice. Second shadows first.
+       First fetch may return null firmId used in invoice update.
+  Impact: Invoice firm_id check may match wrong records.
+
+#34 Webhook Doesn't Log Failed Updates
+  File: src/app/api/subscriptions/webhook/route.ts (all handlers)
+  Bug: All Supabase update calls ignore errors. Webhook returns
+       {received: true} even on failure. Razorpay won't retry.
+  Impact: Permanent state inconsistency on failed updates.
+
+#35 No Idempotency on Webhook Events
+  File: src/app/api/subscriptions/webhook/route.ts
+  Bug: Duplicate Razorpay webhook events are processed again.
+       No event ID tracking or deduplication.
+  Impact: Double-activation, double-cancellation possible.
+
+#36 eCourts Missing firm_id on Insert
+  File: src/app/api/ecourts/route.ts:69-87
+  Bug: ecourts_cases record inserted without firm_id. Court data
+       not scoped to any firm at database level.
+  Impact: Court tracking data not properly isolated between firms.
+
+#37 Bulk Discount Has No user_ids Size Limit
+  Files: api/admin/subscription-toggle/route.ts:20-21,
+         api/admin/subscription-discount/route.ts
+  Bug: Only checks for empty array. Could send 10,000 user IDs.
+  Impact: Potential DoS or excessive database load.
+
+#38 Payment Method Always Hardcoded as "card"
+  File: src/app/api/payments/razorpay/verify/route.ts:46, 74
+  Bug: `payment_method: "card"` regardless of actual Razorpay method.
+  Impact: Payment records show incorrect payment method.
+
+#39 Subscription Override No Validation on Prices/Dates
+  File: src/app/api/admin/subscription-override/route.ts:39-41
+  Bug: Negative custom_price, discount_percent > 100, past
+       expires_at all accepted without validation.
+  Impact: Corrupted subscription data possible.
+
+#40 Missing Status Filter on Bulk Discount
+  File: src/app/api/admin/subscription-discount/route.ts:37-41
+  Bug: Same as #25 — updates all rows per user, not just active.
+  Impact: Discount applied to cancelled/expired subscriptions.
+
+======================================================================
+MEDIUM BUGS (UX / Behavior / Data)
+======================================================================
+
+#41 Cases Filter Missing adjourned/dismissed Statuses
+  File: src/app/(super-admin)/super-admin/cases/page.tsx:49
+  Bug: Filter dropdown has 8 statuses but system defines 10.
+       adjourned and dismissed are missing.
+
+#42 Reports Route Missing firm_id in buildQuery
+  File: src/app/api/reports/route.ts:20-25
+  Bug: Generic query builder only applies date filtering. Each
+       report type must remember to add firm scoping separately.
+
+#43 Analytics No Cross-Firm View for Super Admin
+  Files: api/analytics/route.ts:16, api/reports/route.ts:27-29
+  Bug: All analytics/reports scoped to firmId. Super admin only
+       sees one firm's data, not platform-wide.
+
+#44 Settings Toggle Boolean/String Type Inconsistency
+  File: src/app/(super-admin)/super-admin/settings/page.tsx:106,118
+  Bug: Toggles store booleans, reads parse strings. After first
+       toggle, value type changes between reads and writes.
+
+#45 Settings String Values Double-Wrapped in Quotes
+  File: src/app/(super-admin)/super-admin/settings/page.tsx:80,84
+  Bug: onChange wraps value in `"${e.target.value}"`. Stored as
+       `"My App"` (with quote chars). Fragile round-trip.
+
+#46 Settings No Input Validation on Numeric Fields
+  File: src/app/(super-admin)/super-admin/settings/page.tsx:88,92
+  Bug: default_trial_days and max_upload_size_mb accept any text.
+       Negative numbers, decimals, or non-numeric text accepted.
+
+#47 Subscription Page Supabase in useEffect Causes Re-Fetch Loop
+  File: src/app/(super-admin)/super-admin/revenue/page.tsx:37
+  Bug: `[supabase]` as dependency. If createClient returns new
+       reference, effect fires infinitely.
+
+#48 Super Admin Loading Text Says "Verifying owner access..."
+  File: src/app/(super-admin)/layout.tsx:47
+  Bug: Should say "Verifying super admin access...".
+
+#49 No Re-Verification of Super Admin Status
+  File: src/app/(super-admin)/layout.tsx:15-40
+  Bug: Check runs once on mount. If demoted while page is open,
+       access retained until refresh.
+
+#50 Coupon PUT Doesn't Validate discount_type
+  File: src/app/api/admin/coupons/[id]/route.ts:26
+  Bug: Accepts any string for discount_type without validation.
+       POST validates but PUT does not.
+
+#51 Coupon PUT Allows Changing Code Without Uniqueness Check
+  File: src/app/api/admin/coupons/[id]/route.ts:24
+  Bug: Changing code to existing one causes 500 from unique
+       constraint instead of clean 409.
+
+#52 Coupon Uses No Pagination
+  File: src/app/api/admin/coupons/[id]/uses/route.ts:22-26
+  Bug: Fetches ALL coupon use records with no limit. Popular
+       coupon with thousands of uses causes memory issues.
+
+#53 Activity Logs Hard Limit of 500, No Pagination
+  File: src/app/(super-admin)/super-admin/activity/page.tsx:22
+  Bug: No way to load older entries. On busy platform, 500
+       records could be just a few hours.
+
+#54 Command Center Data Never Auto-Refreshes
+  File: src/app/(super-admin)/super-admin/page.tsx:50-83
+  Bug: No real-time subscription or manual refresh button.
+       Data becomes stale immediately after load.
+
+#55 Command Center Fetches All Payments Into Browser
+  File: src/app/(super-admin)/super-admin/page.tsx:57
+  Bug: `supabase.from("payments").select("amount")` fetches ALL
+       payment records to sum client-side. Should be server-side.
+
+#56 Command Center topLawyers Always Empty
+  File: src/app/(super-admin)/super-admin/page.tsx:77
+  Bug: `topLawyers: []` hardcoded, never populated. Dead code.
+
+#57 Cases Link Navigates to Dashboard Route
+  File: src/app/(super-admin)/super-admin/cases/page.tsx:56
+  Bug: Link goes to `/cases/${id}` (dashboard), losing super
+       admin navigation context.
+
+#58 Clients Creator Join May Fail Silently
+  File: src/app/(super-admin)/super-admin/clients/page.tsx:24
+  Bug: `creator:profiles(full_name)` join requires FK relationship.
+       If not defined, "Added by" never displays.
+
+#59 User Detail Cases Header Shows Fetched Count, Not Total
+  File: src/app/(super-admin)/super-admin/users/[id]/page.tsx:128
+  Bug: Query uses .limit(10) but header shows `Cases ({cases.length})`.
+       If user has 50 cases, shows "Cases (10)".
+
+#60 User Detail subscription.plan Can Be Null
+  File: src/app/(super-admin)/super-admin/users/[id]/page.tsx:34
+  Bug: `.single()` on zero subscriptions returns error. Error
+       silently ignored. plan may be null.
+
+#61 Document Download Exposes Raw file_url
+  File: src/app/(super-admin)/super-admin/documents/page.tsx:82
+  Bug: `<a href={doc.file_url}>` opens URL directly. If signed
+       URL, exposes full storage path. No access proxy.
+
+#62 Dead Code in Analytics adjournment_rate
+  File: src/app/api/analytics/route.ts:262-263
+  Bug: First query fetches hearings for single case, result
+       never used. Wastes a database round-trip.
+
+#63 Analytics dateFilter Helper Defined But Never Used
+  File: src/app/api/analytics/route.ts:19-23
+  Bug: startDate/endDate accepted but ignored for all analytics.
+
+#64 Analytics Leaks Internal Error Messages
+  File: src/app/api/analytics/route.ts:389
+  Bug: `error.message` sent to client. Could expose DB details.
+
+#65 Reports Average Duration Includes Open Cases
+  File: src/app/api/reports/route.ts:65-71
+  Bug: Calculates avg from creation to NOW for ALL cases including
+       active/pending. Inflates the average.
+
+#66 Ecourts No Rate Limiting on External API
+  File: src/app/api/ecourts/route.ts:53
+  Bug: getCaseByCNR hits external API with no throttling. Rapid
+       requests could get IP blocked by eCourts.
+
+#67 Ecourts Sync Notifications Only to One User
+  File: src/app/api/ecourts/sync/route.ts:161-175
+  Bug: Only assigned_to or created_by gets notified. Firm owner
+       doesn't receive eCourts update notifications.
+
+#68 Super Admin Sidebar Hardcoded Colors
+  File: src/components/super-admin-sidebar.tsx:57,64,93-94
+  Bug: Uses bg-white, text-gray-600 instead of CSS variables.
+       Won't respect theme changes.
+
+#69 Subscription Page Hardcoded Plans May Desync
+  File: src/app/(dashboard)/subscription/page.tsx:36-41
+  Bug: Plans array hardcoded. If DB pricing changes, page shows
+       stale data.
+
+#70 Razorpay Script Never Removed on Cancel
+  Files: settings/page.tsx:904, subscription/page.tsx:188
+  Bug: Script tag appended on every click. Never cleaned up.
+
+#71 No Double-Submit Protection on Any Mutation
+  Files: All super admin pages
+  Bug: No loading states, no disabled states during submission.
+       Multiple clicks cause duplicate requests.
+
+#72 All Error Toasts Show Success Unconditionally
+  Files: users/page.tsx:87-91, documents/page.tsx:36
+  Bug: Toast success fires even if mutation fails. User thinks
+       operation succeeded when it didn't.
+
+#73 select("*") Leaks Sensitive Fields
+  Files: users/page.tsx:47, user detail:28
+  Bug: Fetches all profile columns including internal fields
+       into browser memory.
+
+======================================================================
+LOW BUGS (Code Quality / Minor)
+======================================================================
+
+#74 Unused Imports in Super Admin Sidebar
+#75 Hardcoded System Info in Settings
+#76 Settings description Field Never Displayed
+#77 Activity Logs Incomplete Action Color Mapping
+#78 User Detail Save Button Redundant (onClick already saves)
+#79 User Detail toggleActive Stale Closure in Toast
+#80 Super Admin Sidebar Unused Imports
+#81 Client Phone Numbers Not Formatted
+#82 No Empty State Messages on Filtered Results
+#83 Missing useCallback on Fetch Functions
+#84 Inconsistent Error Response Formats
+#85 Webhook subscription.halted/paused Identical Code
+#86 Reports Date Filter Column Mismatch
+#87 Coupon Code Input Allows Special Characters (stripped server-side)
+#88 Risk Score Only Considers "Criminal" Case Type
+#89 No Date Range Filtering on Audit Logs
+#90 Activity Logs Inconsistent Join Handling
+
+======================================================================
+SYSTEMIC ISSUES (Architecture)
+======================================================================
+
+A. Zero API Routes for Super Admin
+   All operations are client-side Supabase. No server-side:
+   - Authorization verification
+   - Audit logging
+   - Input validation
+   - Rate limiting
+   - CSRF protection (beyond middleware)
+
+B. N+1 Query Patterns Everywhere
+   - Users page: 501 queries for 100 users
+   - Analytics: 401 queries for 200 clients
+   - eCourts sync: double-fetching from external API
+
+C. No Pagination on Any Super Admin Page
+   - Users, cases, clients, documents all load entire tables
+   - Will crash browser on large datasets
+
+D. Inconsistent Mutation Patterns
+   - Some use API routes (coupon create, subscription override)
+   - Others use direct Supabase client (user toggle, document delete)
+   - No consistent security model
+
+E. Missing Error Handling
+   - All fetches silently swallow errors
+   - All mutations show success unconditionally
+   - Loading states stuck on failure
+
+======================================================================
+BUILD STATUS
+======================================================================
+
+Build: PASSED (Next.js 16.2.10 Turbopack)
+TypeScript: Compiled successfully (types not validated)
+
+======================================================================
+PRIORITY FIX ORDER
+======================================================================
+
+Phase 1 (IMMEDIATE — Financial/Security):
+  #1 Razorpay 12x overcharging (FIX NOW)
+  #2 Coupon plan_id slugs vs UUIDs
+  #3 User detail wrong roles
+  #5 Document deletion bypasses security
+  #6 Platform settings client-side writes
+
+Phase 2 (This Week — Data Integrity):
+  #4 No API routes for super admin
+  #7 Audit API user scoping
+  #8 Activity wrong table name
+  #9 Reports wrong field name
+  #10 Analytics N+1 queries
+  #12 Webhook never sets plan_id
+
+Phase 3 (Next Sprint — Functionality):
+  #11 Revenue cross-firm data
+  #14 eCourts no firm scoping
+  #16-20 User management guards
+  #22-23 Pagination and N+1
+  #25-26 Bulk operations status filter
+
+Phase 4 (Backlog — UX Polish):
+  #41-90 Medium and low priority items
+
+======================================================================
+                         END OF REPORT
+======================================================================

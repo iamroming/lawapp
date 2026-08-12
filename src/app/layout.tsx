@@ -18,20 +18,17 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
-  ],
+  themeColor: "#ffffff",
 };
 
 export const metadata: Metadata = {
-  title: "LawXP - Legal Practice Management",
+  title: "CaseFiles - Legal Practice Management",
   description:
     "All-in-one practice management software for lawyers and law firms in India. Manage cases, clients, court dates, billing, and documents.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "LawXP",
+    title: "CaseFiles",
   },
 };
 

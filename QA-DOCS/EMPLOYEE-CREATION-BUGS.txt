@@ -1,0 +1,159 @@
+======================================================================
+         EMPLOYEE CREATION — BUG REPORT
+======================================================================
+Date: August 7, 2026
+Tested: Employee invite flow (email + invite code), removal, limits
+
+======================================================================
+BUG #1 (CRITICAL) — Team members list shows ALL users, not just firm
+======================================================================
+File: src/app/(dashboard)/settings/page.tsx:235-239
+
+Current code:
+  const { data: teamData } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, role")
+    .neq("id", user.id)
+    .order("full_name");
+
+Problem: No firm_id filter. Owner sees ALL users in the database,
+not just their firm members. This is a data leak.
+
+Fix: Add .eq("firm_id", firmId) filter.
+
+----------------------------------------------------------------------
+BUG #2 (CRITICAL) — Usage member count is global, not per-firm
+----------------------------------------------------------------------
+File: src/app/(dashboard)/settings/page.tsx:272
+
+Current code:
+  supabase.from("profiles").select("id", { count: "exact", head: true })
+    .eq("is_active", true)
+
+Problem: Counts ALL active users in the system. The member count
+displayed (e.g. "5 / 10") is wrong.
+
+Fix: Add .eq("firm_id", firmId) filter.
+
+----------------------------------------------------------------------
+BUG #3 (HIGH) — Invite code generation always fails (missing email)
+----------------------------------------------------------------------
+File: src/app/(dashboard)/settings/page.tsx:373-376
+
+Current code:
+  body: JSON.stringify({ role_id: inviteCodeRole, expiresInDays: 7 })
+
+Problem: The invite-code API requires `email` field (line 29 of
+invite-code/route.ts), but the settings page doesn't send it.
+Every invite code generation fails with 400 "Email is required".
+
+Fix: Add an email input field in the invite code section, or
+remove the email requirement from the API if codes are generic.
+
+----------------------------------------------------------------------
+BUG #4 (HIGH) — Invite code API uses wrong user limit message
+----------------------------------------------------------------------
+File: src/app/api/team/invite-code/route.ts:62-67
+
+Current code:
+  return NextResponse.json({
+    error: userLimitCheck.message,  // <-- generic message
+    ...
+  }, { status: 403 });
+
+Problem: Doesn't use role-based message like the invite route does.
+Owner gets generic "Upgrade your plan" instead of a clear message.
+
+Fix: Add role check and use role-based message.
+
+----------------------------------------------------------------------
+BUG #5 (MEDIUM) — Role hierarchy check blocks same-level role changes
+----------------------------------------------------------------------
+File: src/app/api/team/invite/route.ts:101
+
+Current code:
+  if (theirLevel <= myLevel && profile?.role !== "super_admin") {
+    return NextResponse.json({ error: "Cannot change role..." });
+  }
+
+Problem: `<=` means a Partner cannot change another Partner's role
+at all — even to demote them. Should be `<` (strictly lower level)
+to allow same-level role changes.
+
+Fix: Change `theirLevel <= myLevel` to `theirLevel < myLevel`.
+
+----------------------------------------------------------------------
+BUG #6 (MEDIUM) — Remove member has no role hierarchy check
+----------------------------------------------------------------------
+File: src/app/api/team/[id]/route.ts
+
+Problem: Any owner or partner can remove any other owner/partner.
+A partner could remove the owner. No hierarchy protection.
+
+Fix: Add role hierarchy check — partner cannot remove owner,
+senior_associate cannot remove partner, etc.
+
+----------------------------------------------------------------------
+BUG #7 (MEDIUM) — Redeem code overwrites existing firm membership
+----------------------------------------------------------------------
+File: src/app/api/team/redeem-code/route.ts:64-79
+
+Problem: If a user already belongs to a firm (firm_id is set),
+redeeming a new code silently overwrites their firm_id. User
+could be moved from Firm A to Firm B without warning.
+
+Fix: Check if user already has a firm_id. If so, return error:
+"You already belong to a firm. Leave your current firm first."
+
+----------------------------------------------------------------------
+BUG #8 (MEDIUM) — Subscription lookup fails for employees
+----------------------------------------------------------------------
+File: src/app/(dashboard)/settings/page.tsx:253-260
+
+Current code:
+  .eq("user_id", user.id)  // <-- employee's ID
+
+Problem: Subscription is stored under the owner's ID (via firm_id).
+When an employee loads settings, subscription query returns nothing.
+Plan shows as null, usage bars don't show, upgrade prompts broken.
+
+Fix: Look up firm_id first, then query subscription with owner's ID:
+  const firmOwner = profile.firm_id || user.id;
+  .eq("user_id", firmOwner)
+
+----------------------------------------------------------------------
+BUG #9 (LOW) — No email/notification when employee is added
+----------------------------------------------------------------------
+File: src/app/api/team/invite/route.ts
+
+Problem: Invite route directly updates profile. No email sent,
+no in-app notification. Employee just silently appears in the team.
+
+Fix: Send email notification or create in-app notification.
+
+----------------------------------------------------------------------
+BUG #10 (LOW) — handleAddMember doesn't refresh team list
+----------------------------------------------------------------------
+File: src/app/(dashboard)/settings/page.tsx:329-356
+
+Problem: After successfully adding a member, the UI shows a toast
+but doesn't refresh the team members list. User must manually
+reload the page to see the new member.
+
+Fix: Call fetchSettings() or add the new member to teamMembers
+state after success.
+
+----------------------------------------------------------------------
+SUMMARY
+----------------------------------------------------------------------
+
+  CRITICAL:  2  (data leak, wrong counts)
+  HIGH:      2  (invite code broken, wrong limit message)
+  MEDIUM:    4  (role hierarchy, firm overwrite, subscription lookup)
+  LOW:       2  (no notification, no UI refresh)
+
+Total: 10 bugs found
+
+======================================================================
+                         END OF BUG REPORT
+======================================================================

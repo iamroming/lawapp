@@ -8,6 +8,7 @@ import { ArrowLeft, Loader2, Receipt } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import { useUser } from "@/hooks/use-user";
 
 interface Client {
   id: string;
@@ -24,6 +25,7 @@ interface Case {
 }
 
 export default function NewInvoicePage() {
+  const { user: appUser } = useUser();
   const router = useRouter();
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
@@ -43,19 +45,26 @@ export default function NewInvoicePage() {
 
   useEffect(() => {
     async function loadData() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!appUser) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("firm_id")
+        .eq("id", appUser?.uuid)
+        .single();
+
+      if (!profile?.firm_id) return;
 
       const [clientsRes, casesRes] = await Promise.all([
-        supabase.from("clients").select("id, full_name, email, phone").is("deleted_at", null),
-        supabase.from("cases").select("id, case_number, title, client_id").is("deleted_at", null),
+        supabase.from("clients").select("id, full_name, email, phone").is("deleted_at", null).eq("firm_id", profile.firm_id),
+        supabase.from("cases").select("id, case_number, title, client_id").is("deleted_at", null).eq("firm_id", profile.firm_id),
       ]);
 
       setClients((clientsRes.data || []) as Client[]);
       setCases((casesRes.data || []) as Case[]);
     }
     loadData();
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     if (form.client_id) {

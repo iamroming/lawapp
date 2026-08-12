@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { dbWrite } from "@/lib/db-write";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +15,7 @@ import { getAvailableActs, getSectionsForAct } from "@/lib/legal/section-mapping
 import { ArrowLeft, Upload, X, FileText, Loader2, HardDrive, Plus } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { useUser } from "@/hooks/use-user";
 
 interface Client {
   id: string;
@@ -50,6 +52,7 @@ function formatBytes(bytes: number): string {
 }
 
 export default function NewCasePage() {
+  const { user: appUser } = useUser();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
@@ -81,18 +84,20 @@ export default function NewCasePage() {
 
   useEffect(() => {
     const fetchClients = async () => {
-      const { data } = await supabase.from("clients").select("id, full_name").order("full_name");
+      if (!appUser) return;
+      const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", appUser?.uuid).single();
+      if (!profile?.firm_id) return;
+      const { data } = await supabase.from("clients").select("id, full_name").eq("firm_id", profile.firm_id).order("full_name");
       setClients(data || []);
     };
     fetchClients();
 
     const fetchStorage = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!appUser) return;
       const { data } = await supabase
         .from("documents")
         .select("file_size")
-        .eq("uploaded_by", user.id)
+        .eq("uploaded_by", appUser?.uuid)
         .is("deleted_at", null);
       if (data) {
         const total = data.reduce((sum: number, doc: { file_size: number | null }) => sum + (doc.file_size || 0), 0);
@@ -150,6 +155,12 @@ export default function NewCasePage() {
       return;
     }
 
+    if (formData.advance_amount && parseFloat(formData.advance_amount) < 0) {
+      toast.error("Advance amount cannot be negative");
+      setLoading(false);
+      return;
+    }
+
     if (formData.advance_amount && formData.total_fee && parseFloat(formData.advance_amount) > parseFloat(formData.total_fee)) {
       toast.error("Advance amount cannot exceed total fee");
       setLoading(false);
@@ -165,10 +176,26 @@ export default function NewCasePage() {
       }
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
+    if (!appUser) { toast.error("You must be logged in to continue"); setLoading(false); return; }
 
-    const { data: caseData, error } = await supabase.from("cases").insert({
+    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", appUser?.uuid).single();
+
+    // Pre-flight case limit check
+    try {
+      const checkRes = await fetch("/api/cases/limit-check");
+      const check = await checkRes.json();
+      if (!check.allowed) {
+        toast.error(check.message || "Case limit reached. Upgrade your plan to add more cases.");
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // If check fails, proceed (Supabase insert will go through regardless)
+    }
+
+    const { data: caseData, error } = await dbWrite("cases", "insert", {
       case_number: generateCaseNumber(),
+      firm_id: profile?.firm_id,
       title: formData.title,
       description: formData.description,
       case_type: formData.case_type,
@@ -184,27 +211,45 @@ export default function NewCasePage() {
       next_payment_date: formData.next_payment_date || null,
       amount_received: formData.advance_amount ? parseFloat(formData.advance_amount) : 0,
       status: "pending",
-      created_by: user?.id,
+      created_by: appUser?.uuid,
       acts: selectedActs.length > 0 ? selectedActs : null,
       sections: selectedSections.length > 0 ? selectedSections : null,
       clauses: clauses.length > 0 ? clauses : null,
-    }).select("id")
-    .single();
+    });
 
     if (error) {
-      toast.error(error.message);
+      toast.error(error);
       setLoading(false);
       return;
     }
 
     if (pendingFiles.length > 0 && caseData) {
+      // Pre-flight storage check
+      try {
+        const totalPendingBytes = pendingFiles.reduce((sum, f) => sum + f.file.size, 0);
+        const checkRes = await fetch("/api/documents/storage-check");
+        const check = await checkRes.json();
+        if (!check.allowed) {
+          toast.error(`Storage limit reached (${check.usedMB} MB of ${check.limit} MB). Upgrade your plan to upload more files.`);
+          setLoading(false);
+          return;
+        }
+        if (check.limit > 0 && (check.used + totalPendingBytes) >= check.limit * 1024 * 1024) {
+          toast.error(`These files will exceed your storage limit of ${check.limit} MB. Remove some files or upgrade your plan.`);
+          setLoading(false);
+          return;
+        }
+      } catch {
+        // If check fails, proceed (API route has its own enforcement)
+      }
+
       let uploadErrors = 0;
       for (let i = 0; i < pendingFiles.length; i++) {
         const pf = pendingFiles[i];
         setPendingFiles((prev) => prev.map((f, idx) => idx === i ? { ...f, uploading: true } : f));
 
         try {
-          const result = await uploadToCloudinary(pf.file, "LawXP/documents");
+          const result = await uploadToCloudinary(pf.file, "CaseFiles/documents");
           const docRes = await fetch("/api/documents", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -234,8 +279,8 @@ export default function NewCasePage() {
 
       if (uploadErrors > 0) {
         toast.error(`${uploadErrors} of ${pendingFiles.length} documents failed to upload`);
-      } else if (pendingFiles.length > 0) {
-        toast.success(`${pendingFiles.length} document(s) uploaded successfully`);
+        setLoading(false);
+        return;
       }
     }
 

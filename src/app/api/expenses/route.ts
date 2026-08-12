@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
 // GET — list expenses for the current user/firm
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
@@ -28,13 +29,13 @@ export async function GET(request: NextRequest) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("firm_id, role")
-      .eq("id", user.id)
+      .eq("id", user.uuid)
       .single();
 
     if (profile?.firm_id && ["owner", "partner"].includes(profile.role || "")) {
       query = query.eq("firm_id", profile.firm_id);
     } else {
-      query = query.eq("user_id", user.id);
+      query = query.eq("user_id", user.uuid);
     }
 
     if (caseId) query = query.eq("case_id", caseId);
@@ -57,31 +58,63 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
     const { case_id, client_id, title, description, amount, category, is_billable, receipt_url, expense_date } = body;
 
-    if (!title || amount === undefined || amount === null) {
-      return NextResponse.json({ error: "Title and amount are required" }, { status: 400 });
+    if (!title || typeof title !== "string" || title.trim().length === 0) {
+      return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
 
-    if (amount < 0) {
-      return NextResponse.json({ error: "Amount cannot be negative" }, { status: 400 });
+    if (amount === undefined || amount === null || typeof amount !== "number" || amount < 0) {
+      return NextResponse.json({ error: "A valid amount is required (must be a non-negative number)" }, { status: 400 });
+    }
+
+    if (description !== undefined && description !== null && typeof description !== "string") {
+      return NextResponse.json({ error: "Description must be a string" }, { status: 400 });
+    }
+
+    if (category !== undefined && category !== null && typeof category !== "string") {
+      return NextResponse.json({ error: "Category must be a string" }, { status: 400 });
     }
 
     // Get user's firm_id
     const { data: profile } = await supabase
       .from("profiles")
       .select("firm_id")
-      .eq("id", user.id)
+      .eq("id", user.uuid)
       .single();
+
+    if (case_id) {
+      const { data: caseRecord } = await supabase
+        .from("cases")
+        .select("id")
+        .eq("id", case_id)
+        .eq("firm_id", profile?.firm_id || "")
+        .single();
+      if (!caseRecord) {
+        return NextResponse.json({ error: "Case not found in your firm" }, { status: 404 });
+      }
+    }
+
+    if (client_id) {
+      const { data: clientRecord } = await supabase
+        .from("clients")
+        .select("id")
+        .eq("id", client_id)
+        .eq("firm_id", profile?.firm_id || "")
+        .single();
+      if (!clientRecord) {
+        return NextResponse.json({ error: "Client not found in your firm" }, { status: 404 });
+      }
+    }
 
     const { data, error } = await supabase
       .from("expenses")
       .insert({
-        user_id: user.id,
+        user_id: user.uuid,
         case_id: case_id || null,
         client_id: client_id || null,
         firm_id: profile?.firm_id || null,
@@ -107,15 +140,20 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { data: profile } = await supabase.from("profiles").select("firm_id, role").eq("id", user.uuid).single();
+    const firmId = profile?.firm_id;
+
+    const allowedRoles = ["owner", "partner"];
+    if (!profile?.role || !allowedRoles.includes(profile.role)) {
+      return NextResponse.json({ error: "Forbidden: insufficient permissions" }, { status: 403 });
+    }
 
     const body = await request.json();
     const { id, title, description, amount, category, is_billable, receipt_url, expense_date, case_id, client_id } = body;
     if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
-
-    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.id).single();
-    const firmId = profile?.firm_id;
 
     const updates: Record<string, unknown> = {};
     if (title !== undefined) updates.title = title;
@@ -129,13 +167,13 @@ export async function PATCH(request: NextRequest) {
     if (client_id !== undefined) updates.client_id = client_id;
     updates.updated_at = new Date().toISOString();
 
-    const { data, error } = await supabase
-      .from("expenses")
-      .update(updates)
-      .eq("id", id)
-      .eq("firm_id", firmId)
-      .select()
-      .single();
+    let query = supabase.from("expenses").update(updates).eq("id", id);
+    if (firmId) {
+      query = query.eq("firm_id", firmId);
+    } else {
+      query = query.eq("user_id", user.uuid);
+    }
+    const { data, error } = await query.select().single();
 
     if (error) throw error;
     return NextResponse.json(data);
@@ -148,17 +186,26 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { data: profile } = await supabase.from("profiles").select("firm_id, role").eq("id", user.uuid).single();
+    const firmId = profile?.firm_id;
+
+    const allowedRoles = ["owner", "partner"];
+    if (!profile?.role || !allowedRoles.includes(profile.role)) {
+      return NextResponse.json({ error: "Forbidden: insufficient permissions" }, { status: 403 });
+    }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
-    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.id).single();
-    const firmId = profile?.firm_id;
-
-    const { error } = await supabase.from("expenses").delete().eq("id", id).eq("firm_id", firmId);
+    const { error } = await supabase
+      .from("expenses")
+      .update({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .eq(firmId ? "firm_id" : "user_id", firmId || user.uuid);
     if (error) throw error;
 
     return NextResponse.json({ success: true });

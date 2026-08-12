@@ -10,21 +10,28 @@ export default function ClientDeepAnalyticsPage() {
   const [ltv, setLtv] = useState<any>(null);
   const [retention, setRetention] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [l, r] = await Promise.all([
-        fetch("/api/analytics?type=client_ltv").then(r => r.json()),
-        fetch("/api/analytics?type=client_retention").then(r => r.json()),
-      ]);
-      setLtv(l);
-      setRetention(r);
-      setLoading(false);
+      try {
+        const [l, r] = await Promise.all([
+          fetch("/api/analytics?type=client_ltv").then(r => r.json()),
+          fetch("/api/analytics?type=client_retention").then(r => r.json()),
+        ]);
+        setLtv(l);
+        setRetention(r);
+      } catch {
+        setError("Failed to load analytics");
+      } finally {
+        setLoading(false);
+      }
     };
     fetchAll();
   }, []);
 
-  if (loading) return <div className="text-center py-12 text-gray-500">Loading analytics...</div>;
+  if (loading) return <div className="text-center py-12 text-[var(--text-secondary)]">Loading analytics...</div>;
+  if (error) return <div className="text-center py-12 text-red-500">{error}</div>;
 
   return (
     <div className="space-y-6">

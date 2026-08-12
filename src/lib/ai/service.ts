@@ -1,6 +1,38 @@
 import type { CaseAnalysis, LegalStrategy, Precedent, DocumentSummary, ResearchResult } from "./types";
 
-export const AI_API_KEY = process.env.AI_API_KEY;
+const INJECTION_PATTERNS = [
+  /ignore\s+(all\s+)?previous\s+instructions/gi,
+  /disregard\s+(all\s+)?(previous|prior|earlier|above)\s+instructions/gi,
+  /you\s+are\s+now\s+/gi,
+  /forget\s+(all\s+)?(previous|prior|earlier|your)\s+(instructions|rules|guidelines)/gi,
+  /override\s+(all\s+)?(previous|prior|your)\s+(instructions|rules)/gi,
+  /new\s+instructions\s*:/gi,
+  /system\s*:\s*/gi,
+  /act\s+as\s+if\s+you\s+(have\s+)?no\s+restrictions/gi,
+  /pretend\s+you\s+are\s+/gi,
+  /roleplay\s+as\s+/gi,
+  /you\s+are\s+a\s+new\s+AI/gi,
+  /reveal\s+(your|the)\s+(system\s+)?prompt/gi,
+  /output\s+(all|your)\s+(system|initial)\s+prompt/gi,
+];
+
+const MAX_TITLE_LENGTH = 200;
+const MAX_DESCRIPTION_LENGTH = 5000;
+
+function sanitizeInput(input: string): string {
+  let sanitized = input;
+  for (const pattern of INJECTION_PATTERNS) {
+    sanitized = sanitized.replace(pattern, "");
+  }
+  return sanitized.trim();
+}
+
+function wrapUserInput(input: string, maxLength: number): string {
+  const truncated = input.substring(0, maxLength);
+  const sanitized = sanitizeInput(truncated);
+  return `<user_input>\n${sanitized}\n</user_input>`;
+}
+
 export const AI_BASE_URL = process.env.AI_BASE_URL || "https://opencode.ai/zen/v1";
 export const AI_MODEL = process.env.AI_MODEL || "mimo-v2.5-free";
 
@@ -12,7 +44,7 @@ export async function analyzeCase(caseData: {
   court: string;
   client?: string;
 }): Promise<CaseAnalysis> {
-  if (AI_API_KEY) {
+  if (process.env.AI_API_KEY) {
     return analyzeCaseWithAI(caseData);
   }
   return analyzeCaseFallback(caseData);
@@ -38,16 +70,16 @@ async function analyzeCaseWithAI(caseData: {
 9. Potential outcome
 
 Case Details:
-- Title: ${caseData.title}
-- Type: ${caseData.caseType}
-- Court: ${caseData.court}
-- Description: ${caseData.description}`;
+- Title: ${wrapUserInput(caseData.title, MAX_TITLE_LENGTH)}
+- Type: ${wrapUserInput(caseData.caseType, MAX_TITLE_LENGTH)}
+- Court: ${wrapUserInput(caseData.court, MAX_TITLE_LENGTH)}
+- Description: ${wrapUserInput(caseData.description, MAX_DESCRIPTION_LENGTH)}`;
 
     const response = await fetch(`${AI_BASE_URL}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${AI_API_KEY}`,
+        Authorization: `Bearer ${process.env.AI_API_KEY}`,
       },
       body: JSON.stringify({
         model: AI_MODEL,
@@ -166,13 +198,13 @@ function analyzeCaseFallback(caseData: {
 }
 
 export async function summarizeDocument(text: string): Promise<DocumentSummary> {
-  if (AI_API_KEY) {
+  if (process.env.AI_API_KEY) {
     try {
       const response = await fetch(`${AI_BASE_URL}/chat/completions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${AI_API_KEY}`,
+          Authorization: `Bearer ${process.env.AI_API_KEY}`,
         },
         body: JSON.stringify({
           model: AI_MODEL,
@@ -181,7 +213,7 @@ export async function summarizeDocument(text: string): Promise<DocumentSummary> 
               role: "system",
               content: "Summarize this legal document in JSON format with title, summary, keyPoints, legalIssues, deadlines, parties.",
             },
-            { role: "user", content: text },
+            { role: "user", content: wrapUserInput(text, MAX_DESCRIPTION_LENGTH) },
           ],
           temperature: 0.5,
           max_tokens: 1000,
@@ -211,12 +243,12 @@ export async function findRelevantPrecedents(caseData: {
   caseType: string;
   description: string;
 }): Promise<Precedent[]> {
-  if (AI_API_KEY) {
+  if (process.env.AI_API_KEY) {
     try {
       const prompt = `Find 5 relevant Indian legal precedents/case laws for this case. Return JSON array with fields: caseName, citation, court, year (number), relevance (0-100), summary.
 
-Case Type: ${caseData.caseType}
-Description: ${caseData.description}
+Case Type: ${wrapUserInput(caseData.caseType, MAX_TITLE_LENGTH)}
+Description: ${wrapUserInput(caseData.description, MAX_DESCRIPTION_LENGTH)}
 
 Only return the JSON array, no other text.`;
 
@@ -224,7 +256,7 @@ Only return the JSON array, no other text.`;
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${AI_API_KEY}`,
+          Authorization: `Bearer ${process.env.AI_API_KEY}`,
         },
         body: JSON.stringify({
           model: AI_MODEL,
@@ -284,12 +316,12 @@ Only return the JSON array, no other text.`;
 }
 
 export async function searchLegalResearch(query: string, topic?: string): Promise<ResearchResult[]> {
-  if (AI_API_KEY) {
+  if (process.env.AI_API_KEY) {
     try {
-      const topicContext = topic ? `\nLegal Topic: ${topic}` : "";
+      const topicContext = topic ? `\nLegal Topic: ${wrapUserInput(topic, MAX_TITLE_LENGTH)}` : "";
       const prompt = `Search and provide relevant Indian legal research results for this query. Return JSON array with fields: title, description, type (one of: "section", "case_law", "opinion", "article"), relevance (0-100), source.
 
-Query: ${query}${topicContext}
+Query: ${wrapUserInput(query, MAX_DESCRIPTION_LENGTH)}${topicContext}
 
 Provide 5-10 results mixing relevant sections from Indian acts, case laws, legal opinions, and articles. Only return the JSON array, no other text.`;
 
@@ -297,7 +329,7 @@ Provide 5-10 results mixing relevant sections from Indian acts, case laws, legal
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${AI_API_KEY}`,
+          Authorization: `Bearer ${process.env.AI_API_KEY}`,
         },
         body: JSON.stringify({
           model: AI_MODEL,
@@ -341,7 +373,7 @@ Provide 5-10 results mixing relevant sections from Indian acts, case laws, legal
       description: `Legal research results for "${query}". Please try again with a more specific query for better results.`,
       type: "article",
       relevance: 50,
-      source: "LawXP Legal Research",
+      source: "CaseFiles Legal Research",
     },
   ];
 

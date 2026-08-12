@@ -1,0 +1,309 @@
+CASEFILES - ROLE-BASED BEHAVIOR GUIDE
+======================================
+How the app behaves for Owner, Employees, and Super Admin
+
+================================================================================
+1. OWNER / PARTNER (Firm Admin)
+================================================================================
+
+ACCESS: Full firm-wide access to everything in their firm.
+
+SIDEBAR MENU:
+- Dashboard, Cases, Clients, Calendar, Court Tracking
+- Documents, Billing, Quotations, Expenses, Tasks
+- AI Tools, Reports, CRM, Messages, Subscription, Settings
+- Owner Panel (admin section) — only if plan is NOT Solo
+
+DASHBOARD:
+- Sees ALL firm data: all cases, all clients, all hearings, all payments
+- Stats show firm-wide totals (total cases, total revenue, total clients, etc.)
+- Sees all upcoming hearings for the entire firm
+- Sees case limit indicator (used/limit for current plan)
+
+CASES:
+- Sees ALL cases in the firm (created by anyone)
+- Can create, edit, delete any case
+- Can assign cases to any team member
+- Can change case status (pending → active → closed → won/lost)
+- Can soft-delete cases (cascades to hearings, documents, invoices, time entries)
+- Sees subscription limit check before creating cases
+
+CLIENTS:
+- Sees ALL clients in the firm
+- Can create, edit, delete any client
+- Client list shows all firm clients
+
+BILLING:
+- Sees ALL invoices, payments, collections for the firm
+- Can create invoices for any client/case
+- Can record payments
+- Can send collection reminders
+- Sees revenue reports and outstanding amounts
+
+DOCUMENTS:
+- Sees ALL documents uploaded by anyone in the firm
+- Can upload, download, delete any document
+- Storage usage tracked at firm level
+
+CALENDAR:
+- Sees ALL hearings for the entire firm
+- Can add hearings for any case
+- Can mark hearings as completed/adjourned
+
+MESSAGES:
+- Sees all firm messages
+- Can send messages to any team member
+
+TIME ENTRIES:
+- Sees all firm time entries
+- Can create time entries for any case
+
+EXPENSES:
+- Sees all firm expenses
+- Can create, edit, delete expenses
+
+QUOTATIONS:
+- Sees all firm quotations
+- Can create quotations for any client
+
+REPORTS:
+- Full access to all reports (cases, clients, financial, performance, revenue, team)
+
+ADMIN PANEL (Owner Panel):
+- Employee management (add, edit, deactivate)
+- Salary calculation and payslip generation
+- Subscription plan management
+- Team performance analytics
+- Profit sharing settings
+
+SETTINGS:
+- Can update firm billing details (GSTIN, bank info, invoice template)
+- Can invite team members
+- Can generate invite codes
+- Can manage notification preferences
+
+================================================================================
+2. EMPLOYEES (Senior Associate, Associate, Junior Associate, Paralegal, Intern)
+================================================================================
+
+ACCESS: Limited to data they created or are assigned to.
+
+SIDEBAR MENU (varies by role):
+- Dashboard: All roles
+- Cases: All except intern
+- Clients: senior_associate, associate, junior_associate, paralegal
+- Calendar: All except some
+- Court Tracking: senior_associate, associate, junior_associate
+- Documents: All except intern
+- Billing: senior_associate, associate
+- Quotations: senior_associate, associate
+- Expenses: senior_associate, associate, junior_associate, paralegal
+- Tasks: All
+- AI Tools: senior_associate, associate, junior_associate
+- Reports: senior_associate, associate only
+- CRM: senior_associate, associate
+- Messages: All
+- Subscription: All (view only)
+- Settings: All
+
+NOTE: No "Owner Panel" link in sidebar for employees.
+
+DASHBOARD:
+- Sees ONLY their own cases (created_by = them OR assigned_to = them)
+- Sees ONLY their own clients (created_by = them)
+- Sees ONLY their own hearings, payments, invoices, time entries
+- Stats are personal, not firm-wide
+- Example: Employee with 5 cases sees "5 Total Cases", not the firm's 200
+
+CASES:
+- Sees only cases they created or are assigned to
+- Can create new cases (firm_id auto-set from profile)
+- Can edit cases they own
+- Cannot delete cases (soft-delete restricted by RLS)
+- Case list filtered to their own data only
+
+CLIENTS:
+- Sees only clients they created
+- Can create new clients (firm_id auto-set)
+- Cannot see clients created by other team members
+
+BILLING:
+- senior_associate/associate: Can create invoices, but only for their own cases
+- Cannot see other team members' invoices
+- junior_associate/paralegal: Read-only or no access
+
+DOCUMENTS:
+- Sees only documents they uploaded or that are on their assigned cases
+- Can upload documents (firm_id auto-set)
+
+CALENDAR:
+- Sees only hearings on their assigned cases
+- Can add hearings to their cases
+
+MESSAGES:
+- Sees messages sent to them or by them
+- Can send messages
+
+TIME ENTRIES:
+- Sees only their own time entries
+- Can log time for their cases
+
+EXPENSES:
+- Sees only their own expenses
+- Can create expenses
+
+QUOTATIONS:
+- senior_associate/associate: Can create quotations
+- junior_associate/paralegal: No access
+
+TASKS:
+- Sees tasks assigned to them
+- Can create tasks
+
+AI TOOLS:
+- Can use AI chat, drafting, research, case analysis
+- Usage limits enforced per plan
+
+RESTRICTIONS:
+- Cannot access /admin pages
+- Cannot see firm-wide revenue or financial reports
+- Cannot manage team members or salaries
+- Cannot see other employees' data
+- Cannot delete firm-wide data
+
+================================================================================
+3. SUPER ADMIN (Platform Admin)
+================================================================================
+
+ACCESS: Bypasses ALL firm-level restrictions. Sees everything across ALL firms.
+
+ACCESS METHOD:
+- Logs in via /login like normal users
+- Must be in the super_admins table in the database
+- Sidebar shows "Super Admin" link at the bottom
+- Navigates to /super-admin for the admin panel
+
+SUPER ADMIN PANEL PAGES:
+
+/super-admin/users
+- Sees ALL users across ALL firms
+- Can toggle any user active/inactive
+- Can change any user's role
+- Uses service-role client (bypasses RLS)
+
+/super-admin/users/[id]
+- Views any user's full profile
+- Can change role, deactivate, reactivate
+- Sees user's subscription, firm, activity
+
+/super-admin/cases
+- Sees ALL cases across ALL firms
+- Can view any case details
+- No firm isolation
+
+/super-admin/clients
+- Sees ALL clients across ALL firms
+- No firm isolation
+
+/super-admin/documents
+- Sees ALL documents across ALL firms
+- Can soft-delete any document
+- Logs deletion in security_audit_log
+
+/super-admin/subscriptions
+- Sees ALL subscriptions across ALL firms
+- Can override any subscription (custom price, discount, disable)
+- Can bulk-apply discounts to all users on a plan
+- Can toggle subscriptions enabled/disabled
+
+/super-admin/coupons
+- Creates discount coupons (code, type, value, limits)
+- Can toggle coupons active/inactive
+- Sees coupon usage statistics
+
+/super-admin/revenue
+- Sees total revenue across ALL firms
+- Revenue analytics and charts
+
+/super-admin/activity
+- Sees activity logs across ALL firms
+- Security audit trail
+
+/super-admin/settings
+- Manages platform-wide settings
+- Feature toggles, pricing, etc.
+
+KEY DIFFERENCES FROM OWNER:
+- Owner sees only their firm's data
+- Super Admin sees ALL firms' data
+- Super Admin uses service-role client (bypasses RLS)
+- Super Admin can manage users across firms
+- Super Admin can create/manage coupons
+- Super Admin can override any subscription
+- Super Admin has no subscription limits
+
+NOT LIMITED BY:
+- Firm isolation (sees all firms)
+- RLS policies (bypassed via service-role)
+- Subscription plan limits
+- Role-based restrictions
+
+================================================================================
+4. HOW DATA FLOW WORKS FOR EACH ROLE
+================================================================================
+
+OWNER/PARTNER:
+  Login → profile.firm_id loaded → All queries filtered by firm_id
+  Insert: firm_id auto-set from profile
+  RLS: Firm isolation policy allows full access within firm
+
+EMPLOYEE:
+  Login → profile.firm_id + profile.role loaded → Queries filtered by
+  firm_id AND (created_by = user OR assigned_to = user)
+  Insert: firm_id auto-set from profile, user_id = auth.uid()
+  RLS: Firm isolation + ownership/assignment check
+
+SUPER ADMIN:
+  Login → super_admins table checked → If present, gets service-role client
+  All queries use service-role (bypasses RLS entirely)
+  No firm filtering applied
+
+================================================================================
+5. ROLE HIERARCHY
+================================================================================
+
+super_admin > owner > partner > senior_associate > associate > junior_associate > paralegal > intern
+
+- Super Admin: Platform-wide, bypasses everything
+- Owner: Full firm control
+- Partner: Same as owner (firm-wide access)
+- Senior Associate: Can manage cases, clients, billing, reports
+- Associate: Can manage cases, clients, billing
+- Junior Associate: Limited case/client access
+- Paralegal: Very limited access
+- Intern: Read-only for most things
+
+================================================================================
+6. WHAT EACH ROLE CANNOT DO
+================================================================================
+
+OWNER cannot:
+- See other firms' data
+- Manage coupons (super admin only)
+- Override subscriptions (super admin only)
+- Access super-admin panel
+
+EMPLOYEE cannot:
+- See other employees' cases/clients
+- Access admin panel
+- See firm-wide financial reports
+- Manage team members
+- Delete firm-wide data
+- See subscription management details
+
+SUPER ADMIN cannot:
+- Be restricted by anything (that's the point)
+
+================================================================================
+END OF FILE
+================================================================================

@@ -13,13 +13,12 @@ interface RateLimitEntry {
 // Fallback to in-memory for local dev when Supabase is unavailable
 const memoryStore = new Map<string, { count: number; resetTime: number }>();
 
-// Clean up expired entries every 5 minutes
-setInterval(() => {
-  const now = Date.now();
+// Lazy cleanup: remove expired entries on each access instead of setInterval
+function cleanupExpiredEntries(now: number) {
   for (const [key, entry] of memoryStore) {
     if (now > entry.resetTime) memoryStore.delete(key);
   }
-}, 5 * 60 * 1000);
+}
 
 export async function checkRateLimit(
   key: string,
@@ -76,7 +75,9 @@ export async function checkRateLimit(
     }
   }
 
-  // In-memory fallback (development only)
+  // In-memory fallback (development only) — with lazy cleanup
+  cleanupExpiredEntries(now);
+
   const entry = memoryStore.get(key);
 
   if (!entry || now > entry.resetTime) {

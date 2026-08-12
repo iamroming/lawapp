@@ -1,32 +1,31 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getSuperAdminActivity } from "@/app/actions/super-admin";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { Activity, Search } from "lucide-react";
-import { formatDateTime, unwrap } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils";
 import type { AuditLog } from "@/types/database";
 
 export default function SuperAdminActivityPage() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState("all");
-  const supabase = createClient();
 
   useEffect(() => { fetchLogs(); }, []);
 
-  const fetchLogs = async () => {
-    const { data } = await supabase.from("activity_logs").select("*, user:profiles(full_name, email)").order("created_at", { ascending: false }).limit(500);
-    setLogs(
-      (data || []).map((l) => ({
-        ...l,
-        user: unwrap(l.user),
-      })) as AuditLog[]
-    );
+  const fetchLogs = async (_offset?: number) => {
+    const data = await getSuperAdminActivity();
+    setLogs((data as AuditLog[]) || []);
+    setHasMore(false);
     setLoading(false);
+    setLoadingMore(false);
   };
 
   const uniqueActions = [...new Set(logs.map((l) => l.action))].sort();
@@ -81,6 +80,13 @@ export default function SuperAdminActivityPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+      {hasMore && !loading && (
+        <div className="flex justify-center">
+          <Button variant="outline" onClick={() => fetchLogs(logs.length)} disabled={loadingMore}>
+            {loadingMore ? "Loading..." : "Load More"}
+          </Button>
+        </div>
       )}
     </div>
   );

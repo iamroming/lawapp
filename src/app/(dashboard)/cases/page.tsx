@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatDate, getStatusColor } from "@/lib/utils";
-import { Briefcase, Plus, Search, Filter } from "lucide-react";
+import { Briefcase, Plus, Search, Filter, AlertTriangle, Download } from "lucide-react";
 import { Pagination, usePagination } from "@/components/ui/pagination";
 import { PageSkeleton } from "@/components/skeleton";
 import Link from "next/link";
+import { useUser } from "@/hooks/use-user";
 
 interface Case {
   id: string;
@@ -26,28 +27,42 @@ interface Case {
 }
 
 export default function CasesPage() {
+  const { user: appUser } = useUser();
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [caseLimit, setCaseLimit] = useState<{ used: number; limit: number; plan: string } | null>(null);
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchCases();
-  }, []);
+  const fetchCaseLimit = async () => {
+    try {
+      const res = await fetch("/api/cases/limit-check");
+      const data = await res.json();
+      if (!data.error) {
+        setCaseLimit({ used: data.used, limit: data.limit, plan: data.plan });
+      }
+    } catch {}
+  };
 
   const fetchCases = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setLoading(false); return; }
+    if (!appUser) { setLoading(false); return; }
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("role, firm_id")
-      .eq("id", user.id)
+      .eq("id", appUser?.uuid)
       .single();
 
     const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
-    const firmId = profile?.firm_id || user.id;
+
+    if (isOwner && !profile?.firm_id) {
+      setError("No firm associated with your account. Please contact support.");
+      setLoading(false);
+      return;
+    }
+    const firmId = profile?.firm_id as string;
 
     let query = supabase
       .from("cases")
@@ -58,16 +73,27 @@ export default function CasesPage() {
     if (isOwner) {
       query = query.eq("firm_id", firmId);
     } else {
-      query = query.or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`);
+      query = query.or(`assigned_to.eq.${appUser?.uuid},created_by.eq.${appUser?.uuid}`);
     }
 
-    const { data, error } = await query;
+    const { data, error: queryError } = await query;
+
+    if (queryError) {
+      setError(queryError.message);
+      setLoading(false);
+      return;
+    }
 
     if (data) {
       setCases(data as Case[]);
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    fetchCases();
+    fetchCaseLimit();
+  }, []);
 
   const filteredCases = cases.filter((c) => {
     const matchesSearch =
@@ -79,6 +105,10 @@ export default function CasesPage() {
 
   const { page, setPage, totalPages, paginatedItems } = usePagination(filteredCases);
 
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -86,13 +116,62 @@ export default function CasesPage() {
           <h1 className="text-2xl font-bold">Cases</h1>
           <p className="text-gray-500">Manage all your cases in one place</p>
         </div>
-        <Link href="/cases/new">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            New Case
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => window.open("/api/export/cases-pdf", "_blank")}>
+            <Download className="h-4 w-4 mr-2" />
+            PDF
           </Button>
-        </Link>
+          <Button variant="outline" onClick={() => window.open("/api/export/cases-excel", "_blank")}>
+            <Download className="h-4 w-4 mr-2" />
+            Excel
+          </Button>
+          <Link href="/cases/new">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              New Case
+            </Button>
+          </Link>
+        </div>
       </div>
+
+      {/* Case limit banner */}
+      {caseLimit && caseLimit.limit !== -1 && (
+        <div className={`p-4 rounded-lg border ${
+          caseLimit.used >= caseLimit.limit
+            ? "bg-red-50 border-red-200"
+            : caseLimit.used >= caseLimit.limit * 0.8
+            ? "bg-amber-50 border-amber-200"
+            : "bg-[var(--surface-subtle)] border-[var(--border)]"
+        }`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className={`h-5 w-5 ${
+                caseLimit.used >= caseLimit.limit ? "text-red-500" :
+                caseLimit.used >= caseLimit.limit * 0.8 ? "text-amber-500" :
+                "text-[var(--text-secondary)]"
+              }`} />
+              <div>
+                <p className="text-sm font-medium">
+                  Cases: {caseLimit.used} / {caseLimit.limit}
+                </p>
+                <p className="text-xs text-[var(--text-secondary)]">
+                  {caseLimit.plan} plan
+                </p>
+              </div>
+            </div>
+            {caseLimit.used >= caseLimit.limit && (
+              <a href="/subscription-required" className="text-sm font-semibold text-indigo-600 hover:text-indigo-500 whitespace-nowrap">
+                Upgrade Plan
+              </a>
+            )}
+          </div>
+          {caseLimit.used >= caseLimit.limit && (
+            <p className="text-xs text-red-600 mt-2">
+              You&apos;ve reached your case limit. Upgrade to create more cases.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
@@ -125,6 +204,11 @@ export default function CasesPage() {
       {/* Cases List */}
       {loading ? (
         <div className="text-center py-12"><PageSkeleton /></div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <AlertTriangle className="h-10 w-10 text-red-500 mx-auto mb-3" />
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
       ) : filteredCases.length === 0 ? (
         <EmptyState
           icon={<Briefcase className="h-12 w-12" />}

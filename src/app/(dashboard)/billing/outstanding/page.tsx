@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { useUser } from "@/hooks/use-user";
 
 interface UnpaidInvoice {
   id: string;
@@ -30,12 +31,13 @@ interface UnpaidInvoice {
 }
 
 export default function OutstandingPage() {
+  const { user: appUser } = useUser();
+  const supabase = createClient();
   const [invoices, setInvoices] = useState<UnpaidInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [sendingReminder, setSendingReminder] = useState<string | null>(null);
   const [filterClient, setFilterClient] = useState("");
   const [clients, setClients] = useState<{ id: string; full_name: string }[]>([]);
-  const supabase = createClient();
 
   useEffect(() => {
     fetchInvoices();
@@ -59,10 +61,21 @@ export default function OutstandingPage() {
   };
 
   const fetchClients = async () => {
+    if (!appUser) return;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("firm_id")
+      .eq("id", appUser?.uuid)
+      .single();
+
+    if (!profile?.firm_id) return;
+
     const { data } = await supabase
       .from("clients")
       .select("id, full_name")
-      .is("deleted_at", null);
+      .is("deleted_at", null)
+      .eq("firm_id", profile.firm_id);
     setClients((data || []) as { id: string; full_name: string }[]);
   };
 
@@ -143,7 +156,7 @@ export default function OutstandingPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card className="md:col-span-1">
           <CardContent className="pt-6">
             <p className="text-sm text-[var(--text-secondary)]">Total Outstanding</p>
@@ -182,6 +195,18 @@ export default function OutstandingPage() {
               label="61-90 days"
               count={bucket6190.length}
               amount={bucket6190.reduce(
+                (s, i) => s + i.amount + (i.tax_amount || 0),
+                0
+              )}
+            />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <AgingBar
+              label="90+ days"
+              count={bucket90.length}
+              amount={bucket90.reduce(
                 (s, i) => s + i.amount + (i.tax_amount || 0),
                 0
               )}

@@ -1,43 +1,7 @@
 import type { DocumentTemplate } from "@/lib/templates";
-import { AI_API_KEY, AI_BASE_URL, AI_MODEL } from "./service";
+import { AI_BASE_URL, AI_MODEL } from "./service";
 
-export const LEGAL_DOCUMENT_TYPES = [
-  { value: "civil_plaint", label: "Civil Plaint" },
-  { value: "criminal_complaint", label: "Criminal Complaint" },
-  { value: "writ_petition", label: "Writ Petition" },
-  { value: "legal_notice", label: "Legal Notice" },
-  { value: "affidavit", label: "Affidavit" },
-  { value: "vakalatnama", label: "Vakalatnama" },
-  { value: "agreement", label: "Agreement" },
-  { value: "memorandum", label: "Memorandum of Understanding" },
-  { value: "power_of_attorney", label: "Power of Attorney" },
-  { value: "bail_application", label: "Bail Application" },
-  { value: "anticipatory_bail", label: "Anticipatory Bail Application" },
-  { value: "divorce_petition", label: "Divorce Petition" },
-  { value: "maintenance_application", label: "Maintenance Application" },
-  { value: "child_custody", label: "Child Custody Petition" },
-  { value: "property_sale_deed", label: "Property Sale Deed" },
-  { value: "rental_agreement", label: "Rental Agreement" },
-  { value: "service_notice", label: "Service Notice (Section 80 CPC)" },
-  { value: "consumer_complaint", label: "Consumer Complaint" },
-];
-
-export const INDIAN_JURISDICTIONS = [
-  { value: "supreme_court", label: "Supreme Court of India" },
-  { value: "delhi_hc", label: "Delhi High Court" },
-  { value: "bombay_hc", label: "Bombay High Court" },
-  { value: "calcutta_hc", label: "Calcutta High Court" },
-  { value: "madras_hc", label: "Madras High Court" },
-  { value: "allahabad_hc", label: "Allahabad High Court" },
-  { value: "karnataka_hc", label: "Karnataka High Court" },
-  { value: "gujarat_hc", label: "Gujarat High Court" },
-  { value: "rajasthan_hc", label: "Rajasthan High Court" },
-  { value: "patna_hc", label: "Patna High Court" },
-  { value: "andhra_hc", label: "Andhra Pradesh High Court" },
-  { value: "telangana_hc", label: "Telangana High Court" },
-  { value: "kerala_hc", label: "Kerala High Court" },
-  { value: "district_court", label: "District Court" },
-];
+export { LEGAL_DOCUMENT_TYPES, INDIAN_JURISDICTIONS } from "./drafting-constants";
 
 export interface DraftOptions {
   documentType: string;
@@ -72,14 +36,14 @@ export interface EngagementLetterOptions {
 }
 
 async function callAI(prompt: string, systemPrompt: string): Promise<string | null> {
-  if (!AI_API_KEY) return null;
+  if (!process.env.AI_API_KEY) return null;
 
   try {
     const response = await fetch(`${AI_BASE_URL}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${AI_API_KEY}`,
+        Authorization: `Bearer ${process.env.AI_API_KEY}`,
       },
       body: JSON.stringify({
         model: AI_MODEL,

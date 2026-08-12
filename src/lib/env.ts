@@ -43,8 +43,8 @@ export function validateEnv() {
 }
 
 export function isRazorpayConfigured(): boolean {
+  if (!process.env.RAZORPAY_KEY_ID) return false;
   return !!(
-    process.env.RAZORPAY_KEY_ID &&
     process.env.RAZORPAY_KEY_SECRET &&
     !process.env.RAZORPAY_KEY_ID.includes("your_key_id")
   );

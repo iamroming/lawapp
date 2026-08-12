@@ -8,7 +8,8 @@ export type PermissionCode =
   | 'documents.view_all' | 'documents.view_assigned' | 'documents.create' | 'documents.edit' | 'documents.delete'
   | 'invoices.view_all' | 'invoices.view_own' | 'invoices.create' | 'invoices.edit' | 'invoices.delete'
   | 'reports.view_all' | 'reports.view_own' | 'audit_logs.view'
-  | 'hearings.view_all' | 'hearings.view_assigned' | 'hearings.manage';
+  | 'hearings.view_all' | 'hearings.view_assigned' | 'hearings.manage'
+  | 'branches.create' | 'branches.read' | 'branches.update' | 'branches.delete' | 'branches.assign_employees';
 
 export const ROLE_HIERARCHY: Record<string, number> = {
   owner: 0,
@@ -59,6 +60,31 @@ export interface Profile {
   state?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface Branch {
+  id: string;
+  firm_id: string;
+  name: string;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  pincode: string | null;
+  phone: string | null;
+  email: string | null;
+  operating_hours: Record<string, { open: string; close: string }>;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmployeeBranch {
+  id: string;
+  employee_id: string;
+  branch_id: string;
+  is_primary: boolean;
+  created_at: string;
+  branch?: Branch;
 }
 
 export interface FirmMember {

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { formatDate } from "@/lib/utils";
 import { Modal } from "@/components/ui/modal";
+import { useUser } from "@/hooks/use-user";
 import {
   Trash2,
   Edit,
@@ -40,6 +41,7 @@ const ROLES = [
 ];
 
 export default function EmployeesPage() {
+  const { user: appUser } = useUser();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [firmId, setFirmId] = useState<string | null>(null);
@@ -63,13 +65,12 @@ export default function EmployeesPage() {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!appUser) return;
 
       const { data: profile } = await supabase
         .from("profiles")
         .select("firm_id")
-        .eq("id", user.id)
+        .eq("id", appUser?.uuid)
         .single();
 
       const fid = profile?.firm_id;
@@ -80,7 +81,7 @@ export default function EmployeesPage() {
       }
     };
     init();
-  }, [supabase]);
+  }, [appUser, supabase]);
 
   const fetchEmployees = async (fid: string) => {
     setLoading(true);
@@ -111,7 +112,8 @@ export default function EmployeesPage() {
         upi_id: form.upi_id || null,
         allotment_status: form.allotment_status,
       })
-      .eq("id", editEmployee.id);
+      .eq("id", editEmployee.id)
+      .eq("firm_id", firmId);
 
     if (!error) {
       await fetchEmployees(firmId);
@@ -127,11 +129,12 @@ export default function EmployeesPage() {
 
     const { error } = await supabase
       .from("profiles")
-      .update({ role: null, firm_id: null })
-      .eq("id", emp.id);
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq("id", emp.id)
+      .eq("firm_id", firmId);
 
     if (!error) {
-      await fetchEmployees(firmId);
+      setEmployees(prev => prev.filter(e => e.id !== emp.id));
     }
   };
 
@@ -183,7 +186,7 @@ export default function EmployeesPage() {
               <tbody>
                 {employees.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-8 text-[var(--text-secondary)]">
+                    <td colSpan={6} className="text-center py-8 text-[var(--text-secondary)]">
                       No employees found.
                     </td>
                   </tr>

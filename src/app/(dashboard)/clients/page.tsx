@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Users, Plus, Search, Phone, Mail } from "lucide-react";
+import { Users, Plus, Search, Phone, Mail, Download } from "lucide-react";
 import { Pagination, usePagination } from "@/components/ui/pagination";
 import { PageSkeleton } from "@/components/skeleton";
 import Link from "next/link";
+import { useUser } from "@/hooks/use-user";
 
 interface Client {
   id: string;
@@ -22,8 +23,10 @@ interface Client {
 }
 
 export default function ClientsPage() {
+  const { user: appUser } = useUser();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const supabase = createClient();
 
@@ -32,26 +35,36 @@ export default function ClientsPage() {
   }, []);
 
   const fetchClients = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setLoading(false); return; }
+    if (!appUser) { setLoading(false); return; }
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("role, firm_id")
-      .eq("id", user.id)
+      .eq("id", appUser?.uuid)
       .single();
 
     const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
-    const firmId = profile?.firm_id || user.id;
+
+    if (isOwner && !profile?.firm_id) {
+      setError("No firm associated with your account. Please contact support.");
+      setLoading(false);
+      return;
+    }
+    const firmId = profile?.firm_id as string;
 
     let query = supabase.from("clients").select("*").is("deleted_at", null).order("full_name");
     if (isOwner) {
       query = query.eq("firm_id", firmId);
     } else {
-      query = query.eq("created_by", user.id);
+      query = query.eq("created_by", appUser?.uuid);
     }
 
-    const { data } = await query;
+    const { data, error: queryError } = await query;
+    if (queryError) {
+      setError(queryError.message);
+      setLoading(false);
+      return;
+    }
     setClients(data || []);
     setLoading(false);
   };
@@ -65,6 +78,10 @@ export default function ClientsPage() {
 
   const { page, setPage, totalPages, paginatedItems } = usePagination(filteredClients);
 
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -72,12 +89,22 @@ export default function ClientsPage() {
           <h1 className="text-2xl font-bold">Clients</h1>
           <p className="text-gray-500">Manage your client database</p>
         </div>
-        <Link href="/clients/new">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Client
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => window.open("/api/export/clients-pdf", "_blank")}>
+            <Download className="h-4 w-4 mr-2" />
+            PDF
           </Button>
-        </Link>
+          <Button variant="outline" onClick={() => window.open("/api/export/clients-excel", "_blank")}>
+            <Download className="h-4 w-4 mr-2" />
+            Excel
+          </Button>
+          <Link href="/clients/new">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Client
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="relative">
@@ -92,6 +119,10 @@ export default function ClientsPage() {
 
       {loading ? (
         <div className="text-center py-12"><PageSkeleton /></div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
       ) : filteredClients.length === 0 ? (
         <EmptyState
           icon={<Users className="h-12 w-12" />}

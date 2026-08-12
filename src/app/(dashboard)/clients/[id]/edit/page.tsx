@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { dbWrite } from "@/lib/db-write";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { useUser } from "@/hooks/use-user";
 
 const indianStates = [
   "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
@@ -37,6 +39,7 @@ interface ClientData {
 }
 
 export default function EditClientPage() {
+  const { user: appUser } = useUser();
   const params = useParams();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -124,25 +127,26 @@ export default function EditClientPage() {
       return;
     }
 
-    const { error } = await supabase
-      .from("clients")
-      .update({
-        full_name: formData.full_name,
-        email: formData.email,
-        phone: formData.phone,
-        alternate_phone: formData.alternate_phone,
-        address: formData.address,
-        city: formData.city,
-        state: formData.state,
-        pincode: formData.pincode,
-        company_name: formData.company_name,
-        gst_number: formData.gst_number,
-        notes: formData.notes,
-      })
-      .eq("id", params.id);
+    if (!appUser) { toast.error("You must be logged in to continue"); setLoading(false); return; }
+
+    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", appUser?.uuid).single();
+
+    const { error } = await dbWrite("clients", "update", {
+      full_name: formData.full_name,
+      email: formData.email,
+      phone: formData.phone,
+      alternate_phone: formData.alternate_phone,
+      address: formData.address,
+      city: formData.city,
+      state: formData.state,
+      pincode: formData.pincode,
+      company_name: formData.company_name,
+      gst_number: formData.gst_number,
+      notes: formData.notes,
+    }, { id: params.id, firm_id: profile?.firm_id });
 
     if (error) {
-      toast.error(error.message);
+      toast.error(error);
       setLoading(false);
       return;
     }

@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await verifySessionFromRequest(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
@@ -24,7 +23,7 @@ export async function GET(request: NextRequest) {
     return query;
   };
 
-  const { data: profile } = await supabase.from("profiles").select("firm_id, role").eq("id", user.id).single();
+  const { data: profile } = await supabase.from("profiles").select("firm_id, role").eq("id", user.uuid).single();
   const firmId = profile?.firm_id;
   const isOwner = ["owner", "partner"].includes(profile?.role || "");
 
@@ -35,7 +34,7 @@ export async function GET(request: NextRequest) {
         if (isOwner && firmId) {
           caseQuery = caseQuery.eq("firm_id", firmId);
         } else {
-          caseQuery = caseQuery.or(`created_by.eq.${user.id},assigned_to.eq.${user.id}`);
+          caseQuery = caseQuery.or(`created_by.eq.${user.uuid},assigned_to.eq.${user.uuid}`);
         }
         const { data: cases, error } = await caseQuery;
         if (error) throw error;
@@ -47,7 +46,7 @@ export async function GET(request: NextRequest) {
 
         allCases.forEach((c: any) => {
           byStatus[c.status] = (byStatus[c.status] || 0) + 1;
-          byType[c.type || "Other"] = (byType[c.type || "Other"] || 0) + 1;
+          byType[c.case_type || "Other"] = (byType[c.case_type || "Other"] || 0) + 1;
           byCourt[c.court || "Unknown"] = (byCourt[c.court || "Unknown"] || 0) + 1;
         });
 
@@ -63,11 +62,11 @@ export async function GET(request: NextRequest) {
         };
 
         const avgDuration =
-          allCases.length > 0
-            ? allCases.reduce((sum: number, c: any) => {
+          resolved.length > 0
+            ? resolved.reduce((sum: number, c: any) => {
                 const created = new Date(c.created_at).getTime();
                 return sum + (Date.now() - created) / (1000 * 60 * 60 * 24);
-              }, 0) / allCases.length
+              }, 0) / resolved.length
             : 0;
 
         return NextResponse.json({
@@ -88,8 +87,8 @@ export async function GET(request: NextRequest) {
           paymentQuery = paymentQuery.eq("firm_id", firmId);
           invoiceQuery = invoiceQuery.eq("firm_id", firmId);
         } else {
-          paymentQuery = paymentQuery.eq("received_by", user.id);
-          invoiceQuery = invoiceQuery.eq("issued_by", user.id);
+          paymentQuery = paymentQuery.eq("received_by", user.uuid);
+          invoiceQuery = invoiceQuery.eq("issued_by", user.uuid);
         }
 
         if (startDate) {
@@ -125,7 +124,7 @@ export async function GET(request: NextRequest) {
         );
         const outstandingAmount = allInvoices
           .filter((i: any) => i.status === "sent" || i.status === "overdue")
-          .reduce((sum: number, i: any) => sum + (i.total_amount || 0), 0);
+          .reduce((sum: number, i: any) => sum + ((i.amount || 0) + (i.tax_amount || 0)), 0);
         const gstCollected = allInvoices.reduce(
           (sum: number, i: any) => sum + (i.tax_amount || 0),
           0

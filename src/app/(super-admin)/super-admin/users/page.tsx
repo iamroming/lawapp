@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getSuperAdminUsers, toggleSuperAdminUserActive, changeSuperAdminUserRole, checkIfSuperAdmin } from "@/app/actions/super-admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,9 +17,8 @@ interface UserProfile {
   id: string;
   full_name: string;
   email: string;
-  phone: string;
   role: string;
-  firm_name: string;
+  firm_id: string | null;
   is_active: boolean;
   created_at: string;
 }
@@ -39,55 +38,50 @@ export default function SuperAdminUsersPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
-  const supabase = createClient();
 
   useEffect(() => { fetchUsers(); }, []);
 
   const fetchUsers = async () => {
-    const { data } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+    const data = await getSuperAdminUsers();
     const userList = (data as UserProfile[]) || [];
     setUsers(userList);
-
-    // Fetch stats for each user
-    const stats: Record<string, UserStats> = {};
-    for (const u of userList) {
-      const [casesRes, clientsRes, docsRes, paymentsRes, subsRes] = await Promise.all([
-        supabase.from("cases").select("id", { count: "exact", head: true }).eq("created_by", u.id).is("deleted_at", null),
-        supabase.from("clients").select("id", { count: "exact", head: true }).eq("created_by", u.id).is("deleted_at", null),
-        supabase.from("documents").select("id", { count: "exact", head: true }).eq("uploaded_by", u.id),
-        supabase.from("payments").select("amount").eq("received_by", u.id),
-        supabase.from("user_subscriptions").select("status").eq("user_id", u.id).in("status", ["active", "trialing"]).limit(1),
-      ]);
-      stats[u.id] = {
-        cases: casesRes.count || 0,
-        clients: clientsRes.count || 0,
-        documents: docsRes.count || 0,
-        revenue: (paymentsRes.data || []).reduce((sum, p) => sum + (p.amount || 0), 0),
-        subscription: subsRes.data?.[0]?.status || "none",
-      };
-    }
-    setUserStats(stats);
+    setUserStats({});
     setLoading(false);
   };
 
   const filteredUsers = users.filter((u) => {
     const match = u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-      u.email?.toLowerCase().includes(search.toLowerCase()) ||
-      u.phone?.includes(search);
+      u.email?.toLowerCase().includes(search.toLowerCase());
     const role = roleFilter === "all" || u.role === roleFilter;
     return match && role;
   });
 
   const toggleActive = async (userId: string, isActive: boolean) => {
-    await supabase.from("profiles").update({ is_active: !isActive }).eq("id", userId);
-    toast.success(isActive ? "User deactivated" : "User activated");
-    fetchUsers();
+    const isSuperAdmin = await checkIfSuperAdmin(userId);
+    if (isSuperAdmin) {
+      toast.error("Cannot deactivate a Super Admin user");
+      return;
+    }
+    const action = isActive ? "deactivate" : "activate";
+    if (!window.confirm(`Are you sure you want to ${action} this user?`)) return;
+    try {
+      await toggleSuperAdminUserActive(userId, isActive);
+      toast.success(isActive ? "User deactivated" : "User activated");
+      fetchUsers();
+    } catch {
+      toast.error("Failed to update user status");
+    }
   };
 
   const changeRole = async (userId: string, newRole: string) => {
-    await supabase.from("profiles").update({ role: newRole }).eq("id", userId);
-    toast.success(`Role changed to ${newRole}`);
-    fetchUsers();
+    if (!window.confirm(`Are you sure you want to change this user's role to "${newRole}"?`)) return;
+    try {
+      await changeSuperAdminUserRole(userId, newRole);
+      toast.success(`Role changed to ${newRole}`);
+      fetchUsers();
+    } catch {
+      toast.error("Failed to change role");
+    }
   };
 
   return (
@@ -117,7 +111,6 @@ export default function SuperAdminUsersPage() {
           <option value="paralegal">Paralegal</option>
           <option value="intern">Intern</option>
           <option value="office_admin">Office Admin</option>
-          <option value="super_admin">Super Admin</option>
         </select>
       </div>
 
@@ -152,8 +145,6 @@ export default function SuperAdminUsersPage() {
                         </div>
                         <p className="text-sm text-[var(--text-secondary)]">{user.email}</p>
                         <div className="flex items-center gap-3 text-xs text-[var(--text-secondary)] mt-1">
-                          {user.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{user.phone}</span>}
-                          {user.firm_name && <span>{user.firm_name}</span>}
                           <span>Joined {formatDate(user.created_at)}</span>
                         </div>
                       </div>
@@ -180,12 +171,12 @@ export default function SuperAdminUsersPage() {
                         <option value="paralegal">Paralegal</option>
                         <option value="intern">Intern</option>
                         <option value="office_admin">Office Admin</option>
-                        <option value="super_admin">Super Admin</option>
                       </select>
                       <Button
                         variant={user.is_active ? "outline" : "default"}
                         size="sm"
                         onClick={() => toggleActive(user.id, user.is_active)}
+                        disabled={user.role === "super_admin"}
                       >
                         {user.is_active ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                       </Button>

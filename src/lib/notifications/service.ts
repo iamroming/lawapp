@@ -92,7 +92,7 @@ async function sendEmailNotification(params: SendNotificationParams): Promise<vo
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     await resend.emails.send({
-      from: process.env.EMAIL_FROM || "LawXP <notifications@LawXP.in>",
+      from: process.env.EMAIL_FROM || "CaseFiles <notifications@CaseFiles.in>",
       to: params.clientEmail,
       subject: params.title,
       html: `
@@ -102,7 +102,7 @@ async function sendEmailNotification(params: SendNotificationParams): Promise<vo
           ${params.data?.case_number ? `<p><strong>Case:</strong> ${escapeHtml(String(params.data.case_number))}</p>` : ""}
           ${params.data?.hearing_date ? `<p><strong>Date:</strong> ${escapeHtml(new Date(String(params.data.hearing_date)).toLocaleString("en-IN"))}</p>` : ""}
           <hr style="margin: 20px 0; border: 1px solid #e5e7eb;" />
-          <p style="color: #6b7280; font-size: 12px;">This is an automated notification from LawXP</p>
+          <p style="color: #6b7280; font-size: 12px;">This is an automated notification from CaseFiles</p>
         </div>
       `,
     });
@@ -117,7 +117,7 @@ async function sendSMSNotification(params: SendNotificationParams): Promise<void
   if (!params.clientPhone) return;
 
   try {
-    const message = `LawXP: ${params.title}\n${params.message}`;
+    const message = `CaseFiles: ${params.title}\n${params.message}`;
 
     await fetch("https://api.msg91.com/api/v5/flow", {
       method: "POST",
@@ -142,7 +142,7 @@ async function sendWhatsAppNotification(params: SendNotificationParams): Promise
   if (!params.clientPhone) return;
 
   try {
-    const message = `Hi ${params.clientName || "there"},\n\n${params.title}\n${params.message}\n\n- LawXP`;
+    const message = `Hi ${params.clientName || "there"},\n\n${params.title}\n${params.message}\n\n- CaseFiles`;
 
     await fetch("https://api.interakt.shop/v1/public/message/", {
       method: "POST",

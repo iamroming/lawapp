@@ -6,8 +6,10 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { createClient } from "@/lib/supabase/client"
+import { dbWrite } from "@/lib/db-write"
 import { formatDate, unwrap } from "@/lib/utils"
 import { toast } from "react-hot-toast"
+import { useUser } from "@/hooks/use-user";
 
 interface Message {
   id: string
@@ -20,6 +22,7 @@ interface Message {
 }
 
 export default function ClientMessagesPage() {
+  const { user: appUser } = useUser();
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState("")
   const [sending, setSending] = useState(false)
@@ -31,14 +34,13 @@ export default function ClientMessagesPage() {
   useEffect(() => {
     async function loadMessages() {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-        setUserId(user.id)
+        if (!appUser) return
+        setUserId(appUser?.uuid)
 
         const { data } = await supabase
           .from("messages")
           .select("id, content, sender_id, receiver_id, client_id, created_at, sender:profiles(full_name)")
-          .eq("client_id", user.id)
+          .eq("client_id", appUser?.uuid)
           .order("created_at", { ascending: true })
 
         if (data) setMessages(data)
@@ -80,20 +82,31 @@ export default function ClientMessagesPage() {
     if (!newMessage.trim() || !userId) return
     setSending(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!appUser) return
 
       const { data: profile } = await supabase
         .from("client_portal_users")
         .select("client_id")
-        .eq("user_id", user.id)
+        .eq("user_id", appUser?.uuid)
         .single()
 
-      const { error } = await supabase.from("messages").insert({
+      let firmId = null
+      if (profile?.client_id) {
+        const { data: clientCase } = await supabase
+          .from("cases")
+          .select("firm_id")
+          .eq("client_id", profile.client_id)
+          .limit(1)
+          .single()
+        firmId = clientCase?.firm_id || null
+      }
+
+      const { error } = await dbWrite("messages", "insert", {
         client_id: profile?.client_id,
-        sender_id: user.id,
+        sender_id: appUser?.uuid,
         receiver_id: null,
         content: newMessage.trim(),
+        firm_id: firmId,
       })
 
       if (error) throw error

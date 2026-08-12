@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 import { getCaseByCNR, bulkRefreshCases } from "@/lib/ecourts/api";
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
     const { case_id, ecourts_case_id } = body;
+
+    // Get firm_id for case scoping
+    const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.uuid).single();
+    const firmId = profile?.firm_id || user.uuid;
 
     // Get the ecourts case to sync
     let query = supabase.from("ecourts_cases").select("*").eq("is_active", true);
@@ -20,22 +25,46 @@ export async function POST(request: NextRequest) {
       query = query.eq("id", ecourts_case_id);
     } else if (case_id) {
       query = query.eq("case_id", case_id);
+    }
+
+    // For targeted syncs, verify the case belongs to the user's firm
+    if (ecourts_case_id || case_id) {
+      const { data: targetedCases, error: targetedError } = await query;
+      if (targetedError || !targetedCases?.length) {
+        return NextResponse.json({ error: "No cases to sync" }, { status: 404 });
+      }
+
+      for (const ec of targetedCases) {
+        const { data: parentCase } = await supabase
+          .from("cases")
+          .select("firm_id")
+          .eq("id", ec.case_id)
+          .single();
+        if (parentCase && parentCase.firm_id !== firmId) {
+          return NextResponse.json({ error: "Case does not belong to your firm" }, { status: 403 });
+        }
+      }
+
+      var ecourtsCases = targetedCases;
+      var fetchError = targetedError;
     } else {
-      // Sync all active cases for the user - get case IDs first
-      const { data: userCases } = await supabase
+      // Sync all active cases for the firm
+      const { data: firmCases } = await supabase
         .from("cases")
         .select("id")
-        .or(`created_by.eq.${user.id},assigned_to.eq.${user.id}`);
+        .eq("firm_id", firmId);
       
-      if (userCases?.length) {
-        const caseIds = userCases.map((c) => c.id);
+      if (firmCases?.length) {
+        const caseIds = firmCases.map((c) => c.id);
         query = query.in("case_id", caseIds);
       } else {
         return NextResponse.json({ error: "No cases to sync" }, { status: 404 });
       }
-    }
 
-    const { data: ecourtsCases, error: fetchError } = await query;
+      var fetchResult = await query;
+      var ecourtsCases = fetchResult.data;
+      var fetchError = fetchResult.error;
+    }
 
     if (fetchError || !ecourtsCases?.length) {
       return NextResponse.json({ error: "No cases to sync" }, { status: 404 });
@@ -43,17 +72,26 @@ export async function POST(request: NextRequest) {
 
     // Bulk refresh all CNRs first
     const cnrs = ecourtsCases.map((ec) => ec.cnr_number).filter(Boolean);
+    const bulkData = new Map<string, ReturnType<typeof getCaseByCNR> extends Promise<infer R> ? R : never>();
     if (cnrs.length > 0) {
-      await bulkRefreshCases(cnrs);
+      const bulkResult = await bulkRefreshCases(cnrs);
+      if (Array.isArray(bulkResult)) {
+        for (const item of bulkResult) {
+          if (item?.cnr_number) bulkData.set(item.cnr_number, item);
+        }
+      }
     }
 
     const results = [];
 
     for (const ec of ecourtsCases) {
       try {
-        // Fetch real case data from eCourts API
-        const caseDetail = await getCaseByCNR(ec.cnr_number);
-        
+        // Get data from bulk result or fetch individually as fallback
+        let caseDetail = bulkData.get(ec.cnr_number) || null;
+        if (!caseDetail) {
+          caseDetail = await getCaseByCNR(ec.cnr_number);
+        }
+
         if (!caseDetail) {
           throw new Error(`Case not found for CNR: ${ec.cnr_number}`);
         }

@@ -1,5 +1,5 @@
 ========================================
-LawXP BUG FIX REPORT
+CaseFiles BUG FIX REPORT
 Generated: 2026-08-02
 ========================================
 

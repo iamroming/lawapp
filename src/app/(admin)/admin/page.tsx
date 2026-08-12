@@ -15,6 +15,7 @@ import {
   Settings,
 } from "lucide-react";
 import Link from "next/link";
+import { useUser } from "@/hooks/use-user";
 
 interface FirmStats {
   totalEmployees: number;
@@ -27,6 +28,7 @@ interface FirmStats {
 }
 
 export default function AdminDashboardPage() {
+  const { user: appUser } = useUser();
   const [stats, setStats] = useState<FirmStats>({
     totalEmployees: 0,
     totalClients: 0,
@@ -42,13 +44,12 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!appUser) return;
 
       const { data: profile } = await supabase
         .from("profiles")
         .select("firm_id")
-        .eq("id", user.id)
+        .eq("id", appUser?.uuid)
         .single();
 
       const currentFirmId = profile?.firm_id;
@@ -103,7 +104,7 @@ export default function AdminDashboardPage() {
     };
 
     fetchStats();
-  }, [supabase]);
+  }, []);
 
   if (loading) {
     return <div className="text-center py-12 text-[var(--text-secondary)]">Loading owner dashboard...</div>;
@@ -182,7 +183,7 @@ export default function AdminDashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Recent Clients</CardTitle>
-            <Link href="/clients" className="text-sm text-[var(--text-accent)] hover:underline">
+            <Link href="/admin/users" className="text-sm text-[var(--text-accent)] hover:underline">
               View All
             </Link>
           </CardHeader>

@@ -12,7 +12,7 @@ const plans = [
   {
     name: "Free",
     slug: "free",
-    description: "Try LawXP with basic features. Perfect for solo lawyers getting started.",
+    description: "Try CaseFiles with basic features. Perfect for solo lawyers getting started.",
     price: 0,
     billing_period: "monthly",
     max_cases: 3,

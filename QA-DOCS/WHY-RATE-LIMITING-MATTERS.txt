@@ -1,0 +1,152 @@
+WHY RATE LIMITING IS IMPORTANT
+===============================
+A simple explanation of why every app needs it
+
+================================================================================
+WHAT IS RATE LIMITING?
+================================================================================
+
+Rate limiting controls how many requests a user/IP can make in a given time.
+
+Example: "Each user can make 20 requests per minute. If they exceed that,
+wait 60 seconds before trying again."
+
+It's like a bouncer at a door — lets real users in, keeps attackers out.
+
+================================================================================
+WHAT HAPPENS WITHOUT RATE LIMITING?
+================================================================================
+
+1. SERVER CRASH
+   One person sends 10,000 requests/second.
+   Exhausts Supabase connections.
+   Your app goes down for EVERYONE.
+
+2. BRUTE-FORCE LOGIN
+   Attacker tries 1 million passwords.
+   No limit = they can try forever.
+   Eventually they get in.
+
+3. QUOTA DRAIN
+   Supabase free tier: 500K row reads/month.
+   One bot can burn through it in an hour.
+   You hit the limit. Real users see errors.
+
+4. DATA THEFT
+   Attacker scrapes all clients, cases, documents.
+   Loops through the API: "give me all clients, page 1... page 2... page 1000..."
+   Steals your entire database in minutes.
+
+5. AI COST ABUSE
+   Your AI endpoint costs money per request.
+   No limit = attacker sends 10,000 AI chat requests.
+   You get a $500 bill you didn't expect.
+
+6. DDoS ATTACK
+   Attacker floods your app with traffic.
+   Vercel serverless functions overload.
+   App becomes unresponsive for real users.
+
+================================================================================
+REAL EXAMPLE
+================================================================================
+
+WITHOUT rate limiting:
+  Attacker writes a script:
+    for i in range(1000000):
+        POST /api/auth/login
+        email: admin@firm.com
+        password: random_password
+
+  In 10 minutes: 1M login attempts.
+  Supabase hits auth limit.
+  Real users can't login.
+  App is down.
+
+WITH rate limiting:
+  After 5 failed attempts from same IP:
+    Response: "Too many attempts. Try again in 15 minutes."
+
+  Script gets blocked.
+  App stays up.
+  Real users unaffected.
+
+================================================================================
+WHAT RATE LIMITING PROTECTS AGAINST
+================================================================================
+
+- Brute-force attacks (login, password reset)
+- Data scraping (stealing all your data)
+- API abuse (spamming endpoints)
+- DDoS (overwhelming your server)
+- Cost abuse (AI, payment APIs)
+- Bot traffic (automated spam)
+- Resource exhaustion (hitting Supabase limits)
+
+================================================================================
+HOW IT WORKS
+================================================================================
+
+Without Redis (current):
+  Rate limit state stored in server memory.
+  Problem: Serverless functions are stateless.
+  Each request might hit a different server instance.
+  Rate limit resets on every cold start.
+  Not effective for production.
+
+With Redis (recommended):
+  Rate limit state stored in Redis (shared database).
+  All serverless instances share the same count.
+  Rate limit persists across cold starts.
+  Works perfectly on Vercel/serverless.
+
+  Example flow:
+    1. User sends request
+    2. Check Redis: "how many requests has this IP made?"
+    3. If count < limit → allow, increment count
+    4. If count >= limit → block with 429 "Too Many Requests"
+
+================================================================================
+WHY UPSTASH REDIS IS PERFECT FOR THIS
+================================================================================
+
+- Serverless: works with Vercel's serverless functions
+- Free tier: 500K commands/month (enough for small apps)
+- No credit card required
+- Pay-as-you-go: $0.20 per 100K commands
+- Global: edge network, fast response times
+
+================================================================================
+RECOMMENDED LIMITS
+================================================================================
+
+| Endpoint              | Limit         | Window  |
+|-----------------------|---------------|---------|
+| Login                 | 5 attempts    | 15 min  |
+| Signup                | 3 attempts    | 1 hour  |
+| Password reset        | 3 attempts    | 1 hour  |
+| AI chat               | 20 requests   | 1 min   |
+| AI research           | 10 requests   | 1 min   |
+| Payment create-order  | 5 requests    | 1 min   |
+| Payment verify        | 10 requests   | 1 min   |
+| Document upload       | 10 requests   | 1 min   |
+| General API           | 60 requests   | 1 min   |
+
+================================================================================
+THE BOTTOM LINE
+================================================================================
+
+Without rate limiting:
+  Your app is a house with no locks.
+  Anyone can walk in, take what they want, or break things.
+
+With rate limiting:
+  Your app has a bouncer.
+  Real users enter freely.
+  Attackers get stopped at the door.
+
+It's not optional for production apps. It's essential.
+
+================================================================================
+END OF FILE
+================================================================================

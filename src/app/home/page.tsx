@@ -50,7 +50,7 @@ const features = [
 ];
 
 const stats = [
-  { value: "2,500+", label: "Lawyers Trust LawXP" },
+  { value: "2,500+", label: "Lawyers Trust CaseFiles" },
   { value: "15,000+", label: "Cases Managed" },
   { value: "99.9%", label: "Uptime SLA" },
   { value: "4.9/5", label: "Client Rating" },
@@ -60,7 +60,7 @@ const testimonials = [
   {
     name: "Adv. Priya Sharma",
     firm: "Sharma & Associates, Delhi",
-    text: "LawXP replaced 5 different tools we were using. The AI research alone saves me 3 hours every day.",
+    text: "CaseFiles replaced 5 different tools we were using. The AI research alone saves me 3 hours every day.",
   },
   {
     name: "Adv. Rajesh Kumar",
@@ -82,7 +82,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Scale className="h-7 w-7 text-orange-500" />
-            <span className="text-xl font-bold">LawXP</span>
+            <span className="text-xl font-bold">CaseFiles</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm text-gray-400">
             <a href="#features" className="hover:text-white transition-colors">Features</a>
@@ -214,9 +214,9 @@ export default function HomePage() {
           </div>
           <div className="grid sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {[
-              { name: "Free", price: "₹0", desc: "Try it out", features: ["3 cases", "1 user", "100 MB storage"], cta: "Get Started" },
-              { name: "Professional", price: "₹799", desc: "/month", features: ["Unlimited cases", "3 users", "5 GB storage", "AI research"], cta: "Start Trial", highlighted: true },
-              { name: "Firm", price: "₹1,999", desc: "/month", features: ["Unlimited everything", "10 users", "20 GB storage", "Admin controls"], cta: "Start Trial" },
+              { name: "Free", price: "₹0", desc: "Try it out", features: ["3 cases", "1 user", "200 MB storage"], cta: "Get Started" },
+              { name: "Professional", price: "₹799", desc: "/month", features: ["Unlimited cases", "3 users", "3 GB storage", "AI research"], cta: "Start Trial", highlighted: true },
+              { name: "Firm", price: "₹1,999", desc: "/month", features: ["Unlimited everything", "10 users", "7 GB storage", "Admin controls"], cta: "Start Trial" },
             ].map((p) => (
               <div
                 key={p.name}
@@ -293,7 +293,7 @@ export default function HomePage() {
             Ready to Transform Your Practice?
           </h2>
           <p className="mt-4 text-gray-400 text-lg">
-            Join 2,500+ lawyers who manage their entire practice with LawXP.
+            Join 2,500+ lawyers who manage their entire practice with CaseFiles.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
@@ -313,7 +313,7 @@ export default function HomePage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
               <Scale className="h-6 w-6 text-orange-500" />
-              <span className="text-lg font-bold">LawXP</span>
+              <span className="text-lg font-bold">CaseFiles</span>
             </div>
             <div className="flex items-center gap-6 text-sm text-gray-500">
               <Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link>
@@ -322,7 +322,7 @@ export default function HomePage() {
               <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
             </div>
             <div className="text-sm text-gray-600">
-              © 2026 LawXP. All rights reserved.
+              © 2026 CaseFiles. All rights reserved.
             </div>
           </div>
         </div>

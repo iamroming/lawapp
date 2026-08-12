@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
 // GET — get active timer
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { data, error } = await supabase
       .from("active_timers")
       .select("*, cases(id, title, case_number)")
-      .eq("user_id", user.id)
+      .eq("user_id", user.uuid)
       .single();
 
     if (error && error.code !== "PGRST116") throw error;
@@ -25,11 +26,11 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     // Stop any existing timer first
-    await supabase.from("active_timers").delete().eq("user_id", user.id);
+    await supabase.from("active_timers").delete().eq("user_id", user.uuid);
 
     const body = await request.json();
     const { case_id, description } = body;
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from("active_timers")
       .insert({
-        user_id: user.id,
+        user_id: user.uuid,
         case_id: case_id || null,
         description: description || null,
         started_at: new Date().toISOString(),
@@ -56,14 +57,14 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     // Get active timer
     const { data: timer } = await supabase
       .from("active_timers")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", user.uuid)
       .single();
 
     if (!timer) return NextResponse.json({ error: "No active timer" }, { status: 400 });
@@ -75,13 +76,13 @@ export async function PATCH(request: NextRequest) {
 
     // Get user's firm_id
     const { data: profile } = await supabase
-      .from("profiles").select("firm_id").eq("id", user.id).single();
+      .from("profiles").select("firm_id").eq("id", user.uuid).single();
 
     // Create timesheet entry
     const { data: timesheet, error: tsError } = await supabase
       .from("timesheets")
       .insert({
-        user_id: user.id,
+        user_id: user.uuid,
         case_id: timer.case_id,
         firm_id: profile?.firm_id || null,
         description: timer.description,
@@ -94,7 +95,7 @@ export async function PATCH(request: NextRequest) {
     if (tsError) throw tsError;
 
     // Delete the timer
-    await supabase.from("active_timers").delete().eq("user_id", user.id);
+    await supabase.from("active_timers").delete().eq("user_id", user.uuid);
 
     return NextResponse.json(timesheet);
   } catch (error) {
@@ -103,13 +104,13 @@ export async function PATCH(request: NextRequest) {
 }
 
 // DELETE — cancel timer without saving
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await verifySessionFromRequest(request);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    await supabase.from("active_timers").delete().eq("user_id", user.id);
+    await supabase.from("active_timers").delete().eq("user_id", user.uuid);
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Server error" }, { status: 500 });

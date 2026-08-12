@@ -40,6 +40,13 @@ export default function TemplatesPage() {
 
   const handlePreview = () => {
     if (!selectedTemplate) return;
+    const missingFields = selectedTemplate.fields
+      .filter((f) => f.required && !formData[f.id]?.trim())
+      .map((f) => f.label);
+    if (missingFields.length > 0) {
+      toast.error(`Please fill required fields: ${missingFields.join(", ")}`);
+      return;
+    }
     const result = generateDocument(selectedTemplate, formData);
     setPreview(result);
   };
