@@ -3,10 +3,12 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
 function getAdminClient() {
-  return createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceKey) {
+    throw new Error("Missing environment variables: NEXT_PUBLIC_SUPABASE_URL and/or SUPABASE_SERVICE_ROLE_KEY must be set");
+  }
+  return createServiceClient(url, serviceKey);
 }
 
 async function verifySuperAdmin(request: NextRequest) {

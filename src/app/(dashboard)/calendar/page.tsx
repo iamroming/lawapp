@@ -188,15 +188,17 @@ function CalendarContent() {
   useEffect(() => {
     fetchData();
     // TODO: court_rules and court_events tables don't exist yet. Using localStorage as temporary persistence.
-    const savedRules = localStorage.getItem("calendar_rules");
-    const savedEvents = localStorage.getItem("calendar_events");
-    if (savedRules) {
-      try { setRules(JSON.parse(savedRules)); } catch {}
+    if (appUser?.uuid) {
+      const savedRules = localStorage.getItem(`calendar_rules_${appUser.uuid}`);
+      const savedEvents = localStorage.getItem(`calendar_events_${appUser.uuid}`);
+      if (savedRules) {
+        try { setRules(JSON.parse(savedRules)); } catch {}
+      }
+      if (savedEvents) {
+        try { setEvents(JSON.parse(savedEvents)); } catch {}
+      }
     }
-    if (savedEvents) {
-      try { setEvents(JSON.parse(savedEvents)); } catch {}
-    }
-  }, []);
+  }, [appUser?.uuid]);
 
   useEffect(() => {
     if (preselectedCaseId && cases.length > 0) {
@@ -208,45 +210,72 @@ function CalendarContent() {
   const fetchData = async () => {
     if (!appUser) { setLoading(false); return; }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role, firm_id")
-      .eq("id", appUser?.uuid)
-      .single();
+    try {
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role, firm_id")
+        .eq("id", appUser?.uuid)
+        .single();
 
-    const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
-    const firmId = profile?.firm_id || appUser?.uuid;
+      if (profileError) {
+        console.error("Failed to fetch profile:", profileError.message);
+        toast.error("Failed to load calendar data");
+        setLoading(false);
+        return;
+      }
 
-    let hearingsQuery = supabase
-      .from("hearings")
-      .select("*, case:cases(id, case_number, title, status)")
-      .is("deleted_at", null)
-      .order("hearing_date");
-    if (isOwner) {
-      hearingsQuery = hearingsQuery.eq("firm_id", firmId);
-    } else {
-      hearingsQuery = hearingsQuery.eq("created_by", appUser?.uuid);
+      const isOwner = profile?.role === "owner" || profile?.role === "partner" || profile?.role === "super_admin";
+      const firmId = profile?.firm_id || appUser?.uuid;
+
+      let hearingsQuery = supabase
+        .from("hearings")
+        .select("*, case:cases(id, case_number, title, status)")
+        .is("deleted_at", null)
+        .order("hearing_date");
+      if (isOwner) {
+        hearingsQuery = hearingsQuery.eq("firm_id", firmId);
+      } else {
+        hearingsQuery = hearingsQuery.eq("created_by", appUser?.uuid);
+      }
+
+      let casesQuery = supabase.from("cases").select("id, case_number, title, client_id").is("deleted_at", null).order("title");
+      if (isOwner) {
+        casesQuery = casesQuery.eq("firm_id", firmId);
+      } else {
+        casesQuery = casesQuery.or(`assigned_to.eq.${appUser?.uuid},created_by.eq.${appUser?.uuid}`);
+      }
+
+      const clientsQuery = supabase
+        .from("clients")
+        .select("id, full_name")
+        .eq("firm_id", firmId)
+        .is("deleted_at", null)
+        .order("full_name");
+
+      const [hearingsRes, casesRes, clientsRes] = await Promise.all([hearingsQuery, casesQuery, clientsQuery]);
+
+      if (hearingsRes.error) {
+        console.error("Failed to fetch hearings:", hearingsRes.error.message);
+        toast.error("Failed to load hearings");
+      }
+      if (casesRes.error) {
+        console.error("Failed to fetch cases:", casesRes.error.message);
+        toast.error("Failed to load cases");
+      }
+      if (clientsRes.error) {
+        console.error("Failed to fetch clients:", clientsRes.error.message);
+        toast.error("Failed to load clients");
+      }
+
+      setHearings((hearingsRes.data as Hearing[]) || []);
+      setCases((casesRes.data as CaseOption[]) || []);
+      setClients((clientsRes.data as ClientOption[]) || []);
+    } catch (err) {
+      console.error("Unexpected error fetching calendar data:", err);
+      toast.error("Failed to load calendar data");
+    } finally {
+      setLoading(false);
     }
-
-    let casesQuery = supabase.from("cases").select("id, case_number, title, client_id").is("deleted_at", null).order("title");
-    if (isOwner) {
-      casesQuery = casesQuery.eq("firm_id", firmId);
-    } else {
-      casesQuery = casesQuery.or(`assigned_to.eq.${appUser?.uuid},created_by.eq.${appUser?.uuid}`);
-    }
-
-    const clientsQuery = supabase
-      .from("clients")
-      .select("id, full_name")
-      .eq("firm_id", firmId)
-      .is("deleted_at", null)
-      .order("full_name");
-
-    const [hearingsRes, casesRes, clientsRes] = await Promise.all([hearingsQuery, casesQuery, clientsQuery]);
-    setHearings((hearingsRes.data as Hearing[]) || []);
-    setCases((casesRes.data as CaseOption[]) || []);
-    setClients((clientsRes.data as ClientOption[]) || []);
-    setLoading(false);
   };
 
   const handleAddHearing = async (e: React.FormEvent) => {
@@ -316,7 +345,7 @@ function CalendarContent() {
     };
     setRules((prev) => {
       const next = [...prev, rule];
-      localStorage.setItem("calendar_rules", JSON.stringify(next));
+      if (appUser?.uuid) localStorage.setItem(`calendar_rules_${appUser.uuid}`, JSON.stringify(next));
       return next;
     });
     toast.success("Court rule added!");
@@ -328,7 +357,7 @@ function CalendarContent() {
     if (!window.confirm("Are you sure you want to delete this rule?")) return;
     setRules((prev) => {
       const next = prev.filter((r) => r.id !== id);
-      localStorage.setItem("calendar_rules", JSON.stringify(next));
+      if (appUser?.uuid) localStorage.setItem(`calendar_rules_${appUser.uuid}`, JSON.stringify(next));
       return next;
     });
     toast.success("Rule deleted");
@@ -350,7 +379,7 @@ function CalendarContent() {
     };
     setEvents((prev) => {
       const next = [...prev, evt];
-      localStorage.setItem("calendar_events", JSON.stringify(next));
+      if (appUser?.uuid) localStorage.setItem(`calendar_events_${appUser.uuid}`, JSON.stringify(next));
       return next;
     });
     toast.success("Event added!");
@@ -362,7 +391,7 @@ function CalendarContent() {
     if (!window.confirm("Are you sure you want to delete this event?")) return;
     setEvents((prev) => {
       const next = prev.filter((e) => e.id !== id);
-      localStorage.setItem("calendar_events", JSON.stringify(next));
+      if (appUser?.uuid) localStorage.setItem(`calendar_events_${appUser.uuid}`, JSON.stringify(next));
       return next;
     });
     toast.success("Event deleted");
@@ -533,7 +562,7 @@ function CalendarContent() {
 
   const handleOpenAddRule = () => {
     if (selectedDate) {
-      const dateStr = selectedDate.toISOString().slice(0, 10);
+      const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
       setNewRule((prev) => ({ ...prev, date: dateStr }));
     }
     setShowRuleModal(true);
@@ -542,7 +571,7 @@ function CalendarContent() {
 
   const handleOpenAddEvent = () => {
     if (selectedDate) {
-      const dateStr = selectedDate.toISOString().slice(0, 10);
+      const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
       setNewEvent((prev) => ({ ...prev, date: dateStr }));
     }
     setShowEventModal(true);

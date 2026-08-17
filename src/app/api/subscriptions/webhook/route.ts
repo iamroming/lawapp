@@ -46,6 +46,17 @@ export async function POST(request: NextRequest) {
   const planSlug = notes.plan_slug as PlanSlug | undefined;
   const billingCycle = notes.billing_cycle as "monthly" | "annual" | undefined;
 
+  // Look up the subscription plan UUID from the slug
+  let planId: string | null = null;
+  if (planSlug) {
+    const { data: planRow } = await supabase
+      .from("subscription_plans")
+      .select("id")
+      .eq("slug", planSlug)
+      .maybeSingle();
+    planId = planRow?.id || null;
+  }
+
   if (!userId) {
     return NextResponse.json({ error: "Missing user_id" }, { status: 400 });
   }
@@ -53,7 +64,7 @@ export async function POST(request: NextRequest) {
   // Idempotency: check if subscription already matches target state (Bug #35)
   const { data: existingSub } = await supabase
     .from("user_subscriptions")
-    .select("status, plan_id, razorpay_sub_id, event_id")
+    .select("status, plan_id, razorpay_sub_id, event_id, plan:subscription_plans(slug)")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -67,7 +78,7 @@ export async function POST(request: NextRequest) {
   switch (event) {
     case "subscription.activated": {
       // Idempotency: skip if already active with same plan (Bug #35)
-      if (existingSub?.status === "active" && existingSub?.plan_id === planSlug) {
+      if (existingSub?.status === "active" && (existingSub as any)?.plan?.slug === planSlug) {
         return NextResponse.json({ received: true, skipped: "already active" });
       }
 
@@ -75,7 +86,7 @@ export async function POST(request: NextRequest) {
         .from("user_subscriptions")
         .update({
           status: "active",
-          plan_id: planSlug || null,
+          plan_id: planId,
           expires_at: new Date(payload.current_end * 1000).toISOString(),
           razorpay_sub_id: razorpaySubId,
           event_id: eventId,
@@ -194,6 +205,24 @@ export async function POST(request: NextRequest) {
 
       if (updateError) {
         console.error("Failed to update subscription on resumed:", updateError);
+        return NextResponse.json({ error: "Failed to update subscription" }, { status: 500 });
+      }
+      break;
+    }
+
+    case "subscription.expired": {
+      if (existingSub?.status === "expired") {
+        return NextResponse.json({ received: true, skipped: "already expired" });
+      }
+
+      const { error: updateError } = await supabase
+        .from("user_subscriptions")
+        .update({ status: "expired", event_id: eventId })
+        .eq("user_id", userId)
+        .in("status", ["active", "trialing", "past_due"]);
+
+      if (updateError) {
+        console.error("Failed to update subscription on expired:", updateError);
         return NextResponse.json({ error: "Failed to update subscription" }, { status: 500 });
       }
       break;

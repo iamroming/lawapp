@@ -31,7 +31,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const user = await verifySessionFromRequest(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await request.json();
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
   const allowedFields = {
     title: body.title,
     description: body.description,
@@ -49,6 +54,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     next_hearing_date: body.next_hearing_date,
     total_fee: body.total_fee,
     outcome: body.outcome,
+    advance_amount: body.advance_amount,
+    amount_received: body.amount_received,
   };
   const filteredBody = Object.fromEntries(
     Object.entries(allowedFields).filter(([, v]) => v !== undefined)
@@ -58,11 +65,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const firmId = profile?.firm_id;
   const role = profile?.role;
 
-  if (!["owner", "partner", "senior_associate"].includes(role || "")) {
+  if (!["owner", "partner", "senior_associate", "associate"].includes(role || "")) {
     return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
   }
 
   if (body.client_id) {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(body.client_id)) {
+      return NextResponse.json({ error: "Invalid client_id format" }, { status: 400 });
+    }
     const { data: client } = await supabase
       .from("clients")
       .select("id")

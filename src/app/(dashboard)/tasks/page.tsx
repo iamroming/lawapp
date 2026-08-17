@@ -9,6 +9,7 @@ import { Plus, CheckSquare, ArrowRight, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { dbWrite } from "@/lib/db-write";
 import { useUser } from "@/hooks/use-user";
+import toast from "react-hot-toast";
 
 const COLUMNS = [
   { key: "todo", label: "To Do", color: "bg-[var(--surface-subtle)] text-[var(--text-primary)]" },
@@ -51,6 +52,7 @@ export default function TasksPage() {
     let query = supabase
       .from("tasks")
       .select("*, cases(id, title, case_number, firm_id), clients(id, full_name), assigned_user:profiles!tasks_assigned_to_fkey(full_name)")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
     if (isOwner) {
@@ -59,19 +61,31 @@ export default function TasksPage() {
       query = query.or(`assigned_to.eq.${appUser?.uuid},created_by.eq.${appUser?.uuid}`);
     }
 
-    const { data } = await query;
+    const { data, error } = await query;
+    if (error) {
+      console.error("Failed to fetch tasks:", error.message);
+      toast.error("Failed to load tasks");
+    }
     if (data) setTasks(data);
     setLoading(false);
   };
 
   const moveTask = async (taskId: string, newStatus: string) => {
-    await dbWrite("tasks", "update", { status: newStatus }, { id: taskId });
+    const { error } = await dbWrite("tasks", "update", { status: newStatus }, { id: taskId });
+    if (error) {
+      toast.error("Failed to move task. Please try again.");
+      return;
+    }
     setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: newStatus } : t));
   };
 
   const deleteTask = async (id: string) => {
     if (!confirm("Delete this task?")) return;
-    await dbWrite("tasks", "delete", undefined, { id });
+    const { error } = await dbWrite("tasks", "delete", undefined, { id });
+    if (error) {
+      toast.error("Failed to delete task. Please try again.");
+      return;
+    }
     setTasks((prev) => prev.filter((t) => t.id !== id));
   };
 

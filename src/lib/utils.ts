@@ -38,7 +38,10 @@ export function formatDateTime(date: string | Date): string {
 export function generateCaseNumber(): string {
   const year = new Date().getFullYear();
   const random = Math.floor(Math.random() * 9000) + 1000;
-  return `CASE/${year}/${random}`;
+  const suffix = Math.floor(Math.random() * 100);
+  // NOTE: For production, prefer using a server-side RPC (e.g. generate_case_number)
+  // to guarantee uniqueness via database-level sequencing.
+  return `CASE/${year}/${random}${suffix.toString().padStart(2, "0")}`;
 }
 
 export function getInitials(name: string): string {

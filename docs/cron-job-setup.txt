@@ -1,0 +1,145 @@
+========================================
+CRON-JOB.ORG SETUP GUIDE
+========================================
+
+STEP 1: Sign Up
+Go to https://cron-job.org and create free account
+
+
+STEP 2: Create Cron Job
+
+Click "Create Cron Job" button
+
+
+STEP 3: Fill Form
+
+URL: paste the URL from below
+Method: GET
+Schedule: pick from below
+
+IMPORTANT: Headers kahan daalein?
+---------------------------------
+
+Form mein neeche scroll karo, "Headers" section dikhega:
+
+┌─────────────────────────────────────────────┐
+│                                             │
+│ URL: https://www.casefiles.in/api/...       │
+│                                             │
+│ Method: GET                                 │
+│                                             │
+│ Schedule: 0 9 * * *                         │
+│                                             │
+│ ─────────────────────────────────────────   │
+│ Headers (scroll down)                       │
+│ ─────────────────────────────────────────   │
+│                                             │
+│ Key:    X-Cron-Secret                       │
+│ Value:  casefiles-cron-secret-2026          │
+│                                             │
+│ [Add Header] button pe click karke add karo │
+│                                             │
+│ ─────────────────────────────────────────   │
+│                                             │
+│ [Save]                                      │
+└─────────────────────────────────────────────┘
+
+
+STEP 4: Save and Test
+
+"Test" button se check karo ki kaam kar raha hai
+
+
+========================================
+ALL 8 CRON JOBS
+========================================
+
+Job 1: Trial Funnel
+URL:    https://www.casefiles.in/api/subscriptions/trial-funnel
+Method: GET
+Schedule: 0 9 * * * (Daily 9:00 AM)
+Header: X-Cron-Secret: casefiles-cron-secret-2026
+
+Job 2: Hearing Reminders
+URL:    https://www.casefiles.in/api/reminders/cron
+Method: GET
+Schedule: 0 18 * * * (Daily 6:00 PM)
+Header: X-Cron-Secret: casefiles-cron-secret-2026
+
+Job 3: Expire Trials
+URL:    https://www.casefiles.in/api/subscriptions/expire-trials
+Method: GET
+Schedule: 59 23 * * * (Daily 11:59 PM)
+Header: X-Cron-Secret: casefiles-cron-secret-2026
+
+Job 4: Daily Digest
+URL:    https://www.casefiles.in/api/daily-digest
+Method: GET
+Schedule: 0 8 * * * (Daily 8:00 AM)
+Header: X-Cron-Secret: casefiles-cron-secret-2026
+
+Job 5: Invoice Reminders
+URL:    https://www.casefiles.in/api/invoices/reminders
+Method: GET
+Schedule: 0 9 * * 1 (Every Monday 9:00 AM)
+Header: X-Cron-Secret: casefiles-cron-secret-2026
+
+Job 6: Deadline Check
+URL:    https://www.casefiles.in/api/deadlines/check
+Method: GET
+Schedule: 0 7 * * * (Daily 7:00 AM)
+Header: X-Cron-Secret: casefiles-cron-secret-2026
+
+Job 7: Cause List Sync
+URL:    https://www.casefiles.in/api/cause-list/sync
+Method: GET
+Schedule: 0 6 * * * (Daily 6:00 AM)
+Header: X-Cron-Secret: casefiles-cron-secret-2026
+
+Job 8: Case Alerts Check
+URL:    https://www.casefiles.in/api/case-alerts/check
+Method: GET
+Schedule: 0 */6 * * * (Every 6 hours)
+Header: X-Cron-Secret: casefiles-cron-secret-2026
+
+
+========================================
+HEADERS SECTION - SCREENSHOT GUIDE
+========================================
+
+When creating a cron job, scroll down to find "Headers":
+
+┌─────────────────────────────────────────────────┐
+│ Cron Job Form                                   │
+│                                                 │
+│ 1. URL Field                                   │
+│    ┌─────────────────────────────────────────┐  │
+│    │ https://www.casefiles.in/api/...        │  │
+│    └─────────────────────────────────────────┘  │
+│                                                 │
+│ 2. Method: GET                                  │
+│                                                 │
+│ 3. Schedule: 0 9 * * *                          │
+│                                                 │
+│ 4. SCROLL DOWN to Headers section               │
+│    ┌─────────────────────────────────────────┐  │
+│    │ Headers                                │  │
+│    │ ┌──────────────┬──────────────────────┐│  │
+│    │ │ Key          │ Value                ││  │
+│    │ ├──────────────┼──────────────────────┤│  │
+│    │ │X-Cron-Secret │casefiles-cron-secret ││  │
+│    │ │              │-2026                 ││  │
+│    │ └──────────────┴──────────────────────┘│  │
+│    │ [Add Header]                           │  │
+│    └─────────────────────────────────────────┘  │
+│                                                 │
+│ 5. Click SAVE                                   │
+└─────────────────────────────────────────────────┘
+
+
+========================================
+QUICK COPY-PASTE
+========================================
+
+Header Key:   X-Cron-Secret
+Header Value: casefiles-cron-secret-2026

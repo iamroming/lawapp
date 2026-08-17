@@ -7,8 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
-import { formatDate, formatCurrency } from "@/lib/utils";
-import { Users, Search, Mail, Phone, Shield, Crown, UserX, UserCheck, Briefcase, FileText, Receipt, Eye } from "lucide-react";
+import { formatDate } from "@/lib/utils";
+import { Users, Search, Mail, Phone, Shield, Crown, UserX, UserCheck, Eye } from "lucide-react";
 import { ROLE_DISPLAY_NAMES } from "@/types/database";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -23,17 +23,8 @@ interface UserProfile {
   created_at: string;
 }
 
-interface UserStats {
-  cases: number;
-  clients: number;
-  documents: number;
-  revenue: number;
-  subscription: string;
-}
-
 export default function SuperAdminUsersPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
-  const [userStats, setUserStats] = useState<Record<string, UserStats>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
@@ -45,7 +36,6 @@ export default function SuperAdminUsersPage() {
     const data = await getSuperAdminUsers();
     const userList = (data as UserProfile[]) || [];
     setUsers(userList);
-    setUserStats({});
     setLoading(false);
   };
 
@@ -103,6 +93,7 @@ export default function SuperAdminUsersPage() {
         </div>
         <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="h-10 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm">
           <option value="all">All Roles</option>
+          <option value="super_admin">Super Admin</option>
           <option value="owner">Owner</option>
           <option value="partner">Partner</option>
           <option value="senior_associate">Senior Associate</option>
@@ -121,7 +112,6 @@ export default function SuperAdminUsersPage() {
       ) : (
         <div className="grid gap-3">
           {filteredUsers.map((user) => {
-            const stats = userStats[user.id];
             const isExpanded = expandedUser === user.id;
             return (
               <Card key={user.id} className="hover:shadow-md transition-shadow">
@@ -141,7 +131,6 @@ export default function SuperAdminUsersPage() {
                             {ROLE_DISPLAY_NAMES[user.role] || user.role}
                           </Badge>
                           {!user.is_active && <Badge variant="outline" className="text-red-500 border-red-300">Inactive</Badge>}
-                          {stats?.subscription === "active" && <Badge variant="success" className="bg-green-100 text-green-700">Pro</Badge>}
                         </div>
                         <p className="text-sm text-[var(--text-secondary)]">{user.email}</p>
                         <div className="flex items-center gap-3 text-xs text-[var(--text-secondary)] mt-1">
@@ -150,19 +139,12 @@ export default function SuperAdminUsersPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {stats && (
-                        <div className="hidden md:flex items-center gap-4 text-xs text-[var(--text-secondary)] mr-4">
-                          <span className="flex items-center gap-1"><Briefcase className="h-3 w-3" />{stats.cases}</span>
-                          <span className="flex items-center gap-1"><Users className="h-3 w-3" />{stats.clients}</span>
-                          <span className="flex items-center gap-1"><FileText className="h-3 w-3" />{stats.documents}</span>
-                          <span className="flex items-center gap-1"><Receipt className="h-3 w-3" />{formatCurrency(stats.revenue)}</span>
-                        </div>
-                      )}
                       <select
                         value={user.role}
                         onChange={(e) => changeRole(user.id, e.target.value)}
                         className="h-8 rounded border border-[var(--border)] text-xs px-2"
                       >
+                        <option value="super_admin">Super Admin</option>
                         <option value="owner">Owner</option>
                         <option value="partner">Partner</option>
                         <option value="senior_associate">Senior Associate</option>
@@ -185,15 +167,6 @@ export default function SuperAdminUsersPage() {
                       </Link>
                     </div>
                   </div>
-                  {/* Expanded stats on mobile */}
-                  {stats && (
-                    <div className="md:hidden mt-3 pt-3 border-t grid grid-cols-4 gap-2 text-center text-xs">
-                      <div><p className="font-bold text-lg">{stats.cases}</p><p className="text-[var(--text-secondary)]">Cases</p></div>
-                      <div><p className="font-bold text-lg">{stats.clients}</p><p className="text-[var(--text-secondary)]">Clients</p></div>
-                      <div><p className="font-bold text-lg">{stats.documents}</p><p className="text-[var(--text-secondary)]">Docs</p></div>
-                      <div><p className="font-bold text-lg">{formatCurrency(stats.revenue)}</p><p className="text-[var(--text-secondary)]">Revenue</p></div>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             );

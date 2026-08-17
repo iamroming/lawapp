@@ -1,0 +1,613 @@
+========================================
+CASEFILES - MANUAL TESTING GUIDE
+(Hinglish mein)
+========================================
+
+
+PART 1: RAZORPAY TESTING MODE
+========================================
+
+Step 1: Razorpay Dashboard pe jao
+https://dashboard.razorpay.com
+
+Step 2: Settings → API Keys pe jao
+
+Step 3: Test Mode ON karo
+- Upar right side mein "Test Mode" toggle dikhega
+- Usse ON karo
+
+Step 4: Test API Keys copy karo
+- Key ID: rzp_test_xxxxxxxxxxxxxxxx
+- Key Secret: xxxxxxxxxxxxxxxxxxxxxxxx
+
+Step 5: Vercel mein daalo
+- NEXT_PUBLIC_RAZORPAY_KEY_ID = rzp_test_xxx
+- RAZORPAY_KEY_SECRET = xxx
+- RAZORPAY_KEY_ID = rzp_test_xxx (same as above)
+
+
+Razorpay Test Cards:
+---------------------
+
+| Card Number           | CVV   | Expiry    | Result         |
+|-----------------------|-------|-----------|----------------|
+| 4111 1111 1111 1111   | 123   | Any future | Payment SUCCESS |
+| 4000 0000 0000 0002   | 123   | Any future | Payment FAIL   |
+| 5104 0100 0000 0008   | 123   | Any future | Payment SUCCESS |
+| 4111 1111 1111 1111   | 000   | Any future | CVV FAIL       |
+
+Test Phone: 919191919191
+Test OTP: 123456
+
+
+========================================
+PART 2: SUBSCRIPTION PLANS TESTING
+========================================
+
+Plan 1: FREE
+- Price: ₹0
+- Cases: 3
+- Users: 1
+- Storage: 100MB
+- Trial: N/A (already free)
+
+Plan 2: SOLO
+- Price: ₹299/month
+- Cases: 25
+- Users: 1
+- Storage: 500MB
+- Trial: 14 days free
+
+Plan 3: PROFESSIONAL
+- Price: ₹799/month
+- Cases: 100
+- Users: 3
+- Storage: 2GB
+- Trial: 14 days free
+
+Plan 4: FIRM
+- Price: ₹1999/month
+- Cases: Unlimited
+- Users: 10
+- Storage: 10GB
+- Trial: 14 days free
+
+Plan 5: ENTERPRISE
+- Price: ₹4999/month
+- Cases: Unlimited
+- Users: Unlimited
+- Storage: Unlimited
+- Trial: 14 days free
+
+
+========================================
+PART 3: STEP-BY-STEP TESTING
+========================================
+
+
+TEST 1: SIGNUP FLOW
+--------------------
+
+1. https://www.casefiles.in/signup pe jao
+2. Email: test1@casefiles.in
+3. Password: Test@1234
+4. Sign Up karo
+5. Email verify karo (agar Resend setup hai)
+6. Onboarding pe redirect hoga
+7. Firm name do: "Test Law Firm"
+8. Role select karo: "Owner"
+9. Dashboard pe redirect hoga
+
+Expected: Dashboard dikhega, 3 free cases allowed
+
+
+TEST 2: LOGIN FLOW
+--------------------
+
+1. https://www.casefiles.in/login pe jao
+2. Email: test1@casefiles.in
+3. Password: Test@1234
+4. Login karo
+
+Expected: Dashboard pe redirect hoga
+
+
+TEST 3: GOOGLE LOGIN
+---------------------
+
+1. Login page pe "Google se Login" button pe click karo
+2. Google account select karo
+3. Allow karo
+
+Expected: Dashboard pe redirect hoga
+
+
+TEST 4: FREE PLAN - CREATE CASE
+---------------------------------
+
+1. Dashboard pe jao
+2. "New Case" button pe click karo
+3. Case title: "Test Case 1"
+4. Client select karo (ya naya banao)
+5. Case type: "Civil"
+6. Court: "Delhi High Court"
+7. Save karo
+
+Expected: Case create ho gaya
+
+
+TEST 5: FREE PLAN - 3 CASES LIMIT
+-----------------------------------
+
+1. 3 cases banao
+2. 4th case try karo
+
+Expected: "Plan limit reached" error aayega
+
+
+TEST 6: UPGRADE TO SOLO PLAN
+-------------------------------
+
+1. https://www.casefiles.in/subscription pe jao
+2. "Solo" plan select karo
+3. "Subscribe" button pe click karo
+4. Razorpay popup aayega
+5. Test card daalo: 4111 1111 1111 1111
+6. CVV: 123
+7. Expiry: Any future date
+8. Pay karo
+
+Expected: Payment successful, plan upgrade ho gaya
+Expected: Ab 25 cases bana sakte ho
+
+
+TEST 7: INVOICE GENERATE KARO
+-------------------------------
+
+1. https://www.casefiles.in/billing/new pe jao
+2. Client select karo
+3. Amount: 5000
+4. Description: "Legal Consultation"
+5. Save karo
+6. Invoice generate hoga
+
+Expected: Invoice dikhega with GST
+
+
+TEST 8: PAYMENT RECEIVE KARO
+------------------------------
+
+1. Invoice pe "Record Payment" button pe click karo
+2. Amount: 5000
+3. Payment method: "Cash" ya "Online"
+4. Save karo
+
+Expected: Payment recorded, invoice status "Paid" hoga
+
+
+TEST 9: HEARING ADD KARO
+--------------------------
+
+1. Calendar pe jao
+2. "Add Hearing" button pe click karo
+3. Case select karo
+4. Date: Kal ki date
+5. Time: 10:00 AM
+6. Court: "Delhi High Court"
+7. Save karo
+
+Expected: Calendar pe hearing dikhegi
+
+
+TEST 10: CLIENT ADD KARO
+--------------------------
+
+1. https://www.casefiles.in/clients pe jao
+2. "Add Client" button pe click karo
+3. Name: "Rajesh Kumar"
+4. Phone: "9876543210"
+5. Email: "rajesh@test.com"
+6. Save karo
+
+Expected: Client create ho gaya
+
+
+TEST 11: DOCUMENT UPLOAD KARO
+-------------------------------
+
+1. https://www.casefiles.in/documents pe jao
+2. "Upload Document" button pe click karo
+3. File select karo (PDF ya Image)
+4. Title: "Test Document"
+5. Category: "Contract"
+6. Save karo
+
+Expected: Document upload ho gaya
+
+
+TEST 12: EXPENSE ADD KARO
+---------------------------
+
+1. https://www.casefiles.in/expenses/new pe jao
+2. Title: "Court Fee"
+3. Amount: 500
+4. Category: "Court Fees"
+5. Save karo
+
+Expected: Expense add ho gaya
+
+
+TEST 13: TASK CREATE KARO
+---------------------------
+
+1. https://www.casefiles.in/tasks/new pe jao
+2. Title: "File counter affidavit"
+3. Due date: Kal
+4. Priority: "High"
+5. Save karo
+
+Expected: Task create ho gaya
+
+
+TEST 14: REPORT CHECK KARO
+-----------------------------
+
+1. https://www.casefiles.in/reports pe jao
+2. Overview tab pe cases aur revenue dikhega
+3. Revenue tab pe payments dikhega
+4. Cases tab pe case status dikhega
+
+Expected: Reports sahi data dikha rahe hain
+
+
+TEST 15: SETTINGS CHANGE KARO
+-------------------------------
+
+1. https://www.casefiles.in/settings pe jao
+2. Profile update karo
+3. Firm name change karo
+4. Save karo
+
+Expected: Settings save ho gaye
+
+
+========================================
+PART 4: EMPLOYEE TESTING
+========================================
+
+
+TEST 16: INVITE CODE BANAO (Owner)
+------------------------------------
+
+1. Owner login karo
+2. https://www.casefiles.in/settings pe jao
+3. "Team" tab pe jao
+4. "Generate Invite Code" pe click karo
+5. Role: "Senior Associate"
+6. Code mil jayega: ABCD1234
+
+Expected: Invite code ban gaya
+
+
+TEST 17: EMPLOYEE SIGNUP (Invite Code se)
+-------------------------------------------
+
+1. Nayi browser window mein incognito kholo
+2. https://www.casefiles.in/signup pe jao
+3. "Employee" mode select karo
+4. Invite code daalo: ABCD1234
+5. Email: employee1@casefiles.in
+6. Password: Test@1234
+7. Sign Up karo
+
+Expected: Employee ka account ban gaya
+Expected: Uska firm_id owner ke firm se match hota hai
+
+
+TEST 18: EMPLOYEE PERMISSIONS CHECK
+--------------------------------------
+
+Employee login karo aur check karo:
+
+| Feature               | Owner | Senior Associate | Associate |
+|-----------------------|-------|------------------|-----------|
+| Create Cases          | YES   | YES              | YES       |
+| View All Cases        | YES   | NO (own only)    | NO        |
+| Upload Documents      | YES   | YES              | YES       |
+| View Salaries         | YES   | NO               | NO        |
+| View Analytics        | YES   | YES              | NO        |
+| Create Hearings       | YES   | YES              | YES       |
+| Create Tasks          | YES   | YES              | YES       |
+| Create Expenses       | YES   | YES              | YES       |
+| Manage Team           | YES   | NO               | NO        |
+| View Invoices         | YES   | YES              | NO        |
+
+
+TEST 19: DATA ISOLATION CHECK
+--------------------------------
+
+1. Owner login karo → sab data dikhega (firm ka)
+2. Employee login karo → sirf apna data dikhega
+3. Dusra employee login karo → uska apna data
+
+Expected: Har employee sirf apna data dekh sake
+
+
+========================================
+PART 5: SUPER ADMIN TESTING
+========================================
+
+
+TEST 20: SUPER ADMIN LOGIN
+----------------------------
+
+1. https://www.casefiles.in/super-admin pe jao
+2. Super admin email/password se login karo
+3. Dashboard dikhega
+
+Expected: Super admin panel access mil gaya
+
+
+TEST 21: SUPER ADMIN FEATURES CHECK
+--------------------------------------
+
+| Feature               | URL                            |
+|-----------------------|--------------------------------|
+| Users                 | /super-admin/users             |
+| Subscriptions         | /super-admin/subscriptions     |
+| Plans                 | /super-admin/plans             |
+| Analytics             | /super-admin/analytics         |
+| Cron Jobs             | /super-admin/cron-jobs         |
+| Referrals             | /super-admin/referrals         |
+| Trial Funnel          | /super-admin/trial-funnel      |
+| Blog                  | /super-admin/blog              |
+| Cases                 | /super-admin/cases             |
+| Clients               | /super-admin/clients           |
+| Revenue               | /super-admin/revenue           |
+
+
+TEST 22: SUPER ADMIN - USER DETAIL
+-------------------------------------
+
+1. /super-admin/users pe jao
+2. Kisi user pe click karo
+3. Uska profile, cases, activity dikhega
+
+Expected: User ka pura detail dikh raha hai
+
+
+========================================
+PART 6: WHATSAPP TESTING
+========================================
+
+
+TEST 23: WHATSAPP HEARING REMINDER
+-------------------------------------
+
+1. Kal ki date pe hearing add karo
+2. Hearing ka time aane do (ya manually trigger karo)
+3. WhatsApp pe message aayega
+
+Expected: "Reminder: Your hearing for case [title] is scheduled for [date] at [time]"
+
+NOTE: Trial WhatsApp sandbox mein test karo
+Number: +14155238886
+Message: "join any-word" bhejo
+
+
+TEST 24: WHATSAPP TRIAL FUNNEL
+---------------------------------
+
+1. Nayi user signup karo (trial pe)
+2. 3 din wait karo (ya manually trigger karo)
+3. WhatsApp pe welcome message aayega
+
+Expected: Trial funnel messages aane chahiye
+
+
+========================================
+PART 7: EMAIL TESTING
+========================================
+
+
+TEST 25: EMAIL NOTIFICATION
+-----------------------------
+
+1. Invoice generate karo
+2. "Send Invoice" button pe click karo
+3. Client ko email jayega
+
+Expected: Email mein invoice PDF attached hoga
+
+
+TEST 26: DAILY DIGEST EMAIL
+-----------------------------
+
+1. Daily digest cron trigger karo
+2. Owner ko email aayega
+
+Expected: Email mein cases, hearings, payments ka summary hoga
+
+
+========================================
+PART 8: CRON JOB TESTING
+========================================
+
+
+Manual Trigger URLs (browser mein daalo):
+------------------------------------------
+
+Trial Funnel:
+https://www.casefiles.in/api/subscriptions/trial-funnel
+
+Hearing Reminders:
+https://www.casefiles.in/api/reminders/cron
+
+Expire Trials:
+https://www.casefiles.in/api/subscriptions/expire-trials
+
+Daily Digest:
+https://www.casefiles.in/api/daily-digest
+
+Invoice Reminders:
+https://www.casefiles.in/api/invoices/reminders
+
+Deadline Check:
+https://www.casefiles.in/api/deadlines/check
+
+Cause List Sync:
+https://www.casefiles.in/api/cause-list/sync
+
+Case Alerts:
+https://www.casefiles.in/api/case-alerts/check
+
+
+NOTE: Headers mein X-Cron-Secret daalo:
+X-Cron-Secret: casefiles-cron-secret-2026
+
+
+========================================
+PART 9: RAZORPAY WEBHOOK TESTING
+========================================
+
+
+TEST 27: WEBHOOK SETUP
+-------------------------
+
+1. Razorpay Dashboard pe jao
+2. Settings → Webhooks pe jao
+3. Webhook URL: https://www.casefiles.in/api/subscriptions/webhook
+4. Secret: (Vercel mein RAZORPAY_WEBHOOK_SECRET daalo)
+5. Events select karo:
+   - payment.captured
+   - payment.failed
+   - subscription.activated
+   - subscription.cancelled
+6. Save karo
+
+Expected: Payment hone pe webhook fire hoga
+
+
+========================================
+PART 10: EDGE CASES TEST KARO
+========================================
+
+
+TEST 28: LOGIN WITH WRONG PASSWORD
+-------------------------------------
+
+1. Galat password daal ke login try karo
+
+Expected: "Invalid credentials" error aayega
+
+
+TEST 29: SIGNUP WITH EXISTING EMAIL
+--------------------------------------
+
+1. Pehle se exist karta email daal ke signup try karo
+
+Expected: "Email already exists" error aayega
+
+
+TEST 30: CREATE CASE WITHOUT CLIENT
+--------------------------------------
+
+1. Client bina case create karo
+
+Expected: Case create ho jayega (client optional hai)
+
+
+TEST 31: UPLOAD LARGE FILE
+-----------------------------
+
+1. 50MB+ file upload karo
+
+Expected: Storage limit check aayega
+
+
+TEST 32: PAST DATE HEARING
+-----------------------------
+
+1. Kal ki date pehle ki date daal ke hearing banao
+
+Expected: Warning aaye ya allow ho
+
+
+TEST 33: NEGATIVE AMOUNT EXPENSE
+-----------------------------------
+
+1. Expense mein -500 amount daalo
+
+Expected: "Amount must be positive" error aayega
+
+
+TEST 34: EMPTY TITLE CASE
+-----------------------------
+
+1. Case title bina case create karo
+
+Expected: "Title is required" error aayega
+
+
+========================================
+QUICK TEST CHECKLIST
+========================================
+
+[ ] Signup (Owner)
+[ ] Login
+[ ] Google Login
+[ ] Create Case
+[ ] Create Client
+[ ] Upload Document
+[ ] Create Hearing
+[ ] Create Task
+[ ] Create Expense
+[ ] Generate Invoice
+[ ] Record Payment
+[ ] Check Reports
+[ ] Check Settings
+[ ] Generate Invite Code
+[ ] Employee Signup (Invite Code)
+[ ] Employee Permission Check
+[ ] Data Isolation Check
+[ ] Super Admin Login
+[ ] Super Admin User Detail
+[ ] Subscription Upgrade (Razorpay)
+[ ] WhatsApp Hearing Reminder
+[ ] Email Notification
+[ ] Manual Cron Trigger
+[ ] Edge Cases
+
+
+========================================
+TROUBLESHOOTING
+========================================
+
+
+Problem: Payment fail ho raha hai
+Solution: Test card use karo: 4111 1111 1111 1111
+
+
+Problem: WhatsApp message nahi aa raha
+Solution: Twilio sandbox mein number verify karo
+
+
+Problem: Email nahi ja raha
+Solution: Resend domain verify karo
+
+
+Problem: Cron job kaam nahi kar raha
+Solution: X-Cron-Secret header check karo
+
+
+Problem: Employee saara data dekh raha hai
+Solution: Role check fix karo (already fixed)
+
+
+Problem: Super admin access nahi mil raha
+Solution: super_admins table mein entry check karo
+
+
+========================================
+END OF TESTING GUIDE
+========================================

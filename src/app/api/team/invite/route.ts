@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     .eq("id", user.uuid)
     .single();
 
-  const allowedInviteRoles = ["owner", "partner"];
+  const allowedInviteRoles = ["owner", "partner", "super_admin"];
   if (!profile?.role || !allowedInviteRoles.includes(profile.role)) {
     return NextResponse.json({ error: "Only owners and partners can invite team members" }, { status: 403 });
   }
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     const message = isOwnerOrPartner
       ? `You've reached your ${userLimitCheck.plan} plan limit of ${userLimitCheck.limit} team members. Upgrade your plan to add more.`
       : `Your firm has reached the ${userLimitCheck.plan} plan limit of ${userLimitCheck.limit} team members. Contact your firm owner to upgrade.`;
-    return NextResponse.json({ error: message }, { status: 403 });
+    return NextResponse.json({ error: message, upgradeRequired: true }, { status: 403 });
   }
 
   // Find the user by email
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (inviteeFullProfile?.firm_id && inviteeFullProfile.firm_id !== profile.firm_id && inviteeFullProfile.firm_id !== user.uuid) {
-    return NextResponse.json({ error: "This user already belongs to another firm" }, { status: 400 });
+    return NextResponse.json({ error: "User already belongs to another firm" }, { status: 400 });
   }
 
   // Check if already a team member (same role or higher)

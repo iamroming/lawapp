@@ -32,6 +32,12 @@ export default function ClientsPage() {
 
   useEffect(() => {
     fetchClients();
+
+    const handleFocus = () => {
+      fetchClients();
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, []);
 
   const fetchClients = async () => {

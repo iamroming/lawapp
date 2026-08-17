@@ -1,10 +1,10 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, lazy, Suspense } from "react";
 import ReportsOverviewTab from "./_components/overview-tab";
-import ProfitLossTab from "./_components/profit-loss-tab";
-import FinancialAnalyticsPage from "./financial/page";
-import TeamAnalyticsPage from "./team/page";
-import ClientDeepAnalyticsPage from "./clients-deep/page";
+const ProfitLossTab = lazy(() => import("./_components/profit-loss-tab"));
+const FinancialAnalyticsPage = lazy(() => import("./financial/page"));
+const TeamAnalyticsPage = lazy(() => import("./team/page"));
+const ClientDeepAnalyticsPage = lazy(() => import("./clients-deep/page"));
 import { BarChart3, IndianRupee, Users, TrendingUp, Download, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -53,10 +53,10 @@ export default function ReportsPage() {
 
       <div>
         {activeTab === "overview" && <ReportsOverviewTab />}
-        {activeTab === "profit-loss" && <ProfitLossTab />}
-        {activeTab === "financial" && <FinancialAnalyticsPage />}
-        {activeTab === "team" && <TeamAnalyticsPage />}
-        {activeTab === "clients" && <ClientDeepAnalyticsPage />}
+        {activeTab === "profit-loss" && <Suspense fallback={<div className="text-center py-12 text-[var(--text-secondary)]">Loading...</div>}><ProfitLossTab /></Suspense>}
+        {activeTab === "financial" && <Suspense fallback={<div className="text-center py-12 text-[var(--text-secondary)]">Loading...</div>}><FinancialAnalyticsPage /></Suspense>}
+        {activeTab === "team" && <Suspense fallback={<div className="text-center py-12 text-[var(--text-secondary)]">Loading...</div>}><TeamAnalyticsPage /></Suspense>}
+        {activeTab === "clients" && <Suspense fallback={<div className="text-center py-12 text-[var(--text-secondary)]">Loading...</div>}><ClientDeepAnalyticsPage /></Suspense>}
       </div>
     </div>
   );

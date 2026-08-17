@@ -158,11 +158,12 @@ export default function SignupPage() {
       if (!sessionRes.ok) {
         console.error("Session creation failed:", sessionData);
         toast.error(sessionData.error || "Failed to create session. Please try again.");
-        setGoogleLoading(false);
-        return;
-      }
+      signupInProgress.current = false;
+      setGoogleLoading(false);
+      return;
+    }
 
-      const profileRes = await fetch("/api/auth/profile", {
+    const profileRes = await fetch("/api/auth/profile", {
         headers: { Authorization: `Bearer ${idToken}` },
       });
 
@@ -183,6 +184,7 @@ export default function SignupPage() {
         router.push("/dashboard");
       }
     } catch (error: any) {
+      signupInProgress.current = false;
       console.error("Google signup error:", error);
       if (error?.code === "auth/popup-closed-by-user") {
         toast.error("Sign-up cancelled");

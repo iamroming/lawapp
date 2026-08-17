@@ -34,11 +34,18 @@ export async function GET(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("id, role, is_active, firm_id")
     .eq("id", user.uuid)
     .single();
+
+  if (profileError) {
+    return NextResponse.json(
+      { error: "Failed to fetch profile", details: profileError.message },
+      { status: 500 }
+    );
+  }
 
   // Check super admin status
   let is_super_admin = false;

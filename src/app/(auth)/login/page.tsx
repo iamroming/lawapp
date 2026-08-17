@@ -47,40 +47,48 @@ export default function LoginPage() {
 
   const handlePostLogin = async (user: { uid: string; getIdToken: () => Promise<string> }) => {
     loginInProgress.current = true;
-    const idToken = await user.getIdToken(true);
-    const sessionRes = await fetch("/api/auth/session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idToken }),
-    });
+    try {
+      const idToken = await user.getIdToken(true);
+      const sessionRes = await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
 
-    const sessionData = await sessionRes.json();
+      const sessionData = await sessionRes.json();
 
-    if (!sessionRes.ok) {
-      console.error("Session creation failed:", sessionRes.status, sessionData);
-      toast.error(sessionData.error || `Failed to create session (HTTP ${sessionRes.status}). Please try again.`);
-      return false;
-    }
+      if (!sessionRes.ok) {
+        console.error("Session creation failed:", sessionRes.status, sessionData);
+        toast.error(sessionData.error || `Failed to create session (HTTP ${sessionRes.status}). Please try again.`);
+        loginInProgress.current = false;
+        return false;
+      }
 
-    const profileRes = await fetch("/api/auth/profile", {
-      headers: { Authorization: `Bearer ${idToken}` },
-    });
+      const profileRes = await fetch("/api/auth/profile", {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
 
-    if (!profileRes.ok) {
-      router.push("/onboarding");
+      if (!profileRes.ok) {
+        loginInProgress.current = false;
+        router.push("/onboarding");
+        return true;
+      }
+
+      const { profile, is_super_admin } = await profileRes.json();
+
+      loginInProgress.current = false;
+      if (is_super_admin) {
+        router.push("/super-admin");
+      } else if (!profile) {
+        router.push("/onboarding");
+      } else {
+        router.push("/dashboard");
+      }
       return true;
+    } catch {
+      loginInProgress.current = false;
+      throw new Error("Post-login failed");
     }
-
-    const { profile, is_super_admin } = await profileRes.json();
-
-    if (is_super_admin) {
-      router.push("/super-admin");
-    } else if (!profile) {
-      router.push("/onboarding");
-    } else {
-      router.push("/dashboard");
-    }
-    return true;
   };
 
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -92,7 +100,11 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const { user } = await signInWithEmailAndPassword(auth, email, password);
-      await handlePostLogin(user);
+      try {
+        await handlePostLogin(user);
+      } catch {
+        toast.error("Session creation failed. Please try again.");
+      }
     } catch {
       toast.error("Invalid email or password");
     }

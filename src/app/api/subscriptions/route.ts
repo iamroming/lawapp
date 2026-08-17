@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
     const { error: dbError } = await supabase.from("user_subscriptions").insert({
       user_id: user.uuid,
       plan_id: planRow?.id || null,
-      status: "trialing",
+      status: "pending",
       starts_at: new Date().toISOString(),
       expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
       payment_method: "razorpay",

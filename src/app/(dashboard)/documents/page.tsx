@@ -211,9 +211,13 @@ export default function DocumentsPage() {
       return;
     }
 
-    const { error } = await dbWrite("documents", "update", { deleted_at: new Date().toISOString() }, { id: doc.id, firm_id: firmId });
+    const { error, data } = await dbWrite("documents", "update", { deleted_at: new Date().toISOString() }, { id: doc.id, firm_id: firmId });
     if (error) {
       toast.error(error);
+      return;
+    }
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      toast.error("You do not have permission to delete this document");
       return;
     }
 

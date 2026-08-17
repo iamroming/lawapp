@@ -137,10 +137,17 @@ export async function GET(request: NextRequest) {
           break;
       }
 
+      let emailSuccess = false;
+      let whatsappSuccess = false;
+
       if (emailTemplate) {
         const emailResult = await sendEmail(user.email, emailTemplate);
-        if (emailResult.success) results.emailsSent++;
-        else results.errors.push(`Email failed for ${user.email}: ${emailResult.error}`);
+        if (emailResult.success) {
+          emailSuccess = true;
+          results.emailsSent++;
+        } else {
+          results.errors.push(`Email failed for ${user.email}: ${emailResult.error}`);
+        }
       }
 
       if (whatsappMessage && user.phone) {
@@ -150,19 +157,22 @@ export async function GET(request: NextRequest) {
           type: "custom",
           userId: trial.user_id,
         });
-        if (whatsappResult.success) results.whatsappSent++;
-        // Log even if failed (for dedup)
+        if (whatsappResult.success) {
+          whatsappSuccess = true;
+          results.whatsappSent++;
+        }
       }
 
-      // Log the stage sent for dedup
-      await supabase.from("whatsapp_logs").insert({
-        user_id: trial.user_id,
-        phone_number: user.phone || "",
-        message_type: `trial_funnel_${stage}`,
-        message_content: `Trial funnel ${stage} sent`,
-        status: "sent",
-        sent_at: now.toISOString(),
-      });
+      if (emailSuccess && (whatsappSuccess || !whatsappMessage || !user.phone)) {
+        await supabase.from("whatsapp_logs").insert({
+          user_id: trial.user_id,
+          phone_number: user.phone || "",
+          message_type: `trial_funnel_${stage}`,
+          message_content: `Trial funnel ${stage} sent`,
+          status: "sent",
+          sent_at: now.toISOString(),
+        });
+      }
 
     } catch (error) {
       results.errors.push(`Error for user ${trial.user_id}: ${error instanceof Error ? error.message : "Unknown"}`);

@@ -1,16 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { getFirebaseAuth } from "@/lib/firebase/config";
 import { onAuthStateChanged } from "firebase/auth";
-
-const PUBLIC_PATHS = ["/subscription-required", "/onboarding", "/login", "/signup", "/reset-password"];
 
 export function ProfileGuard({ children }: { children: React.ReactNode }) {
   const [checking, setChecking] = useState(true);
   const [allowed, setAllowed] = useState(false);
   const router = useRouter();
-  const pathname = usePathname();
 
   useEffect(() => {
     const auth = getFirebaseAuth();
@@ -72,7 +69,7 @@ export function ProfileGuard({ children }: { children: React.ReactNode }) {
         setChecking(false);
       } catch {
         if (!cancelled) {
-          setChecking(false);
+          router.push("/login");
         }
       }
     });

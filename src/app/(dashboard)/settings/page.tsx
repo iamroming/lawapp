@@ -106,28 +106,6 @@ export default function SettingsPage() {
     caseUpdates: true,
   });
 
-  useEffect(() => {
-    fetchNotificationPreferences();
-  }, []);
-
-  const fetchNotificationPreferences = async () => {
-    try {
-      if (!appUser) return;
-      const { data } = await supabase
-        .from("notification_preferences")
-        .select("*")
-        .eq("user_id", appUser?.uuid)
-        .single();
-      if (data) {
-        setNotifications({
-          emailNotifications: data.email ?? true,
-          hearingReminders: data.hearing_reminders ?? true,
-          paymentAlerts: data.payment_alerts ?? true,
-          caseUpdates: data.case_updates ?? true,
-        });
-      }
-    } catch (e) { console.error(e); }
-  };
   const [billing, setBilling] = useState<BillingSettings>({
     gstin: "",
     firmName: "",
@@ -147,9 +125,32 @@ export default function SettingsPage() {
   const [userLimitError, setUserLimitError] = useState<string | null>(null);
   const supabase = createClient();
 
+  const fetchNotificationPreferences = async () => {
+    try {
+      if (!appUser) return;
+      const { data } = await supabase
+        .from("notification_preferences")
+        .select("*")
+        .eq("user_id", appUser?.uuid)
+        .single();
+      if (data) {
+        setNotifications({
+          emailNotifications: data.email ?? true,
+          hearingReminders: data.hearing_reminders ?? true,
+          paymentAlerts: data.payment_alerts ?? true,
+          caseUpdates: data.case_updates ?? true,
+        });
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  useEffect(() => {
+    fetchNotificationPreferences();
+  }, [appUser]);
+
   useEffect(() => {
     fetchSettings();
-  }, []);
+  }, [appUser]);
 
   const fetchSettings = async () => {
     setLoading(true);

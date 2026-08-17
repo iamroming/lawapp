@@ -10,14 +10,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { amount, invoiceId } = body;
-
-  if (!amount || amount <= 0) {
-    return NextResponse.json(
-      { error: "Invalid amount" },
-      { status: 400 }
-    );
-  }
+  const { invoiceId } = body;
 
   if (!invoiceId) {
     return NextResponse.json(
@@ -30,15 +23,24 @@ export async function POST(request: NextRequest) {
     const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.uuid).single();
     const firmId = profile?.firm_id;
 
-    const { data: invoiceCheck } = await supabase
+    const { data: invoice } = await supabase
       .from("invoices")
-      .select("id")
+      .select("id, total_amount")
       .eq("id", invoiceId)
       .eq("firm_id", firmId)
       .single();
 
-    if (!invoiceCheck) {
+    if (!invoice) {
       return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+    }
+
+    const amount = invoice.total_amount;
+
+    if (!amount || amount <= 0) {
+      return NextResponse.json(
+        { error: "Invalid invoice amount" },
+        { status: 400 }
+      );
     }
 
     const order = await createOrder(

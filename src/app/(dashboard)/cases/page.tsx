@@ -93,6 +93,13 @@ export default function CasesPage() {
   useEffect(() => {
     fetchCases();
     fetchCaseLimit();
+
+    const handleFocus = () => {
+      fetchCases();
+      fetchCaseLimit();
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, []);
 
   const filteredCases = cases.filter((c) => {

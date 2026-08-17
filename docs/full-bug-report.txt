@@ -1,0 +1,552 @@
+========================================
+CASEFILES - COMPREHENSIVE BUG REPORT
+Code-Level Analysis (34 Test Cases)
+Date: August 17, 2026
+========================================
+
+Total Bugs Found: 59
+Critical: 8 | High: 17 | Medium: 20 | Low: 14
+
+
+========================================
+TEST 1: SIGNUP FLOW
+========================================
+
+Bug 1.1 [HIGH] - signupInProgress ref never reset
+File: src/app/(auth)/signup/page.tsx:144
+Issue: signupInProgress.current = true set during Google signup, never reset to false
+Impact: If Google signup fails, auto-redirect is permanently blocked
+
+Bug 1.2 [MEDIUM] - Email not normalized before submission
+File: src/app/(auth)/signup/page.tsx:118
+Issue: formData.email sent without .trim().toLowerCase()
+Impact: Case mismatch causes Supabase query failures
+
+Bug 1.3 [MEDIUM] - Owner can signup with empty firm name
+File: src/app/(auth)/signup/page.tsx:123
+Issue: firm_name not enforced server-side for owners
+Impact: Owners with blank firm names break downstream logic
+
+Bug 1.4 [HIGH] - Race condition on invite code redemption
+File: src/app/api/auth/signup/route.ts:77-169
+Issue: Two concurrent signups with same invite code both pass validation
+Impact: Duplicate firm memberships, orphaned records
+
+Bug 1.5 [MEDIUM] - Rate limit bypassed via x-forwarded-for spoofing
+File: src/app/api/auth/signup/route.ts:29
+Issue: Rate limit uses client-controlled header
+Impact: Attacker can bypass rate limit completely
+
+Bug 1.6 [LOW] - In-memory rate limit map never cleans up
+File: src/app/api/auth/signup/route.ts:7
+Issue: Expired entries never removed from Map
+Impact: Memory leak over time
+
+
+========================================
+TEST 2: LOGIN FLOW
+========================================
+
+Bug 2.1 [HIGH] - loginInProgress ref never reset on failure
+File: src/app/(auth)/login/page.tsx:49
+Issue: loginInProgress.current = true set but never cleared on failure
+Impact: Auto-redirect permanently blocked after failed login
+
+Bug 2.2 [MEDIUM] - Misleading error on session creation failure
+File: src/app/(auth)/login/page.tsx:96-98
+Issue: Session creation errors shown as "Invalid email or password"
+Impact: User thinks credentials are wrong when server is down
+
+Bug 2.3 [MEDIUM] - Google login has no error guard on handlePostLogin
+File: src/app/(auth)/login/page.tsx:106
+Issue: No try/catch around handlePostLogin specifically
+Impact: "Google sign-in failed" shown when auth succeeded but session failed
+
+Bug 2.4 [LOW] - No inactive account check on login
+File: src/app/(auth)/login/page.tsx
+Issue: Login doesn't check profile.is_active before session creation
+Impact: Inactive users get silent redirect loop
+
+
+========================================
+TEST 3: GOOGLE LOGIN
+========================================
+
+Bug 3.1 [HIGH] - loginInProgress never reset on success
+File: src/app/(auth)/login/page.tsx:48-84
+Issue: loginInProgress.current never set back to false even on success
+Impact: Browser back to login page shows blank page
+
+
+========================================
+TEST 4: CREATE CASE
+========================================
+
+Bug 4.1 [CRITICAL] - Case creation bypasses API
+File: src/app/(dashboard)/cases/new/page.tsx:201-223
+Issue: Uses dbWrite instead of POST /api/cases
+Impact: Bypasses Zod validation, role check, subscription limit, activity logging
+
+Bug 4.2 [MEDIUM] - Case number collision risk
+File: src/lib/utils.ts:38-42
+Issue: Client-side generateCaseNumber() uses Math.random() with only 9000 values
+Impact: Duplicate case numbers under concurrent use
+
+Bug 4.3 [MEDIUM] - appUser missing from useEffect dependencies
+File: src/app/(dashboard)/cases/new/page.tsx:113
+Issue: useEffect uses appUser but doesn't list it as dependency
+Impact: Data may not load if appUser is initially null
+
+
+========================================
+TEST 5: CASES LIMIT (FREE PLAN)
+========================================
+
+Bug 5.1 [HIGH] - Subscription limit check bypassed
+File: src/app/(dashboard)/cases/new/page.tsx:189-198
+Issue: Client-side limit check silently swallows failures (catch {})
+Impact: Users can create cases beyond plan limits
+
+
+========================================
+TEST 6: UPGRADE SUBSCRIPTION
+========================================
+
+Bug 6.1 [CRITICAL] - plan_id assigned slug string where UUID required
+File: src/app/api/subscriptions/webhook/route.ts:78
+Issue: Writes "solo" string into UUID column
+Impact: Database constraint violation or broken foreign key joins
+
+Bug 6.2 [CRITICAL] - Payment amount verification bypassed
+File: src/app/api/payments/razorpay/verify/route.ts:54-55
+Issue: razorpay_amount omitted = NaN = check skipped entirely
+Impact: Any amount can be marked as paid
+
+Bug 6.3 [CRITICAL] - Invoice amount not server-validated
+File: src/app/api/payments/razorpay/route.ts:13-45
+Issue: Order created using client-supplied amount, not invoice total
+Impact: User can pay ₹1 for ₹50000 invoice
+
+Bug 6.4 [HIGH] - Subscription verification rejects coupon payments
+File: src/app/api/payments/verify/route.ts:73-76
+Issue: Amount checked against full plan price, not discounted price
+Impact: Coupon users get valid payments rejected
+
+Bug 6.5 [HIGH] - plan_id set to null in payment verification
+File: src/app/api/payments/verify/route.ts:101-103
+Issue: plan_id hardcoded to null on subscription creation
+Impact: All plan joins return null data
+
+Bug 6.6 [HIGH] - Subscription created as "trialing" on paid path
+File: src/app/api/subscriptions/route.ts:179
+Issue: Paid subscription starts with status "trialing"
+Impact: Incorrect subscription state
+
+Bug 6.7 [MEDIUM] - Subscription page and API use conflicting flows
+File: src/app/(dashboard)/subscription/page.tsx vs src/app/api/subscriptions/route.ts
+Issue: Page uses one-time order, API uses recurring subscription
+Impact: Both can run simultaneously for same user
+
+
+========================================
+TEST 7: INVOICE GENERATE
+========================================
+
+Bug 7.1 [LOW] - Invoice number collision on fallback
+File: src/app/api/invoices/route.ts:98-100
+Issue: Fallback uses Date.now().toString().slice(-4) - only 10000 values
+Impact: Duplicate invoice numbers in same 10-second window
+
+
+========================================
+TEST 8: PAYMENT RECORD
+========================================
+
+Bug 8.1 [MEDIUM] - Recurring payments not recorded
+File: src/app/api/subscriptions/webhook/route.ts:105-120
+Issue: subscription.charged webhook doesn't create payment record
+Impact: Payment history only shows first payment, not renewals
+
+
+========================================
+TEST 9: HEARING ADD
+========================================
+
+Bug 9.1 [MEDIUM] - Calendar date uses UTC not local time
+File: src/app/(dashboard)/calendar/page.tsx:536,545
+Issue: toISOString().slice(0,10) gives UTC date
+Impact: Date picker shows wrong date in IST timezone
+
+Bug 9.2 [MEDIUM] - Hearings log_activity references non-existent fields
+File: src/app/api/hearings/route.ts:96
+Issue: data.title and data.court_name don't exist in schema
+Impact: Activity logs always show "item" instead of hearing details
+
+
+========================================
+TEST 10: CLIENT ADD
+========================================
+
+Bug 10.1 [CRITICAL] - Client creation bypasses API
+File: src/app/(dashboard)/cases/new/page.tsx:300-333
+Issue: Direct Supabase insert instead of POST /api/clients
+Impact: Bypasses Zod validation, activity logging, firm_id enforcement
+
+Bug 10.2 [CRITICAL] - Client creation page bypasses API
+File: src/app/(dashboard)/clients/new/page.tsx:93-97
+Issue: Uses dbWrite instead of POST /api/clients
+Impact: No role check, no server validation
+
+Bug 10.3 [MEDIUM] - Client deletion doesn't check for linked cases
+File: src/app/api/clients/[id]/route.ts:84-118
+Issue: No referential integrity check before soft delete
+Impact: Cases lose client reference silently
+
+
+========================================
+TEST 11: DOCUMENT UPLOAD
+========================================
+
+Bug 11.1 [HIGH] - Non-owner document delete silently fails
+File: src/app/(dashboard)/documents/page.tsx:202-214
+Issue: firm_id mismatch via dbWrite causes 0-row update
+Impact: User sees "Document deleted" but document remains
+
+Bug 11.2 [MEDIUM] - Employee document query lacks firm scoping
+File: src/app/api/documents/route.ts:30-38
+Issue: assignedCases query not filtered by firm_id
+Impact: Employee sees documents from other firms
+
+
+========================================
+TEST 12: EXPENSE ADD
+========================================
+
+Bug 12.1 [HIGH] - Expenses reports ignore filter params
+File: src/app/api/expenses/reports/route.ts:24-32
+Issue: category and billable params received but never applied
+Impact: Filter shows wrong totals
+
+Bug 12.2 [MEDIUM] - deleteExpense ignores dbWrite errors
+File: src/app/(dashboard)/expenses/page.tsx:72-76
+Issue: No error checking on dbWrite result
+Impact: Failed deletes show no error feedback
+
+
+========================================
+TEST 13: TASK CREATE
+========================================
+
+Bug 13.1 [CRITICAL] - Tasks ownerField is wrong
+File: src/app/api/db/write/route.ts:10
+Issue: ownerField is "assigned_to" instead of "firm_id" or "created_by"
+Impact: Owner can't move/delete tasks assigned to others
+
+Bug 13.2 [HIGH] - Tasks API GET uses wrong column
+File: src/app/api/tasks/route.ts:32
+Issue: Non-owner filter uses user_id, client uses created_by
+Impact: Inconsistent data visibility
+
+Bug 13.3 [HIGH] - Tasks page doesn't filter deleted tasks
+File: src/app/(dashboard)/tasks/page.tsx:51-54
+Issue: Missing .is("deleted_at", null) filter
+Impact: Deleted tasks appear in Kanban board
+
+Bug 13.4 [HIGH] - moveTask/deleteTask ignore errors
+File: src/app/(dashboard)/tasks/page.tsx:67-76
+Issue: No error checking on dbWrite result
+Impact: Failed operations show no feedback
+
+Bug 13.5 [MEDIUM] - Tasks POST doesn't set status field
+File: src/app/api/tasks/route.ts:69-83
+Issue: status field not included in insert
+Impact: Tasks may not appear in Kanban columns
+
+Bug 13.6 [MEDIUM] - Tasks PATCH accepts any status string
+File: src/app/api/tasks/route.ts:100-114
+Issue: No validation on status values
+Impact: Task with status "banana" disappears from board
+
+
+========================================
+TEST 14: REPORTS
+========================================
+
+Bug 14.1 [HIGH] - Overview tab swallows clients/hearings errors
+File: src/app/(dashboard)/reports/_components/overview-tab.tsx:107-112
+Issue: Only cases and payments errors checked, others ignored
+Impact: Shows 0 clients/hearings as valid data
+
+Bug 14.2 [MEDIUM] - Reports page eagerly loads all tabs
+File: src/app/(dashboard)/reports/page.tsx:3-7
+Issue: All tab components imported eagerly
+Impact: All analytics APIs fire on page mount, not just active tab
+
+
+========================================
+TEST 15: SETTINGS
+========================================
+
+Bug 15.1 [HIGH] - Settings fetchSettings has empty useEffect deps
+File: src/app/(dashboard)/settings/page.tsx:150-152
+Issue: useEffect(() => { fetchSettings(); }, []) ignores appUser
+Impact: Settings don't refresh on user change
+
+Bug 15.2 [MEDIUM] - supabase used before declaration
+File: src/app/(dashboard)/settings/page.tsx:116 vs 148
+Issue: fetchNotificationPreferences uses supabase before it's declared
+Impact: Temporal Dead Zone trap - may break in future React versions
+
+
+========================================
+TEST 16: INVITE CODE
+========================================
+
+Bug 16.1 [HIGH] - Team invite missing upgradeRequired field
+File: src/app/api/team/invite/route.ts:57
+Issue: 403 response doesn't include upgradeRequired: true
+Impact: Shows "Failed to send invitation" instead of upgrade prompt
+
+Bug 16.2 [HIGH] - Team invite overwrites firm without consent
+File: src/app/api/team/invite/route.ts:107-110
+Issue: Directly updates invitee's firm_id and role
+Impact: Owner can forcibly move any user to their firm
+
+Bug 16.3 [MEDIUM] - super_admin excluded from allowed invite roles
+File: src/app/api/team/invite/route.ts:39-42
+Issue: super_admin not in ["owner", "partner"] check
+Impact: Super admin can't invite team members
+
+
+========================================
+TEST 17: EMPLOYEE SIGNUP
+========================================
+
+Bug 17.1 [HIGH] - Invite code race condition (same as Bug 1.4)
+File: src/app/api/auth/signup/route.ts:77-169
+Impact: Two employees can redeem same code simultaneously
+
+Bug 17.2 [MEDIUM] - Invite code update errors silently ignored
+File: src/app/api/auth/signup/route.ts:162-169
+Issue: No error checking on team_invites update
+Impact: Invite stays active after redemption
+
+
+========================================
+TEST 18: EMPLOYEE PERMISSIONS
+========================================
+
+Bug 18.1 [MEDIUM] - Associates can create but not edit cases
+File: src/app/api/cases/route.ts:58 vs src/app/api/cases/[id]/route.ts:61
+Issue: POST allows associate, PUT excludes associate
+Impact: Associate creates case, can never update it
+
+
+========================================
+TEST 19: DATA ISOLATION
+========================================
+
+Bug 19.1 [MEDIUM] - Non-owner query misses collaborator cases
+File: src/app/api/cases/route.ts:24-26
+Issue: Filter only checks created_by and assigned_to
+Impact: Collaborator sees nothing if not creator or assignee
+
+
+========================================
+TEST 20: SUPER ADMIN LOGIN
+========================================
+
+Bug 20.1 [HIGH] - checkIfSuperAdmin has no auth guard
+File: src/app/actions/super-admin.ts:283-291
+Issue: No verifySession or checkSuperAdminAccess
+Impact: Any user can enumerate super admin IDs
+
+Bug 20.2 [HIGH] - getSuperAdminCouponUses has no auth guard
+File: src/app/actions/super-admin.ts:416-424
+Issue: Missing checkSuperAdminAccess
+Impact: Any user can read coupon usage data
+
+
+========================================
+TEST 21: SUPER ADMIN FEATURES
+========================================
+
+Bug 21.1 [HIGH] - User stats never fetched
+File: src/app/(super-admin)/super-admin/users/page.tsx:44-49
+Issue: setUserStats({}) always empty, no code populates it
+Impact: Pro badge, stats never render
+
+Bug 21.2 [MEDIUM] - super_admin missing from filter dropdown
+File: src/app/(super-admin)/super-admin/users/page.tsx:104-114
+Issue: No super_admin option in role filter
+Impact: Can't filter super admin users
+
+Bug 21.3 [MEDIUM] - Subscriptions page no error state
+File: src/app/(super-admin)/super-admin/subscriptions/page.tsx:40-52
+Issue: Catch only logs to console
+Impact: Empty page with no error feedback
+
+
+========================================
+TEST 22: SUPER ADMIN USER DETAIL
+========================================
+
+Bug 22.1 [HIGH] - Deactivated super admin retains access
+File: src/app/api/auth/profile/route.ts:55-61
+Issue: is_active === false still gets synthetic active subscription
+Impact: Deactivated super admin can still access everything
+
+
+========================================
+TEST 23-24: WHATSAPP
+========================================
+
+Bug 23.1 [HIGH] - Trial funnel dedup prevents retry
+File: src/app/api/subscriptions/trial-funnel/route.ts:103-165
+Issue: Dedup log written even if send failed
+Impact: Failed WhatsApp/Email never retried
+
+Bug 23.2 [MEDIUM] - WhatsApp errors silently swallowed
+File: src/app/api/subscriptions/trial-funnel/route.ts:146-155
+Issue: No error pushed to results.errors for WhatsApp failures
+Impact: Admin never knows WhatsApp messages failed
+
+
+========================================
+TEST 25: EMAIL
+========================================
+
+Bug 25.1 [HIGH] - Profile query error returns null silently
+File: src/app/api/auth/profile/route.ts:37-41
+Issue: Supabase error ignored, profile returns null
+Impact: Valid user redirected to /onboarding on DB error
+
+
+========================================
+TEST 26: DAILY DIGEST
+========================================
+
+Bug 26.1 [MEDIUM] - ProfileGuard blank page on network error
+File: src/components/profile-guard.tsx:73-76
+Issue: checking=false but allowed=false, renders nothing
+Impact: User sees blank page with no feedback
+
+
+========================================
+TEST 27-28: WEBHOOK / CRON
+========================================
+
+Bug 27.1 [MEDIUM] - subscription.expired event not handled
+File: src/app/api/subscriptions/webhook/route.ts:67-201
+Issue: Switch statement missing expired case
+Impact: Subscription stays active after Razorpay expiration
+
+Bug 27.2 [MEDIUM] - Cron jobs missing env var safety check
+File: src/app/api/super-admin/cron-jobs/route.ts:5-9
+Issue: Uses ! assertions instead of runtime null check
+Impact: Confusing error if env vars missing
+
+
+========================================
+TEST 29-34: EDGE CASES
+========================================
+
+Bug 29.1 [MEDIUM] - PUT handler has no JSON parse error handling
+File: src/app/api/cases/[id]/route.ts:34
+Issue: request.json() called without try/catch
+Impact: Malformed JSON causes unhandled 500 error
+
+Bug 29.2 [MEDIUM] - PUT handler missing payment fields
+File: src/app/api/cases/[id]/route.ts:35-52
+Issue: advance_amount, amount_received not in allowedFields
+Impact: Payment fields can never be updated
+
+Bug 29.3 [LOW] - Client PUT doesn't validate UUID format
+File: src/app/api/cases/[id]/route.ts:65
+Issue: No UUID format validation on client_id
+Impact: Supabase query error instead of clean validation
+
+Bug 29.4 [LOW] - Cases list stale after navigation
+File: src/app/(dashboard)/cases/page.tsx:93-96
+Issue: useEffect has empty deps, no re-fetch
+Impact: Stale data until page reload
+
+Bug 29.5 [LOW] - Clients list stale after navigation
+File: src/app/(dashboard)/clients/page.tsx:33-35
+Issue: Same as above
+Impact: Stale data until page reload
+
+Bug 29.6 [LOW] - Calendar events in localStorage with no scoping
+File: src/app/(dashboard)/calendar/page.tsx:191-198
+Issue: Rules/events not scoped by user or firm
+Impact: Shared browser = shared events
+
+Bug 29.7 [LOW] - storageLimit never populated
+File: src/app/(dashboard)/cases/new/page.tsx:60,730
+Issue: storageLimit initialized null, never set
+Impact: Storage limit display permanently hidden
+
+Bug 29.8 [LOW] - ProfileGuard unused constants
+File: src/components/profile-guard.tsx:7,13
+Issue: PUBLIC_PATHS and pathname declared but never used
+Impact: Dead code, unnecessary renders
+
+Bug 29.9 [LOW] - Super admin role missing from role-change dropdown
+File: src/app/(super-admin)/super-admin/users/page.tsx:161-174
+Issue: Can't promote user to super admin via UI
+Impact: Must use SQL directly
+
+
+========================================
+SUMMARY
+========================================
+
+CRITICAL (8):
+- Case/Client creation bypasses API (no validation, no role check)
+- Payment amount not server-validated (pay ₹1 for ₹50000 invoice)
+- Payment verification bypassed entirely
+- plan_id type mismatch (slug vs UUID)
+
+HIGH (17):
+- Login/signup refs never reset (blank pages)
+- Race condition on invite codes
+- Employee permissions inconsistent
+- Super admin auth gaps
+- Settings stale data
+- Trial funnel dedup prevents retry
+
+MEDIUM (20):
+- Calendar UTC date issues
+- Tasks wrong ownerField
+- Reports error handling
+- Various missing validations
+
+LOW (14):
+- Stale data on lists
+- Dead code
+- Missing dropdown options
+- localStorage scoping
+
+
+========================================
+RECOMMENDATION
+========================================
+
+Fix CRITICAL bugs first (8):
+1. Route case/client creation through API endpoints
+2. Server-validate all payment amounts
+3. Fix plan_id type mismatch
+4. Add payment verification from Razorpay server
+
+Then HIGH bugs (17):
+1. Fix login/signup ref resets
+2. Add invite code atomicity
+3. Fix employee permission matrix
+4. Add super admin auth guards
+
+MEDIUM and LOW can be addressed in subsequent releases.
+
+
+========================================
+END OF REPORT
+========================================

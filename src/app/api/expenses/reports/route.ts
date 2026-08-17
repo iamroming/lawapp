@@ -30,6 +30,8 @@ export async function GET(request: NextRequest) {
 
     if (startDate) query = query.gte("expense_date", startDate);
     if (endDate) query = query.lte("expense_date", endDate);
+    if (searchParams.get("category")) query = query.eq("category", searchParams.get("category"));
+    if (searchParams.get("billable")) query = query.eq("is_billable", searchParams.get("billable") === "true");
 
     const { data: expenses, error } = await query;
     if (error) throw error;

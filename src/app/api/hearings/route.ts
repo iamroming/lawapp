@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     p_action: "created",
     p_entity_type: "hearing",
     p_entity_id: data.id,
-    p_entity_name: data.title || data.court_name || "item",
+    p_entity_name: data.purpose || data.court || "item",
     p_details: {},
   });
 

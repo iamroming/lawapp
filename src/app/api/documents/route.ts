@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
     const { data: assignedCases } = await supabase
       .from("cases")
       .select("id")
+      .eq("firm_id", firmId)
       .or(`created_by.eq.${user.uuid},assigned_to.eq.${user.uuid}`);
     const caseIds = (assignedCases || []).map((c) => c.id);
     if (caseIds.length > 0) {

@@ -34,6 +34,7 @@ export default function SuperAdminSubscriptionsPage() {
     expires_at: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -44,8 +45,10 @@ export default function SuperAdminSubscriptionsPage() {
       const allPlans = (result.plans as SubscriptionPlan[]) || [];
       setSubscriptions(subs);
       setPlans(allPlans);
+      setError(null);
     } catch (e) {
       console.error("Failed to fetch subscriptions:", e);
+      setError("Failed to load subscriptions. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -159,6 +162,15 @@ export default function SuperAdminSubscriptionsPage() {
   });
 
   if (loading) return <div className="text-center py-12 text-[var(--text-secondary)]">Loading...</div>;
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-600 mb-4">{error}</p>
+        <Button onClick={() => { setLoading(true); fetchData(); }}>Retry</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

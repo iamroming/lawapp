@@ -281,6 +281,9 @@ export async function toggleSuperAdminUserActive(userId: string, isActive: boole
 }
 
 export async function checkIfSuperAdmin(userId: string) {
+  const access = await checkSuperAdminAccess();
+  if (!access.authorized) throw new Error("Unauthorized");
+
   const serviceRoleClient = createServiceRoleClient();
   const { data } = await serviceRoleClient
     .from("super_admins")
@@ -414,6 +417,9 @@ export async function deleteSuperAdminCoupon(couponId: string) {
 }
 
 export async function getSuperAdminCouponUses(couponId: string) {
+  const access = await checkSuperAdminAccess();
+  if (!access.authorized) throw new Error("Unauthorized");
+
   const serviceRoleClient = createServiceRoleClient();
   const { data } = await serviceRoleClient
     .from("coupon_uses")

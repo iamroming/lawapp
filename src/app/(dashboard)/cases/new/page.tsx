@@ -108,6 +108,13 @@ export default function NewCasePage() {
         const total = data.reduce((sum: number, doc: { file_size: number | null }) => sum + (doc.file_size || 0), 0);
         setStorageUsed(total);
       }
+      try {
+        const res = await fetch("/api/documents/storage-check");
+        const check = await res.json();
+        if (check.limit && check.limit > 0) {
+          setStorageLimit(check.limit * 1024 * 1024);
+        }
+      } catch {}
     };
     fetchStorage();
   }, [supabase]);

@@ -9,6 +9,7 @@ import { Plus, Wallet, TrendingUp, Filter, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { dbWrite } from "@/lib/db-write";
 import { useUser } from "@/hooks/use-user";
+import toast from "react-hot-toast";
 
 const CATEGORIES = [
   { value: "court_fees", label: "Court Fees" },
@@ -71,7 +72,11 @@ export default function ExpensesPage() {
 
   const deleteExpense = async (id: string) => {
     if (!confirm("Delete this expense?")) return;
-    await dbWrite("expenses", "delete", undefined, { id });
+    const { error } = await dbWrite("expenses", "delete", undefined, { id });
+    if (error) {
+      toast.error(error);
+      return;
+    }
     fetchExpenses();
   };
 

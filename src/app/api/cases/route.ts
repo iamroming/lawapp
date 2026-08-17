@@ -22,6 +22,9 @@ export async function GET(request: NextRequest) {
   if (isOwner && firmId) {
     query = query.eq("firm_id", firmId);
   } else {
+    // NOTE: This filter only checks created_by and assigned_to. Cases where the user
+    // is a collaborator (via a case_collaborators join table) are not included.
+    // Consider adding a collaborators check if the case_collaborators table exists.
     query = query.or(`created_by.eq.${user.uuid},assigned_to.eq.${user.uuid}`);
   }
 

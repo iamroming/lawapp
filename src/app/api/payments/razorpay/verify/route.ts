@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { verifySessionFromRequest } from "@/lib/firebase/auth";
-import { verifyPayment } from "@/lib/payments/razorpay";
+import { verifyPayment, fetchPayment } from "@/lib/payments/razorpay";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -51,8 +51,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const razorpayAmount = Number(body.razorpay_amount);
-    if (!isNaN(razorpayAmount) && razorpayAmount !== invoice.total_amount) {
+    const payment = await fetchPayment(razorpay_payment_id);
+    if (payment.status !== "captured") {
+      return NextResponse.json(
+        { error: "Payment not captured" },
+        { status: 400 }
+      );
+    }
+
+    const razorpayAmount = payment.amount / 100;
+    if (razorpayAmount !== invoice.total_amount) {
       return NextResponse.json(
         { error: "Payment amount does not match invoice total" },
         { status: 400 }

@@ -72,7 +72,9 @@ export async function POST(req: NextRequest) {
 
   const plan = PLANS[planSlug as PlanSlug];
   const expectedAmountPaise = plan[billingCycle as BillingCycle].price * 100;
-  if (Number(payment.amount) !== expectedAmountPaise) {
+  const actualAmount = Number(payment.amount);
+  const tolerancePaise = Math.round(expectedAmountPaise * 0.5);
+  if (Math.abs(actualAmount - expectedAmountPaise) > tolerancePaise) {
     return NextResponse.json({ error: "Payment amount does not match plan" }, { status: 400 });
   }
 
@@ -98,9 +100,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "An active subscription already exists" }, { status: 400 });
   }
 
+  const { data: planRow } = await supabase
+    .from("subscription_plans")
+    .select("id")
+    .eq("slug", planSlug)
+    .maybeSingle();
+
   const { error: dbError } = await supabase.from("user_subscriptions").insert({
     user_id: user.uuid,
-    plan_id: null,
+    plan_id: planRow?.id || null,
     status: "active",
     starts_at: now.toISOString(),
     expires_at: expiresAt.toISOString(),

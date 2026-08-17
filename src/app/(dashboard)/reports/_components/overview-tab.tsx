@@ -109,7 +109,9 @@ export default function ReportsOverviewTab() {
       ]);
 
       if (casesRes.error) throw casesRes.error;
+      if (clientsRes.error) throw clientsRes.error;
       if (paymentsRes.error) throw paymentsRes.error;
+      if (hearingsRes.error) throw hearingsRes.error;
 
       const cases = (casesRes.data || []) as any[];
       const payments = (paymentsRes.data || []) as any[];

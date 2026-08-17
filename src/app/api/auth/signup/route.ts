@@ -6,6 +6,15 @@ import { firebaseUidToUuid } from "@/lib/firebase/uid";
 
 const signupAttempts = new Map<string, { count: number; resetAt: number }>();
 
+function cleanupExpiredEntries(): void {
+  const now = Date.now();
+  for (const [ip, record] of signupAttempts) {
+    if (now > record.resetAt) {
+      signupAttempts.delete(ip);
+    }
+  }
+}
+
 function checkSignupRateLimit(ip: string): boolean {
   const now = Date.now();
   const windowMs = 15 * 60 * 1000;
@@ -26,6 +35,7 @@ function checkSignupRateLimit(ip: string): boolean {
 }
 
 export async function POST(request: Request) {
+  cleanupExpiredEntries();
   const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
   if (!checkSignupRateLimit(ip)) {
     return NextResponse.json({ error: "Too many signup attempts. Please try again later." }, { status: 429 });
@@ -159,7 +169,7 @@ export async function POST(request: Request) {
         throw profileError;
       }
 
-      await supabaseAdmin
+      const { error: inviteUpdateError } = await supabaseAdmin
         .from("team_invites")
         .update({
           used_by: profileUuid,
@@ -167,6 +177,10 @@ export async function POST(request: Request) {
           is_active: false,
         })
         .eq("id", inviteData.id as string);
+
+      if (inviteUpdateError) {
+        console.error("Failed to mark invite as used:", inviteUpdateError.message);
+      }
     }
   } catch (profileError) {
     try {

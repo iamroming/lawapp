@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     if (profile?.firm_id && ["owner", "partner"].includes(profile.role || "")) {
       query = query.eq("firm_id", profile.firm_id);
     } else {
-      query = query.or(`user_id.eq.${user.uuid},assigned_to.eq.${user.uuid}`);
+      query = query.or(`created_by.eq.${user.uuid},assigned_to.eq.${user.uuid}`);
     }
 
     if (status) query = query.eq("status", status);
@@ -70,6 +70,7 @@ export async function POST(request: NextRequest) {
       .from("tasks")
       .insert({
         user_id: user.uuid,
+        created_by: user.uuid,
         case_id: case_id || null,
         client_id: client_id || null,
         firm_id: profile?.firm_id || null,
@@ -77,6 +78,7 @@ export async function POST(request: NextRequest) {
         title,
         description: description || null,
         priority: priority || "medium",
+        status: "todo",
         due_date: due_date || null,
       })
       .select("*, cases(id, title, case_number), clients(id, full_name), assigned_user:profiles!tasks_assigned_to_fkey(full_name)")
@@ -99,6 +101,11 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const { id, title, description, status, priority, due_date, assigned_to, case_id, client_id } = body;
     if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+
+    const VALID_STATUSES = ["todo", "in_progress", "review", "done"];
+    if (status !== undefined && !VALID_STATUSES.includes(status)) {
+      return NextResponse.json({ error: `Invalid status. Allowed: ${VALID_STATUSES.join(", ")}` }, { status: 400 });
+    }
 
     const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.uuid).single();
     const firmId = profile?.firm_id;
