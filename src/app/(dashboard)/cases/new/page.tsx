@@ -78,6 +78,11 @@ export default function NewCasePage() {
   const [selectedSections, setSelectedSections] = useState<string[]>([]);
   const [clauses, setClauses] = useState<string[]>([]);
   const [newClause, setNewClause] = useState("");
+  const [showNewClient, setShowNewClient] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [newClientEmail, setNewClientEmail] = useState("");
+  const [newClientPhone, setNewClientPhone] = useState("");
+  const [creatingClient, setCreatingClient] = useState(false);
   const availableActs = getAvailableActs();
   const router = useRouter();
   const supabase = createClient();
@@ -292,6 +297,42 @@ export default function NewCasePage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleCreateClient = async () => {
+    if (!newClientName.trim()) {
+      toast.error("Client name is required");
+      return;
+    }
+    if (!appUser) return;
+    setCreatingClient(true);
+    try {
+      const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", appUser.uuid).single();
+      const { data, error } = await supabase.from("clients").insert({
+        full_name: newClientName.trim(),
+        email: newClientEmail.trim() || null,
+        phone: newClientPhone.trim() || null,
+        firm_id: profile?.firm_id || appUser.uuid,
+        created_by: appUser.uuid,
+      }).select("id, full_name").single();
+
+      if (error) {
+        toast.error("Failed to create client");
+        return;
+      }
+
+      setClients((prev) => [...prev, data].sort((a, b) => a.full_name.localeCompare(b.full_name)));
+      setFormData((prev) => ({ ...prev, client_id: data.id }));
+      setShowNewClient(false);
+      setNewClientName("");
+      setNewClientEmail("");
+      setNewClientPhone("");
+      toast.success("Client created!");
+    } catch {
+      toast.error("Failed to create client");
+    } finally {
+      setCreatingClient(false);
+    }
+  };
+
   return (
     <div className="max-w-3xl space-y-6">
       <div className="flex items-center gap-4">
@@ -344,14 +385,90 @@ export default function NewCasePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Client</label>
-                <Select
-                  options={[
-                    { value: "", label: "Select client..." },
-                    ...clients.map((c) => ({ value: c.id, label: c.full_name })),
-                  ]}
-                  value={formData.client_id}
-                  onChange={(e) => updateField("client_id", e.target.value)}
-                />
+                {clients.length === 0 && !showNewClient ? (
+                  <div className="flex items-center gap-2">
+                    <Select
+                      options={[{ value: "", label: "No clients yet..." }]}
+                      value=""
+                      onChange={() => {}}
+                      disabled
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowNewClient(true)}
+                      className="shrink-0"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Create
+                    </Button>
+                  </div>
+                ) : (
+                  <Select
+                    options={[
+                      { value: "", label: "Select client..." },
+                      ...clients.map((c) => ({ value: c.id, label: c.full_name })),
+                    ]}
+                    value={formData.client_id}
+                    onChange={(e) => updateField("client_id", e.target.value)}
+                  />
+                )}
+                {!showNewClient && clients.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowNewClient(true)}
+                    className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                  >
+                    <Plus className="h-3 w-3" /> Add new client
+                  </button>
+                )}
+                {showNewClient && (
+                  <div className="p-3 border border-blue-200 bg-blue-50 rounded-lg space-y-2">
+                    <p className="text-xs font-medium text-blue-800">New Client</p>
+                    <Input
+                      placeholder="Full name *"
+                      value={newClientName}
+                      onChange={(e) => setNewClientName(e.target.value)}
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        placeholder="Email"
+                        type="email"
+                        value={newClientEmail}
+                        onChange={(e) => setNewClientEmail(e.target.value)}
+                      />
+                      <Input
+                        placeholder="Phone"
+                        value={newClientPhone}
+                        onChange={(e) => setNewClientPhone(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleCreateClient}
+                        disabled={creatingClient || !newClientName.trim()}
+                      >
+                        {creatingClient ? "Creating..." : "Save Client"}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setShowNewClient(false);
+                          setNewClientName("");
+                          setNewClientEmail("");
+                          setNewClientPhone("");
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Priority</label>

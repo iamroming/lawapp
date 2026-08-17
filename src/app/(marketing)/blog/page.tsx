@@ -22,12 +22,12 @@ export default async function BlogListPage() {
   const posts = await getPosts();
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-black text-white">
       {/* Header */}
-      <div className="bg-gray-50 border-b border-gray-200">
+      <div className="border-b border-white/10 bg-white/[0.02]">
         <div className="max-w-5xl mx-auto px-4 py-16 text-center">
-          <h1 className="text-4xl font-bold text-gray-900">Blog</h1>
-          <p className="mt-3 text-lg text-gray-500">
+          <h1 className="text-4xl font-bold">Blog</h1>
+          <p className="mt-3 text-lg text-gray-400">
             Insights, tips, and updates for Indian legal professionals
           </p>
         </div>
@@ -45,7 +45,7 @@ export default async function BlogListPage() {
               <Link key={post.id} href={`/blog/${post.slug}`} className="group">
                 <article className="h-full flex flex-col">
                   {post.cover_image && (
-                    <div className="aspect-video rounded-xl overflow-hidden mb-4 bg-gray-100">
+                    <div className="aspect-video rounded-xl overflow-hidden mb-4 bg-white/5">
                       <img
                         src={post.cover_image}
                         alt={post.heading}
@@ -54,17 +54,17 @@ export default async function BlogListPage() {
                     </div>
                   )}
                   {!post.cover_image && (
-                    <div className="aspect-video rounded-xl mb-4 bg-gradient-to-br from-orange-500/10 to-indigo-500/10 flex items-center justify-center">
+                    <div className="aspect-video rounded-xl mb-4 bg-gradient-to-br from-orange-500/10 to-white/5 flex items-center justify-center">
                       <Scale className="h-10 w-10 text-orange-500/40" />
                     </div>
                   )}
-                  <h2 className="text-xl font-bold text-gray-900 group-hover:text-orange-600 transition-colors line-clamp-2">
+                  <h2 className="text-xl font-bold group-hover:text-orange-500 transition-colors line-clamp-2">
                     {post.heading}
                   </h2>
                   {post.excerpt && (
-                    <p className="mt-2 text-sm text-gray-500 line-clamp-3 flex-1">{post.excerpt}</p>
+                    <p className="mt-2 text-sm text-gray-400 line-clamp-3 flex-1">{post.excerpt}</p>
                   )}
-                  <div className="mt-4 flex items-center justify-between text-xs text-gray-400">
+                  <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
                     <span>{post.author_name}</span>
                     {post.published_at && (
                       <span>
@@ -76,7 +76,7 @@ export default async function BlogListPage() {
                       </span>
                     )}
                   </div>
-                  <span className="mt-3 text-sm font-semibold text-orange-600 flex items-center gap-1">
+                  <span className="mt-3 text-sm font-semibold text-orange-500 flex items-center gap-1">
                     Read more <ArrowRight className="h-3 w-3" />
                   </span>
                 </article>

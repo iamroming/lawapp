@@ -1,0 +1,173 @@
+========================================
+CASEFILES - COMPLETE CRON JOBS REFERENCE
+========================================
+
+All automated tasks in the app:
+
+
+1. TRIAL FUNNEL
+   Endpoint: /api/subscriptions/trial-funnel
+   Schedule: Daily 9 AM UTC
+   
+   Actions:
+   ┌─────────────────────────────────────────┐
+   │ ✅ Email: 5 templates                   │
+   │    - Welcome (Day 0)                    │
+   │    - Progress check (Day 3)             │
+   │    - Halfway warning (Day 7)            │
+   │    - Urgent alert (Day 12)              │
+   │    - Trial ended (Day 14)               │
+   │                                         │
+   │ ✅ WhatsApp: 5 messages                 │
+   │    - Welcome message                    │
+   │    - Progress check                     │
+   │    - Halfway warning                    │
+   │    - Urgent alert                       │
+   │    - Trial ended                        │
+   └─────────────────────────────────────────┘
+
+
+2. HEARING REMINDERS
+   Endpoint: /api/reminders/cron
+   Schedule: Daily 6 PM UTC
+   
+   Actions:
+   ┌─────────────────────────────────────────┐
+   │ ✅ WhatsApp to Lawyer                   │
+   │    - Tomorrow's hearings reminder       │
+   │                                         │
+   │ ✅ WhatsApp to Firm Owner               │
+   │    - Alert for all firm hearings        │
+   │                                         │
+   │ ✅ Email to Lawyer                      │
+   │    - Hearing details with documents     │
+   └─────────────────────────────────────────┘
+
+
+3. EXPIRE TRIALS
+   Endpoint: /api/subscriptions/expire-trials
+   Schedule: Daily 8 AM UTC
+   
+   Actions:
+   ┌─────────────────────────────────────────┐
+   │ ✅ Database update                      │
+   │    - Mark expired trials as "expired"   │
+   │    - Restrict user access               │
+   └─────────────────────────────────────────┘
+
+
+4. DAILY DIGEST
+   Endpoint: /api/daily-digest
+   Schedule: Daily 2:30 AM UTC (8 AM IST)
+   
+   Actions:
+   ┌─────────────────────────────────────────┐
+   │ ✅ Email to Firm Owner/Partner          │
+   │    - Today's hearings                   │
+   │    - This week's hearings               │
+   │    - Pending tasks                      │
+   │    - Overdue invoices                   │
+   └─────────────────────────────────────────┘
+
+
+5. INVOICE REMINDERS
+   Endpoint: /api/invoices/reminders
+   Schedule: Daily 10 AM UTC
+   
+   Actions:
+   ┌─────────────────────────────────────────┐
+   │ ✅ Email to Client                      │
+   │    - 7 days overdue: Gentle reminder    │
+   │    - 30 days overdue: Final notice      │
+   │    - 60 days overdue: Escalation        │
+   │                                         │
+   │ ✅ Database update                      │
+   │    - Update invoice status to overdue   │
+   │    - Log to collection_logs             │
+   └─────────────────────────────────────────┘
+
+
+6. DEADLINE CHECK
+   Endpoint: /api/deadlines/check
+   Schedule: Daily 7 AM UTC
+   
+   Actions:
+   ┌─────────────────────────────────────────┐
+   │ ✅ Database create                      │
+   │    - Create deadline_reminders          │
+   │    - Types: emergency/critical/urgent   │
+   │                                         │
+   │ ✅ Email (if configured)                │
+   │    - Limitation date alerts             │
+   │                                         │
+   │ ✅ WhatsApp (if configured)             │
+   │    - Limitation date alerts             │
+   └─────────────────────────────────────────┘
+
+
+7. CAUSE LIST SYNC
+   Endpoint: /api/cause-list/sync
+   Schedule: Daily 5 AM UTC
+   
+   Actions:
+   ┌─────────────────────────────────────────┐
+   │ ✅ Database upsert                      │
+   │    - Sync cause_list_entries            │
+   │    - Update hearing dates               │
+   │    - Track judge assignments            │
+   └─────────────────────────────────────────┘
+
+
+8. CASE ALERTS CHECK
+   Endpoint: /api/case-alerts/check
+   Schedule: Daily 11 AM UTC
+   
+   Actions:
+   ┌─────────────────────────────────────────┐
+   │ ✅ API call to eCourts                  │
+   │    - Check case status changes          │
+   │    - Check hearing date changes         │
+   │    - Check stage changes                │
+   │                                         │
+   │ ✅ In-App Notification                  │
+   │    - Notify assigned user               │
+   │                                         │
+   │ ✅ WhatsApp to User                     │
+   │    - Case update alert                  │
+   │                                         │
+   │ ✅ Email to User                        │
+   │    - Case change details                │
+   │                                         │
+   │ ✅ Database update                      │
+   │    - Update last_known_status           │
+   │    - Log to case_alert_history          │
+   └─────────────────────────────────────────┘
+
+
+========================================
+ACTIONS SUMMARY (What each can do)
+========================================
+
+Action Type          │ Cron Jobs Using It
+─────────────────────┼─────────────────────
+📧 Email             │ 1, 2, 4, 5, 6, 8
+💬 WhatsApp          │ 1, 2, 6, 8
+🔔 In-App Notification│ 8
+📊 Database Update   │ 3, 5, 6, 7, 8
+🌐 External API Call │ 8 (eCourts)
+
+
+========================================
+RECOMMENDED SCHEDULE (cron-job.org)
+========================================
+
+Time (UTC)  │ Job                    │ Action
+────────────┼────────────────────────┼──────────────────
+05:00 AM    │ cause-list-sync        │ Sync court data
+07:00 AM    │ deadline-check         │ Check limitations
+08:00 AM    │ expire-trials          │ Expire old trials
+09:00 AM    │ trial-funnel           │ Send trial emails
+10:00 AM    │ invoice-reminders      │ Payment reminders
+11:00 AM    │ case-alerts            │ Check eCourts
+02:30 AM    │ daily-digest           │ Morning digest
+06:00 PM    │ hearing-reminders      │ Tomorrow's hearings

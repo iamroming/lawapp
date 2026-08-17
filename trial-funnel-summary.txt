@@ -1,0 +1,101 @@
+========================================
+FREE TRIAL FUNNEL - IMPLEMENTATION SUMMARY
+========================================
+
+What was built:
+--------------
+5-stage automated email + WhatsApp funnel for trial users.
+
+
+Files Created/Modified:
+-----------------------
+
+1. src/lib/email-templates.ts
+   - trialFunnelWelcome()    → Day 0: Welcome + first steps
+   - trialFunnelDay3()       → Day 3: Progress check + tips
+   - trialFunnelDay7()       → Day 7: Halfway + what you'll lose
+   - trialFunnelDay12()      → Day 12: Urgent - data at risk
+   - trialFunnelDay14()      → Day 14: Trial ended - restricted
+
+2. src/lib/whatsapp.ts
+   - formatTrialWelcome()    → WhatsApp welcome message
+   - formatTrialDay3()       → Personalized by case count
+   - formatTrialDay7()       → Urgency message
+   - formatTrialDay12()      → Red alert
+   - formatTrialDay14()      → Final reminder
+
+3. src/app/api/subscriptions/trial-funnel/route.ts
+   - GET  → Cron trigger (runs daily)
+   - POST → Manual admin trigger
+   - Deduplicates via whatsapp_logs
+   - Personalizes by user's case count
+
+4. vercel.json
+   - Cron: /api/subscriptions/trial-funnel (9 AM UTC daily)
+   - Cron: /api/reminders/cron (6 PM UTC daily)
+
+
+Trial Funnel Flow:
+------------------
+
+Day 0  ──→  Welcome email + WhatsApp
+           "Your trial starts! Here's how to begin"
+
+Day 3  ──→  Progress check
+           "You created X cases. Keep going!"
+           (If 0 cases: "Create your first case")
+
+Day 7  ──→  Halfway warning
+           "7 days left. Here's what you'll lose:
+            ❌ WhatsApp reminders
+            ❌ AI research
+            ❌ X cases locked"
+
+Day 12 ──→  Urgent alert
+           "⚠️ 2 DAYS LEFT! Your data is at risk"
+
+Day 14 ──→  Trial ended
+           "Your account is restricted. Subscribe to continue"
+
+
+Vercel Cron Jobs - Pricing:
+----------------------------
+
+FREE Plan:
+  ✅ 1 cron job included
+  ✅ Runs every day (up to once per day)
+
+HOBBY Plan ($20/month):
+  ✅ 1 cron job included
+
+PRO Plan ($20/month):
+  ✅ 1 cron job included
+
+OUR APP:
+  We have 2 cron jobs:
+  1. /api/subscriptions/trial-funnel (9 AM UTC)
+  2. /api/reminders/cron (6 PM UTC)
+
+  ⚠️ Free plan only allows 1 cron job.
+     Need to upgrade or combine into 1 endpoint.
+
+SOLUTION:
+  Option A: Upgrade to Hobby ($20/month) - gets 1 cron
+  Option B: Combine both into 1 cron endpoint
+  Option C: Use external cron service (cron-job.org - free)
+
+
+Super Admin Monitor Module:
+---------------------------
+
+Location: src/app/(dashboard)/super-admin/trial-funnel/page.tsx
+
+Features:
+  - See all active trial users
+  - See which stage each user is at
+  - See email/WhatsApp delivery status
+  - Manual trigger button
+  - Stats: total trials, emails sent, WhatsApp sent
+  - Filter by stage (welcome, day3, day7, day12, day14)
+  - Resend failed messages
+  - Export trial data to CSV

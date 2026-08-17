@@ -19,6 +19,10 @@ import {
   Ticket,
   PenSquare,
   Package,
+  BarChart3,
+  Zap,
+  Clock,
+  Gift,
 } from "lucide-react";
 import { getFirebaseAuth } from "@/lib/firebase/config";
 import { signOut as firebaseSignOut } from "firebase/auth";
@@ -26,6 +30,9 @@ import { useRouter } from "next/navigation";
 
 const superAdminNav = [
   { name: "Command Center", href: "/super-admin", icon: Crown },
+  { name: "Trial Funnel", href: "/super-admin/trial-funnel", icon: Zap },
+  { name: "Cron Jobs", href: "/super-admin/cron-jobs", icon: Clock },
+  { name: "Referrals", href: "/super-admin/referrals", icon: Gift },
   { name: "All Users", href: "/super-admin/users", icon: Users },
   { name: "All Cases", href: "/super-admin/cases", icon: Briefcase },
   { name: "All Clients", href: "/super-admin/clients", icon: Users },
@@ -33,6 +40,7 @@ const superAdminNav = [
   { name: "Plans", href: "/super-admin/plans", icon: Package },
   { name: "Coupons", href: "/super-admin/coupons", icon: Ticket },
   { name: "Revenue", href: "/super-admin/revenue", icon: IndianRupee },
+  { name: "Site Analytics", href: "/super-admin/analytics", icon: BarChart3 },
   { name: "Blog", href: "/super-admin/blog", icon: PenSquare },
   { name: "Activity Logs", href: "/super-admin/activity", icon: Activity },
   { name: "Documents", href: "/super-admin/documents", icon: FileText },

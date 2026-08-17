@@ -38,9 +38,16 @@ export function ProfileGuard({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        const { profile, subscription } = await res.json();
+        const { profile, subscription, is_super_admin } = await res.json();
 
         if (cancelled) return;
+
+        // Super admins bypass all checks
+        if (is_super_admin) {
+          setAllowed(true);
+          setChecking(false);
+          return;
+        }
 
         if (!profile) {
           cancelled = true;

@@ -1,0 +1,111 @@
+========================================
+CASEFILES - ROLE-BASED ACCESS CONTROL BUG REPORT
+Tested: Owner, Employee (same firm), Employee (different firm)
+Date: August 2026
+========================================
+
+CONFIRMED BUGS: 12
+STATUS: ALL FIXED
+
+========================================
+CRITICAL (Security - anyone can access)
+========================================
+
+#1: No auth on GET invite code
+    File: src/app/api/team/redeem-code/route.ts (line 124)
+    Issue: Anyone could probe invite codes, see role, firm, email without login
+    Fix: Added verifySessionFromRequest() to GET handler
+    Allowed: Any logged-in user
+
+#2: Super admin functions exposed (4 functions)
+    File: src/app/actions/super-admin.ts (lines 75, 316, 327, 338)
+    Issue: getSuperAdminUser, getSuperAdminUserCases, getSuperAdminUserActivities,
+           getSuperAdminUserSubscription had NO checkSuperAdminAccess()
+    Fix: Added checkSuperAdminAccess() to all 4 functions
+    Allowed: Only super admins
+
+========================================
+HIGH (Permission bypass)
+========================================
+
+#3: Anyone can create cases
+    File: src/app/api/cases/route.ts (line 42 POST)
+    Issue: No role check - any authenticated user could create cases
+    Fix: Added role check - owner/partner/senior_associate/associate/super_admin only
+
+#4: Anyone can upload documents
+    File: src/app/api/documents/route.ts (line 57 POST)
+    Issue: No role check - any authenticated user could upload documents
+    Fix: Added role check - owner/partner/senior_associate/associate/junior_associate/paralegal/super_admin only
+
+#5: Anyone can view all salaries
+    File: src/app/api/salary/route.ts (line 5 GET)
+    Issue: No role check - employee could see everyone's salary data
+    Fix: Added role check - owner/partner/office_admin/super_admin only
+
+#6: Anyone can view all analytics
+    File: src/app/api/analytics/route.ts (line 6 GET)
+    Issue: No role check - employee could see revenue, profit, forecasts, revenue per lawyer
+    Fix: Added role check - owner/partner/senior_associate/super_admin only
+
+#7: Anyone can view/create hearings
+    File: src/app/api/hearings/route.ts (lines 6, 53)
+    Issue: No role check - intern could create hearings and view all firm hearings
+    Fix: Added role check - owner/partner/senior_associate/associate/super_admin only
+
+#8: Anyone can create tasks
+    File: src/app/api/tasks/route.ts (line 49 POST)
+    Issue: No role check - any authenticated user could create tasks
+    Fix: Added role check - owner/partner/senior_associate/associate/super_admin only
+
+#9: Anyone can create expenses
+    File: src/app/api/expenses/route.ts (line 58 POST)
+    Issue: No role check - any authenticated user could create expenses
+    Fix: Added role check - owner/partner/senior_associate/associate/super_admin only
+
+========================================
+MEDIUM (Data leaks - now fixed by role checks)
+========================================
+
+#10: Salary data leak
+     GET /api/salary returned all firm salaries to any employee
+     Now restricted to owner/partner/office_admin only
+
+#11: Analytics data leak
+     GET /api/analytics exposed revenue forecasts, profit per case type,
+     revenue per lawyer to employees
+     Now restricted to owner/partner/senior_associate only
+
+#12: Hearings not scoped by role
+     All firm members could see all hearings regardless of case assignment
+     Now restricted to owner/partner/senior_associate/associate only
+
+========================================
+ROLE PERMISSION MATRIX (after fix)
+========================================
+
+Action                  | Owner | Partner | Sr Assoc | Assoc | Jr Assoc | Paralegal | Intern | Office Admin
+------------------------|-------|---------|----------|-------|----------|-----------|--------|-------------
+Create cases            |  YES  |  YES    |   YES    |  YES  |    NO    |    NO     |   NO   |    NO
+Upload documents        |  YES  |  YES    |   YES    |  YES  |   YES    |   YES     |   NO   |    NO
+View salaries           |  YES  |  YES    |    NO    |   NO  |    NO    |    NO     |   NO   |    YES
+View analytics          |  YES  |  YES    |   YES    |   NO  |    NO    |    NO     |   NO   |    NO
+View/create hearings    |  YES  |  YES    |   YES    |  YES  |    NO    |    NO     |   NO   |    NO
+Create tasks            |  YES  |  YES    |   YES    |  YES  |    NO    |    NO     |   NO   |    NO
+Create expenses         |  YES  |  YES    |   YES    |  YES  |    NO    |    NO     |   NO   |    NO
+View invite code (GET)  |  YES  |  YES    |   YES    |  YES  |   YES    |   YES     |  YES   |    YES
+Super admin functions   |  YES  |   NO    |    NO    |   NO  |    NO    |    NO     |   NO   |    NO
+
+========================================
+FILES MODIFIED
+========================================
+
+1. src/app/api/team/redeem-code/route.ts
+2. src/app/actions/super-admin.ts
+3. src/app/api/cases/route.ts
+4. src/app/api/documents/route.ts
+5. src/app/api/salary/route.ts
+6. src/app/api/analytics/route.ts
+7. src/app/api/hearings/route.ts
+8. src/app/api/tasks/route.ts
+9. src/app/api/expenses/route.ts

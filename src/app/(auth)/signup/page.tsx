@@ -22,6 +22,7 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const signupInProgress = useRef(false);
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -36,6 +37,29 @@ export default function SignupPage() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
+  }, []);
+
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user || signupInProgress.current) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const idToken = await user.getIdToken();
+        const profileRes = await fetch("/api/auth/profile", {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        if (cancelled || !profileRes.ok) return;
+        const { is_super_admin } = await profileRes.json();
+        if (cancelled) return;
+        router.replace(is_super_admin ? "/super-admin" : "/dashboard");
+      } catch {
+        // user stays on signup page
+      }
+    })();
+
+    return () => { cancelled = true; };
   }, []);
 
   const validateInviteCode = async (code: string) => {
@@ -117,19 +141,23 @@ export default function SignupPage() {
   };
 
   const handleGoogleSignup = async () => {
+    signupInProgress.current = true;
     setGoogleLoading(true);
     try {
       const { user } = await signInWithPopup(auth, new GoogleAuthProvider());
 
-      const idToken = await user.getIdToken();
+      const idToken = await user.getIdToken(true);
       const sessionRes = await fetch("/api/auth/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idToken }),
       });
 
+      const sessionData = await sessionRes.json();
+
       if (!sessionRes.ok) {
-        toast.error("Failed to create session");
+        console.error("Session creation failed:", sessionData);
+        toast.error(sessionData.error || "Failed to create session. Please try again.");
         setGoogleLoading(false);
         return;
       }
@@ -145,17 +173,24 @@ export default function SignupPage() {
         return;
       }
 
-      const { profile } = await profileRes.json();
+      const { profile, is_super_admin } = await profileRes.json();
 
-      if (!profile) {
-        router.push("/onboarding");
-      } else if (profile.role === "super_admin") {
+      if (is_super_admin) {
         router.push("/super-admin");
+      } else if (!profile) {
+        router.push("/onboarding");
       } else {
         router.push("/dashboard");
       }
-    } catch {
-      toast.error("Google sign-up failed");
+    } catch (error: any) {
+      console.error("Google signup error:", error);
+      if (error?.code === "auth/popup-closed-by-user") {
+        toast.error("Sign-up cancelled");
+      } else if (error?.code === "auth/account-exists-with-different-credential") {
+        toast.error("An account already exists with this email. Please sign in instead.");
+      } else {
+        toast.error("Google sign-up failed. Please try again.");
+      }
       setGoogleLoading(false);
     }
   };

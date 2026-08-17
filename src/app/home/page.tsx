@@ -316,7 +316,7 @@ export default function HomePage() {
               <span className="text-lg font-bold">CaseFiles</span>
             </div>
             <div className="flex items-center gap-6 text-sm text-gray-500">
-              <Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link>
+              <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
               <Link href="/help" className="hover:text-white transition-colors">Help</Link>
               <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
               <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>

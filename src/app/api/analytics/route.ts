@@ -17,6 +17,12 @@ export async function GET(request: NextRequest) {
   const firmId = profile?.firm_id;
   if (!firmId) return NextResponse.json({ error: "No firm" }, { status: 400 });
 
+  // Role check: only owner/partner/senior_associate can view analytics
+  const analyticsRoles = ["owner", "partner", "senior_associate", "super_admin"];
+  if (!profile?.role || !analyticsRoles.includes(profile.role)) {
+    return NextResponse.json({ error: "Forbidden: insufficient permissions" }, { status: 403 });
+  }
+
   const dateFilter = (query: any) => {
     if (startDate) query = query.gte("created_at", startDate);
     if (endDate) query = query.lte("created_at", endDate);

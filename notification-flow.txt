@@ -1,0 +1,102 @@
+HEARING NOTIFICATION FLOW
+==========================
+
+  ┌──────────────┐
+  │  CRON / API  │  POST /api/notifications/schedule
+  │   TRIGGER    │  (called daily or manually)
+  └──────┬───────┘
+         │
+         ▼
+  ┌──────────────────┐
+  │  Query hearings  │  hearing_date = tomorrow
+  │  for tomorrow    │  is_completed = false
+  └──────┬───────────┘
+         │
+         ▼
+  ┌──────────────────┐
+  │  For each        │
+  │  hearing ────────┼──────────────────────┐
+  └──────┬───────────┘                      │
+         │                                  │
+         ▼                                  ▼
+  ┌──────────────────┐            ┌──────────────────┐
+  │  Get assigned    │            │  Get firm owner  │
+  │  lawyer profile  │            │  profile         │
+  │  (assigned_to /  │            │  (role = "owner" │
+  │   created_by)    │            │   firm_id match) │
+  └──────┬───────────┘            └──────┬───────────┘
+         │                               │
+         ▼                               ▼
+  ┌──────────────────┐            ┌──────────────────┐
+  │  Has phone?      │            │  Has phone?      │
+  │  Yes → Send      │            │  Yes → Send      │
+  │  No  → Skip      │            │  No  → Skip      │
+  └──────┬───────────┘            └──────┬───────────┘
+         │                               │
+         ▼                               ▼
+  ┌──────────────────┐            ┌──────────────────┐
+  │  formatHearing   │            │  formatOwner     │
+  │  Reminder()      │            │  HearingReminder │
+  │                  │            │                  │
+  │  "Dear Lawyer,   │            │  "Dear Owner,    │
+  │   your case..."  │            │   A hearing is   │
+  └──────┬───────────┘            │   scheduled..."  │
+         │                        └──────┬───────────┘
+         ▼                               │
+  ┌──────────────────┐                   │
+  │  Twilio WhatsApp │                   │
+  │  API (send)      │                   │
+  │  + log to        │                   │
+  │  whatsapp_logs   │                   │
+  └──────┬───────────┘                   │
+         │                               ▼
+         │                        ┌──────────────────┐
+         │                        │  Twilio WhatsApp │
+         │                        │  API (send)      │
+         │                        │  + log to        │
+         │                        │  whatsapp_logs   │
+         │                        └──────┬───────────┘
+         │                               │
+         ▼                               ▼
+  ┌──────────────────┐            ┌──────────────────┐
+  │  Insert into     │            │  Insert into     │
+  │  reminders table │            │  reminders table │
+  └──────┬───────────┘            └──────┬───────────┘
+         │                               │
+         └───────────┬───────────────────┘
+                     ▼
+           ┌──────────────────┐
+           │  Return JSON     │
+           │  { success: true │
+           │    hearingsFound │
+           │    remindersSent }│
+           └──────────────────┘
+
+
+WHATSAPP MESSAGES SENT:
+========================
+
+  TO LAWYER                          TO FIRM OWNER
+  ─────────────────────              ─────────────────────
+  ⚖️ Hearing Reminder                ⚖️ Hearing Alert — Firm Owner
+
+  Dear [Lawyer],                     Dear [Owner],
+
+  Case: [Number] - [Title]           A hearing is scheduled tomorrow
+  Date: [Date]                       for your firm:
+  Court: [Court]
+
+                                     Case: [Number] - [Title]
+  _CaseFiles_                        Lawyer: [Name]
+                                     Date: [Date]
+                                     Court: [Court]
+
+                                     _CaseFiles_
+
+
+NOTES:
+======
+  - Owner gets ONE message per firm (not per hearing)
+  - Skip if owner IS the assigned lawyer (no duplicate)
+  - Skip if owner has no phone number
+  - Each message logged to whatsapp_logs table

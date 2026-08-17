@@ -73,6 +73,9 @@ export async function getSuperAdminUsers() {
 }
 
 export async function getSuperAdminUser(userId: string) {
+  const access = await checkSuperAdminAccess();
+  if (!access.authorized) throw new Error("Unauthorized");
+
   const serviceRoleClient = createServiceRoleClient();
   const { data, error } = await serviceRoleClient
     .from("profiles")
@@ -83,28 +86,46 @@ export async function getSuperAdminUser(userId: string) {
   return data;
 }
 
-export async function getSuperAdminCases() {
+export async function getSuperAdminFirms() {
   const access = await checkSuperAdminAccess();
   if (!access.authorized) throw new Error("Unauthorized");
 
   const serviceRoleClient = createServiceRoleClient();
   const { data, error } = await serviceRoleClient
+    .from("profiles")
+    .select("id, full_name, email, firm_name, firm_id, created_at")
+    .eq("role", "owner")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getSuperAdminCases(firmId?: string) {
+  const access = await checkSuperAdminAccess();
+  if (!access.authorized) throw new Error("Unauthorized");
+
+  const serviceRoleClient = createServiceRoleClient();
+  let query = serviceRoleClient
     .from("cases")
     .select("*, profiles!cases_created_by_fkey(full_name, email)")
     .order("created_at", { ascending: false });
+  if (firmId) query = query.eq("firm_id", firmId);
+  const { data, error } = await query;
   if (error) throw error;
   return data;
 }
 
-export async function getSuperAdminClients() {
+export async function getSuperAdminClients(firmId?: string) {
   const access = await checkSuperAdminAccess();
   if (!access.authorized) throw new Error("Unauthorized");
 
   const serviceRoleClient = createServiceRoleClient();
-  const { data, error } = await serviceRoleClient
+  let query = serviceRoleClient
     .from("clients")
     .select("*")
     .order("created_at", { ascending: false });
+  if (firmId) query = query.eq("firm_id", firmId);
+  const { data, error } = await query;
   if (error) throw error;
   return data;
 }
@@ -114,12 +135,22 @@ export async function getSuperAdminSubscriptions() {
   if (!access.authorized) throw new Error("Unauthorized");
 
   const serviceRoleClient = createServiceRoleClient();
+
+  // Fetch all plans
+  const { data: plans, error: plansError } = await serviceRoleClient
+    .from("subscription_plans")
+    .select("*")
+    .order("price", { ascending: true });
+  if (plansError) throw plansError;
+
+  // Fetch all subscriptions with plan info
   const { data, error } = await serviceRoleClient
     .from("user_subscriptions")
-    .select("*, profiles!user_subscriptions_user_id_fkey(full_name, email)")
+    .select("*, plan:subscription_plans(*), user:profiles(full_name, email)")
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return data;
+
+  return { subscriptions: data, plans: plans || [] };
 }
 
 export async function getSuperAdminRevenue() {
@@ -286,6 +317,9 @@ export async function getSuperAdminUserDetail(userId: string) {
 }
 
 export async function getSuperAdminUserCases(userId: string) {
+  const access = await checkSuperAdminAccess();
+  if (!access.authorized) throw new Error("Unauthorized");
+
   const serviceRoleClient = createServiceRoleClient();
   const { data } = await serviceRoleClient
     .from("cases")
@@ -297,6 +331,9 @@ export async function getSuperAdminUserCases(userId: string) {
 }
 
 export async function getSuperAdminUserActivities(userId: string) {
+  const access = await checkSuperAdminAccess();
+  if (!access.authorized) throw new Error("Unauthorized");
+
   const serviceRoleClient = createServiceRoleClient();
   const { data } = await serviceRoleClient
     .from("activity_logs")
@@ -308,6 +345,9 @@ export async function getSuperAdminUserActivities(userId: string) {
 }
 
 export async function getSuperAdminUserSubscription(userId: string) {
+  const access = await checkSuperAdminAccess();
+  if (!access.authorized) throw new Error("Unauthorized");
+
   const serviceRoleClient = createServiceRoleClient();
   const { data } = await serviceRoleClient
     .from("user_subscriptions")

@@ -1,77 +1,71 @@
-======================================================================
- CASEFILES - SESSION SUMMARY (Aug 12, 2026)
-======================================================================
+========================================
+SESSION SUMMARY - 12 August 2026
+========================================
 
-COMPLETED WORK:
-----------------------------------------------------------------------
+ISSUE 1: Super Admin Page Error
+-------------------------------
+Problem: All 10 super-admin pages showed "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY" error.
 
-1. SUBSCRIPTION GATE (After Onboarding)
-----------------------------------------------------------------------
-- /api/auth/profile now returns subscription status alongside profile
-- ProfileGuard checks for active subscription on every dashboard page
-- No subscription → redirected to /subscription-required
-- Flow: Onboarding → Subscription Plans → Dashboard
+Root Cause: All super-admin pages were "use client" components but directly called createServiceRoleClient() at the top level. SUPABASE_SERVICE_ROLE_KEY (without NEXT_PUBLIC_ prefix) is only available server-side, so it was undefined in the browser.
 
-2. BRANCH LIMITS (Firm & Enterprise Only)
-----------------------------------------------------------------------
-Updated max_branches per plan:
-  Solo:           0 (no branches)
-  Professional:   0 (no branches)
-  Firm:           3 branches
-  Enterprise:    10 branches
+Fix: Replaced direct createServiceRoleClient() calls with server actions from @/app/actions/super-admin which run server-side where the env vars are available.
 
-Sidebar now hides Branches nav for Solo/Professional plans.
-Branches page banner updated: "Upgrade to Firm plan and above"
+Files Modified:
+- src/app/actions/super-admin.ts - Added server actions for mutations (toggle active, change role, update status, delete, etc.)
+- src/app/(super-admin)/super-admin/page.tsx
+- src/app/(super-admin)/super-admin/users/page.tsx
+- src/app/(super-admin)/super-admin/users/[id]/page.tsx
+- src/app/(super-admin)/super-admin/cases/page.tsx
+- src/app/(super-admin)/super-admin/clients/page.tsx
+- src/app/(super-admin)/super-admin/subscriptions/page.tsx
+- src/app/(super-admin)/super-admin/revenue/page.tsx
+- src/app/(super-admin)/super-admin/coupons/page.tsx
+- src/app/(super-admin)/super-admin/activity/page.tsx
+- src/app/(super-admin)/super-admin/documents/page.tsx
+- src/app/(super-admin)/super-admin/settings/page.tsx
 
-3. LANDING PAGE (www.casefiles.in)
-----------------------------------------------------------------------
-- Created src/app/page.tsx — full marketing site at root "/"
-- Dark theme with orange accent (matching casefiles-website)
-- Auth-aware navbar:
-  * Not logged in: "Sign In" + "Get Started Free"
-  * Logged in: "Go to Dashboard"
-- Sections: Hero, Stats, Features, Solutions, How It Works,
-  Pricing (monthly/annual toggle), Testimonials, CTA, Footer
-- Old (marketing)/page.tsx now redirects to /
+Commit: fix: move createServiceRoleClient from client components to server actions
 
-4. DASHBOARD ENHANCEMENTS
-----------------------------------------------------------------------
-- Added "Recent Transactions" card (owners only)
-  * Shows last 5 payments with client name, invoice #, amount, date
-- Employee welcome banner shows "My Overview" instead of "Firm Overview"
+Deployed: https://www.casefiles.in
 
-5. EMPLOYEE SIDEBAR (Reduced)
-----------------------------------------------------------------------
-Added ownerOnly flag to these nav items:
-  - Billing
-  - Quotations
-  - Expenses
-  - AI Tools
-  - Reports
-  - CRM
 
-Employee roles: senior_associate, associate, junior_associate,
-paralegal, intern, office_admin
+ISSUE 2: Subscription Plans Management Module
+---------------------------------------------
+Request: Create a module for super admin to create/edit subscription plans (pricing plans).
 
-Employee sidebar shows:
-  Dashboard, Cases, Clients, Calendar, Court Tracking,
-  Documents, Tasks, Messages, Subscription, Settings
+What Was Built:
+1. Server Actions (src/app/actions/super-admin.ts):
+   - getSuperAdminPlans() - Fetch all plans
+   - createSuperAdminPlan() - Create a new plan
+   - updateSuperAdminPlan() - Update an existing plan
+   - deleteSuperAdminPlan() - Delete a plan (with active subscription protection)
+   - toggleSuperAdminPlanActive() - Toggle plan active/inactive
 
-Owner/Partner sidebar shows everything including admin tools.
+2. Plans Page (src/app/(super-admin)/super-admin/plans/page.tsx):
+   - Stats cards: Total Plans, Active Plans, Monthly Plans, Yearly Plans
+   - Plan cards showing: name, slug, price, billing period, description, features, limits (cases/users/storage)
+   - Create/Edit modal form with all plan fields
+   - Toggle active/inactive status
+   - Delete with protection (cannot delete plans with active subscriptions)
+   - Empty state when no plans exist
 
-----------------------------------------------------------------------
-FILES MODIFIED:
-----------------------------------------------------------------------
-  src/app/page.tsx                              NEW - Root landing page
-  src/app/(marketing)/page.tsx                  Modified - redirect to /
-  src/app/api/auth/profile/route.ts             Modified - returns subscription
-  src/components/profile-guard.tsx              Modified - subscription check
-  src/app/(dashboard)/dashboard/page.tsx        Modified - transactions, employee view
-  src/components/sidebar.tsx                    Modified - employee filtering
-  src/app/api/subscriptions/route.ts            Modified - branch limits
-  src/app/(admin)/admin/branches/page.tsx       Modified - banner text
-  src/components/sidebar.tsx                    Modified - Branches nav for firm+
+3. Sidebar (src/components/super-admin-sidebar.tsx):
+   - Added "Plans" nav link with Package icon between Subscriptions and Coupons
 
-----------------------------------------------------------------------
-DEPLOYED TO: https://www.casefiles.in
-----------------------------------------------------------------------
+Plan Schema (subscription_plans table):
+   - id, name, slug, description, price, billing_period (monthly/yearly/one_time)
+   - features (string[]), max_cases, max_users, max_storage_mb
+   - is_active, created_at, updated_at
+
+Commit: feat: add super admin subscription plans management module
+
+Deployed: https://www.casefiles.in/super-admin/plans
+
+
+TECHNICAL NOTES
+---------------
+- All server actions use checkSuperAdminAccess() for authorization
+- createServiceRoleClient() is only used in "use server" files
+- "use client" components call server actions, never service role client directly
+- BillingPeriod type: 'monthly' | 'yearly' | 'one_time'
+- SubscriptionPlan interface in src/types/database.ts

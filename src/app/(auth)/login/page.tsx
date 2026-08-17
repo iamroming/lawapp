@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { getFirebaseAuth } from "@/lib/firebase/config";
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail } from "firebase/auth";
@@ -20,17 +20,45 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const auth = getFirebaseAuth();
   const router = useRouter();
+  const loginInProgress = useRef(false);
+
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user || loginInProgress.current) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const idToken = await user.getIdToken();
+        const profileRes = await fetch("/api/auth/profile", {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        if (cancelled || !profileRes.ok) return;
+        const { is_super_admin } = await profileRes.json();
+        if (cancelled) return;
+        router.replace(is_super_admin ? "/super-admin" : "/dashboard");
+      } catch {
+        // user stays on login page
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, []);
 
   const handlePostLogin = async (user: { uid: string; getIdToken: () => Promise<string> }) => {
-    const idToken = await user.getIdToken();
+    loginInProgress.current = true;
+    const idToken = await user.getIdToken(true);
     const sessionRes = await fetch("/api/auth/session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ idToken }),
     });
 
+    const sessionData = await sessionRes.json();
+
     if (!sessionRes.ok) {
-      toast.error("Failed to create session");
+      console.error("Session creation failed:", sessionRes.status, sessionData);
+      toast.error(sessionData.error || `Failed to create session (HTTP ${sessionRes.status}). Please try again.`);
       return false;
     }
 
@@ -43,12 +71,12 @@ export default function LoginPage() {
       return true;
     }
 
-    const { profile } = await profileRes.json();
+    const { profile, is_super_admin } = await profileRes.json();
 
-    if (!profile) {
-      router.push("/onboarding");
-    } else if (profile.role === "super_admin") {
+    if (is_super_admin) {
       router.push("/super-admin");
+    } else if (!profile) {
+      router.push("/onboarding");
     } else {
       router.push("/dashboard");
     }
@@ -76,8 +104,15 @@ export default function LoginPage() {
     try {
       const { user } = await signInWithPopup(auth, new GoogleAuthProvider());
       await handlePostLogin(user);
-    } catch {
-      toast.error("Google sign-in failed");
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      if (error?.code === "auth/popup-closed-by-user") {
+        toast.error("Sign-in cancelled");
+      } else if (error?.code === "auth/account-exists-with-different-credential") {
+        toast.error("An account already exists with this email. Please sign in with email.");
+      } else {
+        toast.error("Google sign-in failed. Please try again.");
+      }
     }
     setGoogleLoading(false);
   };

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { verifySessionFromRequest } from "@/lib/firebase/auth";
-import { sendWhatsAppMessage, formatHearingReminder } from "@/lib/whatsapp";
+import { sendWhatsAppMessage, formatHearingReminder, formatOwnerHearingReminder } from "@/lib/whatsapp";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
@@ -59,6 +59,8 @@ export async function POST(request: NextRequest) {
   }
 
   let sentCount = 0;
+  const notifiedOwnerIds = new Set<string>();
+
   for (const hearing of hearings) {
     const caseData = Array.isArray(hearing.case) ? hearing.case[0] : hearing.case;
     if (!caseData) continue;
@@ -72,35 +74,68 @@ export async function POST(request: NextRequest) {
       .eq("id", lawyerId)
       .single();
 
-    if (!profile?.phone) continue;
+    // Send to assigned lawyer
+    if (profile?.phone) {
+      const message = formatHearingReminder(
+        profile.full_name,
+        caseData.case_number,
+        caseData.title,
+        hearing.hearing_date,
+        hearing.court || "Court"
+      );
 
-    const message = formatHearingReminder(
-      profile.full_name,
-      caseData.case_number,
-      caseData.title,
-      hearing.hearing_date,
-      hearing.court || "Court"
-    );
+      await sendWhatsAppMessage({
+        to: profile.phone,
+        message,
+        type: "hearing_reminder",
+        caseId: caseData.id,
+        userId: lawyerId,
+      });
 
-    await sendWhatsAppMessage({
-      to: profile.phone,
-      message,
-      type: "hearing_reminder",
-      caseId: caseData.id,
-      userId: lawyerId,
-    });
+      await supabase.from("reminders").insert({
+        user_id: lawyerId,
+        case_id: caseData.id,
+        title: `Hearing tomorrow: ${caseData.case_number}`,
+        description: `Court: ${hearing.court || "TBD"}`,
+        reminder_date: new Date().toISOString(),
+        type: "hearing",
+        is_sent: true,
+      });
 
-    await supabase.from("reminders").insert({
-      user_id: lawyerId,
-      case_id: caseData.id,
-      title: `Hearing tomorrow: ${caseData.case_number}`,
-      description: `Court: ${hearing.court || "TBD"}`,
-      reminder_date: new Date().toISOString(),
-      type: "hearing",
-      is_sent: true,
-    });
+      sentCount++;
+    }
 
-    sentCount++;
+    // Send to firm owner (once per owner across all hearings)
+    const hearingFirmId = caseData.firm_id;
+    if (hearingFirmId && !notifiedOwnerIds.has(hearingFirmId)) {
+      const { data: owner } = await supabase
+        .from("profiles")
+        .select("id, full_name, phone")
+        .eq("firm_id", hearingFirmId)
+        .eq("role", "owner")
+        .maybeSingle();
+
+      if (owner?.phone && owner.id !== lawyerId) {
+        const ownerMessage = formatOwnerHearingReminder(
+          owner.full_name,
+          profile?.full_name || "Team member",
+          caseData.case_number,
+          caseData.title,
+          hearing.hearing_date,
+          hearing.court || "Court"
+        );
+
+        await sendWhatsAppMessage({
+          to: owner.phone,
+          message: ownerMessage,
+          type: "hearing_reminder",
+          caseId: caseData.id,
+          userId: owner.id,
+        });
+
+        notifiedOwnerIds.add(hearingFirmId);
+      }
+    }
   }
 
   return NextResponse.json({ success: true, hearingsFound: hearings.length, remindersSent: sentCount });

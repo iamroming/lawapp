@@ -1,0 +1,210 @@
+========================================
+CASEFILES - PRE-LAUNCH CHECKLIST
+========================================
+
+STATUS: App is ready to deploy
+Build: Clean (no errors)
+Security: All 12 bugs fixed
+========================================
+
+
+STEP 1: ADD MISSING ENVIRONMENT VARIABLES
+==========================================
+
+Go to your .env.local file and add these 7 keys:
+
+# WhatsApp (Twilio)
+TWILIO_ACCOUNT_SID=your_twilio_account_sid
+TWILIO_AUTH_TOKEN=your_twilio_auth_token
+TWILIO_PHONE_NUMBER=+1234567890
+
+# Email (Resend)
+RESEND_API_KEY=your_resend_api_key
+RESEND_FROM_EMAIL=noreply@casefiles.in
+
+# SMS (MSG91)
+MSG91_API_KEY=your_msg91_api_key
+
+# Cron Jobs
+CRON_SECRET=your_random_secret_string
+
+
+Where to get these:
+- Twilio: https://console.twilio.com (sign up, get free trial number)
+- Resend: https://resend.com (sign up, verify domain)
+- MSG91: https://msg91.com (sign up, get API key)
+- CRON_SECRET: Just make up a random string like "my-secret-123"
+
+
+STEP 2: ADD SAME KEYS TO VERCEL
+================================
+
+Go to Vercel Dashboard > your project > Settings > Environment Variables
+
+Add the same 7 keys there with the same values.
+
+
+STEP 3: RUN SQL MIGRATIONS IN SUPABASE
+========================================
+
+Go to Supabase Dashboard > SQL Editor
+
+Run these files in order:
+
+1. scripts/create-cron-jobs-table.sql
+   (Creates cron_jobs table and seeds 8 jobs)
+
+2. scripts/create-referrals-table.sql
+   (Creates referrals table, adds referral_code to profiles)
+
+
+STEP 4: SET UP CRON-JOB.ORG
+=============================
+
+Sign up at https://cron-job.org (free)
+
+Create these 8 cron jobs:
+
+Job 1: Trial Funnel
+  URL: https://lawapp-eight.vercel.app/api/subscriptions/trial-funnel
+  Method: GET
+  Schedule: Daily at 9:00 AM (0 9 * * *)
+
+Job 2: Hearing Reminders
+  URL: https://lawapp-eight.vercel.app/api/reminders/cron
+  Method: GET
+  Schedule: Daily at 6:00 PM (0 18 * * *)
+
+Job 3: Expire Trials
+  URL: https://lawapp-eight.vercel.app/api/subscriptions/expire-trials
+  Method: GET
+  Schedule: Daily at 11:59 PM (59 23 * * *)
+
+Job 4: Daily Digest
+  URL: https://lawapp-eight.vercel.app/api/daily-digest
+  Method: GET
+  Schedule: Daily at 8:00 AM (0 8 * * *)
+
+Job 5: Invoice Reminders
+  URL: https://lawapp-eight.vercel.app/api/invoices/reminders
+  Method: GET
+  Schedule: Every Monday at 9:00 AM (0 9 * * 1)
+
+Job 6: Deadline Check
+  URL: https://lawapp-eight.vercel.app/api/deadlines/check
+  Method: GET
+  Schedule: Daily at 7:00 AM (0 7 * * *)
+
+Job 7: Cause List Sync
+  URL: https://lawapp-eight.vercel.app/api/cause-list/sync
+  Method: GET
+  Schedule: Daily at 6:00 AM (0 6 * * *)
+
+Job 8: Case Alerts Check
+  URL: https://lawapp-eight.vercel.app/api/case-alerts/check
+  Method: GET
+  Schedule: Every 6 hours (0 */6 * * *)
+
+
+STEP 5: DEPLOY TO VERCEL
+==========================
+
+Run in terminal:
+
+  git add .
+  git commit -m "Launch: security fixes + role-based access control"
+  git push
+
+Vercel will auto-deploy from your git repo.
+
+
+STEP 6: VERIFY DEPLOYMENT
+===========================
+
+After deploy, test these URLs:
+
+1. https://lawapp-eight.vercel.app/login
+   - Can you log in?
+
+2. https://lawapp-eight.vercel.app/dashboard
+   - Does dashboard load?
+
+3. https://lawapp-eight.vercel.app/cases
+   - Can you see cases?
+
+4. https://lawapp-eight.vercel.app/subscription
+   - Do plans show?
+
+5. https://lawapp-eight.vercel.app/super-admin
+   - Can super admin access work?
+
+6. Test as employee:
+   - Create an invite code
+   - Sign up as employee
+   - Verify they can only see their own data
+
+
+WHAT WORKS WITHOUT THE MISSING KEYS
+=====================================
+
+These features work RIGHT NOW (no extra setup needed):
+
+  - Firebase Auth (login/signup/Google login)
+  - Case management (create/edit/delete)
+  - Client management
+  - Calendar and hearing tracking
+  - E-filing integration
+  - AI legal research and drafting
+  - Invoice and GST billing
+  - Razorpay payment gateway
+  - Subscription system (Free/Solo/Pro/Firm/Enterprise)
+  - Team management with roles
+  - Expense tracking
+  - Reports and P&L
+  - Client portal
+  - Blog and marketing pages
+  - Pricing page
+  - Mobile responsive design
+  - Super admin panel
+  - Plan monitoring
+  - Referral program (UI ready, needs SQL migration)
+
+These features NEED the missing keys:
+
+  - WhatsApp hearing reminders
+  - WhatsApp trial funnel messages
+  - Email notifications
+  - Email trial funnel
+  - SMS notifications
+  - Automated cron jobs (8 jobs)
+
+
+QUICK LAUNCH (5 minutes)
+=========================
+
+If you want to launch NOW without WhatsApp/Email/SMS:
+
+1. Run the 2 SQL files in Supabase
+2. git add . && git commit -m "launch" && git push
+3. Done. App is live.
+
+You can add the API keys later and everything will start working automatically.
+
+
+RECOMMENDED LAUNCH (30 minutes)
+================================
+
+1. Get Twilio account + free trial number
+2. Get Resend account + verify domain
+3. Get MSG91 account
+4. Add all keys to .env.local and Vercel
+5. Run SQL migrations
+6. Set up cron-job.org
+7. Deploy
+8. Test everything
+9. Announce launch
+
+
+========================================
+DONE! Your app is ready.
+========================================

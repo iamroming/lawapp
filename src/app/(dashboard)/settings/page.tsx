@@ -16,7 +16,6 @@ import {
   Bell,
   Receipt,
   Users,
-  CreditCard,
   Shield,
   KeyRound,
   FileText,
@@ -28,7 +27,7 @@ import { PERMISSIONS } from "@/lib/permissions";
 import toast from "react-hot-toast";
 import { useUser } from "@/hooks/use-user";
 
-type SettingsTab = "profile" | "notifications" | "billing" | "team" | "subscription" | "templates" | "invoice-settings";
+type SettingsTab = "profile" | "notifications" | "billing" | "team" | "templates" | "invoice-settings";
 
 interface UserProfile {
   id: string;
@@ -60,17 +59,6 @@ interface TeamMember {
   role: string;
 }
 
-// Team roles available for invitation (excluding owner and super_admin)
-const TEAM_ROLE_OPTIONS = [
-  { value: "partner", label: "Partner" },
-  { value: "senior_associate", label: "Senior Associate" },
-  { value: "associate", label: "Associate" },
-  { value: "junior_associate", label: "Junior Associate" },
-  { value: "paralegal", label: "Paralegal" },
-  { value: "intern", label: "Intern" },
-  { value: "office_admin", label: "Office Admin" },
-];
-
 interface SubscriptionPlan {
   id: string;
   name: string;
@@ -95,61 +83,16 @@ interface UserSubscription {
   plan: SubscriptionPlan | null;
 }
 
-interface UsageStats {
-  cases: number;
-  storage: number;
-  teamMembers: number;
-}
-
-function CouponInput() {
-  const [code, setCode] = useState("");
-  const [applying, setApplying] = useState(false);
-  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
-
-  const handleApply = async () => {
-    if (!code.trim()) return;
-    setApplying(true);
-    setResult(null);
-    try {
-      const res = await fetch("/api/coupons/apply", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: code.trim() }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setResult({ success: true, message: `Coupon applied! You're now on the ${data.plan} plan.` });
-        setCode("");
-      } else {
-        setResult({ success: false, message: data.error || "Invalid coupon" });
-      }
-    } catch {
-      setResult({ success: false, message: "Failed to apply coupon" });
-    }
-    setApplying(false);
-  };
-
-  return (
-    <div className="space-y-2">
-      <div className="flex gap-2">
-        <Input
-          placeholder="Enter coupon code"
-          value={code}
-          onChange={(e) => setCode(e.target.value.toUpperCase())}
-          className="font-mono"
-        />
-        <Button onClick={handleApply} disabled={applying || !code.trim()} variant="outline">
-          {applying ? "Applying..." : "Apply"}
-        </Button>
-      </div>
-      {result && (
-        <p className={`text-sm ${result.success ? "text-green-600" : "text-red-500"}`}>
-          {result.message}
-        </p>
-      )}
-    </div>
-  );
-}
+// Team roles available for invitation (excluding owner and super_admin)
+const TEAM_ROLE_OPTIONS = [
+  { value: "partner", label: "Partner" },
+  { value: "senior_associate", label: "Senior Associate" },
+  { value: "associate", label: "Associate" },
+  { value: "junior_associate", label: "Junior Associate" },
+  { value: "paralegal", label: "Paralegal" },
+  { value: "intern", label: "Intern" },
+  { value: "office_admin", label: "Office Admin" },
+];
 
 export default function SettingsPage() {
   const { user: appUser } = useUser();
@@ -198,9 +141,7 @@ export default function SettingsPage() {
   const [inviteCodeEmail, setInviteCodeEmail] = useState("");
   const [generatedCode, setGeneratedCode] = useState("");
   const [generatingCode, setGeneratingCode] = useState(false);
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [currentSubscription, setCurrentSubscription] = useState<UserSubscription | null>(null);
-  const [usage, setUsage] = useState<UsageStats>({ cases: 0, storage: 0, teamMembers: 0 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [userLimitError, setUserLimitError] = useState<string | null>(null);
@@ -242,15 +183,6 @@ export default function SettingsPage() {
 
         setTeamMembers((teamData as TeamMember[]) || []);
 
-        // Fetch subscription plans
-        const { data: plansData } = await supabase
-          .from("subscription_plans")
-          .select("*")
-          .eq("is_active", true)
-          .order("price");
-
-        setPlans((plansData as SubscriptionPlan[]) || []);
-
         // Fetch subscription (use firm owner's ID, not employee's)
         const subscriptionOwnerId = profileData?.firm_id || appUser?.uuid;
         const { data: subData } = await supabase
@@ -268,19 +200,6 @@ export default function SettingsPage() {
           setCurrentSubscription(sub);
         }
 
-        // Fetch usage stats (firm-scoped)
-        const [casesRes, docsRes, membersRes] = await Promise.all([
-          supabase.from("cases").select("id", { count: "exact", head: true }).eq("firm_id", firmId).is("deleted_at", null),
-          supabase.from("documents").select("file_size").eq("firm_id", firmId).is("deleted_at", null),
-          supabase.from("profiles").select("id", { count: "exact", head: true }).eq("firm_id", firmId).eq("is_active", true),
-        ]);
-
-        const totalStorageBytes = (docsRes.data || []).reduce((sum: number, d: any) => sum + (d.file_size || 0), 0);
-        setUsage({
-          cases: casesRes.count || 0,
-          storage: Math.round(totalStorageBytes / (1024 * 1024)),
-          teamMembers: membersRes.count || 0,
-        });
       }
     } catch (error) {
       console.error("Error fetching settings:", error);
@@ -400,11 +319,10 @@ export default function SettingsPage() {
   const tabs = [
     { id: "profile" as const, label: "Profile", icon: User },
     { id: "notifications" as const, label: "Notifications", icon: Bell },
-  { id: "billing" as const, label: "Billing", icon: Receipt },
-  { id: "templates" as const, label: "Invoice Template", icon: FileText },
-  { id: "invoice-settings" as const, label: "Invoice Settings", icon: Settings },
-  { id: "team" as const, label: "Team", icon: Users },
-  { id: "subscription" as const, label: "Subscription", icon: CreditCard },
+    { id: "billing" as const, label: "Billing", icon: Receipt },
+    { id: "templates" as const, label: "Invoice Template", icon: FileText },
+    { id: "invoice-settings" as const, label: "Invoice Settings", icon: Settings },
+    { id: "team" as const, label: "Team", icon: Users },
   ];
 
   if (loading) {
@@ -763,291 +681,6 @@ export default function SettingsPage() {
                 )}
               </CardContent>
             </Card>
-          )}
-
-          {/* Subscription Tab */}
-          {activeTab === "subscription" && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Subscription & Billing</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Current Plan */}
-                  {currentSubscription?.plan ? (
-                    <div className="p-4 border-2 border-blue-500 rounded-lg bg-[var(--surface-subtle)]">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-semibold text-lg">{currentSubscription.plan.name} Plan</h3>
-                          <p className="text-[var(--text-secondary)]">{currentSubscription.plan.description}</p>
-                        </div>
-                        <Badge>{currentSubscription.status === "trialing" ? "Trial" : "Current Plan"}</Badge>
-                      </div>
-                      <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <p className="text-[var(--text-secondary)]">Cases</p>
-                          <p className="font-medium">{currentSubscription.plan.max_cases === -1 ? "Unlimited" : currentSubscription.plan.max_cases}</p>
-                        </div>
-                        <div>
-                          <p className="text-[var(--text-secondary)]">Team Members</p>
-                          <p className="font-medium">{currentSubscription.plan.max_users === -1 ? "Unlimited" : currentSubscription.plan.max_users} included</p>
-                        </div>
-                        <div>
-                          <p className="text-[var(--text-secondary)]">Storage</p>
-                          <p className="font-medium">{currentSubscription.plan.max_storage_mb === -1 ? "Unlimited" : `${Math.round(currentSubscription.plan.max_storage_mb / 1024)} GB`}</p>
-                        </div>
-                      </div>
-                      <div className="mt-4 text-sm text-[var(--text-secondary)]">
-                        {currentSubscription.expires_at && <p>Next billing date: <strong>{new Date(currentSubscription.expires_at).toLocaleDateString("en-IN", { month: "long", day: "numeric", year: "numeric" })}</strong></p>}
-                        {currentSubscription.payment_method && <p>Payment method: <strong>{currentSubscription.payment_method}</strong></p>}
-                        <p>Amount: <strong>Rs {currentSubscription.plan.price.toLocaleString("en-IN")}/month</strong></p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-4 border-2 border-[var(--border)] rounded-lg bg-[var(--background)]">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-semibold text-lg">No Active Subscription</h3>
-                          <p className="text-[var(--text-secondary)]">Subscribe to unlock all features</p>
-                        </div>
-                        <Badge variant="secondary">No Plan</Badge>
-                      </div>
-                      <div className="mt-4 text-sm text-[var(--text-secondary)]">
-                        <p>Choose a plan below to get started.</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Available Plans */}
-                <div>
-                  <h4 className="font-medium mb-3">Available Plans</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {plans.map((plan) => {
-                      const isCurrent = currentSubscription?.plan_id === plan.id;
-                      const isFree = plan.price === 0;
-                      return (
-                        <div key={plan.id} className={`p-4 border rounded-lg ${isCurrent ? "border-blue-500 bg-[var(--surface-subtle)]" : ""}`}>
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-medium">{plan.name}</h4>
-                            {isCurrent && <Badge>Current</Badge>}
-                          </div>
-                          <p className="text-2xl font-bold mt-2">
-                            Rs {plan.price.toLocaleString("en-IN")}<span className="text-sm text-[var(--text-secondary)]">/{plan.billing_period === "yearly" ? "year" : "month"}</span>
-                          </p>
-                          <ul className="mt-3 space-y-1 text-sm text-[var(--text-secondary)]">
-                            <li>• {plan.max_cases === -1 ? "Unlimited" : plan.max_cases} active cases</li>
-                            <li>• {plan.max_users === -1 ? "Unlimited" : plan.max_users} user{(plan.max_users === -1 || plan.max_users > 1) ? "s" : ""}</li>
-                            <li>• {plan.max_storage_mb === -1 ? "Unlimited" : `${Math.round(plan.max_storage_mb / 1024)} GB`} storage</li>
-                          </ul>
-                          {!isCurrent && !isFree && (
-                            <Button
-                              variant={currentSubscription ? "outline" : "default"}
-                              className="w-full mt-4"
-                              size="sm"
-                              onClick={async () => {
-                                try {
-                                  const planSlug = plan.slug || plan.name?.toLowerCase();
-                                  const billingCycle = plan.billing_period === "yearly" ? "annual" : "monthly";
-                                  const orderRes = await fetch("/api/payments/create-order", {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ planSlug, billingCycle }),
-                                  });
-                                  const orderData = await orderRes.json();
-                                  if (orderData.error) {
-                                    toast.error(orderData.error);
-                                    return;
-                                  }
-                                  const loadRazorpay = () => new Promise<void>((resolve) => {
-                                    const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
-                                    if (existing) { resolve(); return; }
-                                    const script = document.createElement("script");
-                                    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-                                    script.onload = () => resolve();
-                                    document.body.appendChild(script);
-                                  });
-
-                                  await loadRazorpay();
-                                  const rzp = new window.Razorpay({
-                                    key: orderData.keyId,
-                                    amount: orderData.amount,
-                                    currency: orderData.currency,
-                                    name: "CaseFiles",
-                                    description: `${orderData.planName} Plan (${billingCycle})`,
-                                    order_id: orderData.orderId,
-                                    handler: async (response: any) => {
-                                      const verifyRes = await fetch("/api/payments/verify", {
-                                        method: "POST",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({
-                                          razorpay_order_id: response.razorpay_order_id,
-                                          razorpay_payment_id: response.razorpay_payment_id,
-                                          razorpay_signature: response.razorpay_signature,
-                                          planSlug,
-                                          billingCycle,
-                                        }),
-                                      });
-                                      const verifyData = await verifyRes.json();
-                                      if (verifyData.success) {
-                                        toast.success("Payment successful! Subscription activated.");
-                                        fetchSettings();
-                                      } else {
-                                        toast.error(verifyData.error || "Payment verification failed");
-                                      }
-                                    },
-                                    theme: { color: "#4f46e5" },
-                                  });
-                                  rzp.open();
-                                } catch {
-                                  toast.error("Failed to start payment");
-                                }
-                              }}
-                            >
-                              {currentSubscription ? "Switch" : "Upgrade"}
-                            </Button>
-                          )}
-                          {!isCurrent && isFree && !currentSubscription && (
-                            <Button variant="outline" className="w-full mt-4" size="sm" onClick={async () => {
-                              try {
-                                const planSlug = plan.slug || plan.name?.toLowerCase();
-                                const billingCycle = plan.billing_period === "yearly" ? "annual" : "monthly";
-                                const orderRes = await fetch("/api/payments/create-order", {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ planSlug, billingCycle }),
-                                });
-                                const orderData = await orderRes.json();
-                                if (orderData.error) {
-                                  toast.error(orderData.error);
-                                  return;
-                                }
-                                if (orderData.free) {
-                                  toast.success("Free plan activated!");
-                                  fetchSettings();
-                                  return;
-                                }
-                                const loadRazorpay = () => new Promise<void>((resolve) => {
-                                  const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
-                                  if (existing) { resolve(); return; }
-                                  const script = document.createElement("script");
-                                  script.src = "https://checkout.razorpay.com/v1/checkout.js";
-                                  script.onload = () => resolve();
-                                  document.body.appendChild(script);
-                                });
-
-                                await loadRazorpay();
-                                const rzp = new window.Razorpay({
-                                  key: orderData.keyId,
-                                  amount: orderData.amount,
-                                  currency: orderData.currency,
-                                  name: "CaseFiles",
-                                  description: `${orderData.planName} Plan (${billingCycle})`,
-                                  order_id: orderData.orderId,
-                                  handler: async (response: any) => {
-                                    const verifyRes = await fetch("/api/payments/verify", {
-                                      method: "POST",
-                                      headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({
-                                        razorpay_order_id: response.razorpay_order_id,
-                                        razorpay_payment_id: response.razorpay_payment_id,
-                                        razorpay_signature: response.razorpay_signature,
-                                        planSlug,
-                                        billingCycle,
-                                      }),
-                                    });
-                                    const verifyData = await verifyRes.json();
-                                    if (verifyData.success) {
-                                      toast.success("Payment successful! Subscription activated.");
-                                      fetchSettings();
-                                    } else {
-                                      toast.error(verifyData.error || "Payment verification failed");
-                                    }
-                                  },
-                                  theme: { color: "#4f46e5" },
-                                });
-                                rzp.open();
-                              } catch {
-                                toast.error("Failed to start payment");
-                              }
-                            }}>
-                              Select Free Plan
-                            </Button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Usage */}
-                <div>
-                  <h4 className="font-medium mb-3">Current Usage</h4>
-                  <div className="space-y-3">
-                    <div>
-                      {(() => {
-                        const maxCases = currentSubscription?.plan?.max_cases ?? 3;
-                        const displayLimit = maxCases === -1 ? "Unlimited" : maxCases;
-                        const pct = maxCases === -1 ? Math.min(usage.cases * 2, 20) : Math.min((usage.cases / maxCases) * 100, 100);
-                        return (
-                          <>
-                            <div className="flex justify-between text-sm mb-1">
-                              <span>Cases</span>
-                              <span className="text-[var(--text-secondary)]">{usage.cases} / {displayLimit}</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${pct}%` }} />
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                    <div>
-                      {(() => {
-                        const maxStorage = currentSubscription?.plan?.max_storage_mb ?? 100;
-                        const displayLimit = maxStorage === -1 ? "Unlimited" : `${Math.round(maxStorage / 1024)} GB`;
-                        const pct = maxStorage === -1 ? Math.min(usage.storage * 0.5, 20) : Math.min((usage.storage / maxStorage) * 100, 100);
-                        return (
-                          <>
-                            <div className="flex justify-between text-sm mb-1">
-                              <span>Storage</span>
-                              <span className="text-[var(--text-secondary)]">{usage.storage} MB / {displayLimit}</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${pct}%` }} />
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                    <div>
-                      {(() => {
-                        const maxUsers = currentSubscription?.plan?.max_users ?? 1;
-                        const displayLimit = maxUsers === -1 ? "Unlimited" : maxUsers;
-                        const pct = maxUsers === -1 ? Math.min(usage.teamMembers * 5, 20) : Math.min((usage.teamMembers / maxUsers) * 100, 100);
-                        return (
-                          <>
-                            <div className="flex justify-between text-sm mb-1">
-                              <span>Team Members</span>
-                              <span className="text-[var(--text-secondary)]">{usage.teamMembers} / {displayLimit}</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${pct}%` }} />
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Apply Coupon */}
-                <div className="border-t pt-4">
-                  <h4 className="font-medium mb-3">Have a coupon code?</h4>
-                  <CouponInput />
-                </div>
-              </CardContent>
-            </Card>
-            </div>
           )}
 
           {/* Templates Tab */}

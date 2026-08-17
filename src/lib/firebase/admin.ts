@@ -24,8 +24,11 @@ async function getFirebaseAdmin(): Promise<App> {
     );
   }
 
+  // Handle all possible newline formats from Vercel/env files
   let normalizedKey = privateKey
     .replace(/\\n/g, "\n")
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\"/g, '"')
     .replace(/^"/, "")
     .replace(/"$/, "")
     .trim();

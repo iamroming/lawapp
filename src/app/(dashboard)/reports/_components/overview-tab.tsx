@@ -50,8 +50,10 @@ export default function ReportsOverviewTab() {
   const supabase = createClient();
 
   useEffect(() => {
-    fetchReportData();
-  }, [dateRange]);
+    if (appUser) {
+      fetchReportData();
+    }
+  }, [dateRange, appUser]);
 
   const getDateFilter = () => {
     const now = new Date();

@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useUser } from "@/hooks/use-user";
+import { ReferralBanner } from "@/components/referral-banner";
 
 const supabase = createClient();
 
@@ -120,6 +121,7 @@ export default function DashboardPage() {
   const [userName, setUserName] = useState("");
   const [userRole, setUserRole] = useState("");
   const [caseLimit, setCaseLimit] = useState<{ used: number; limit: number; plan: string } | null>(null);
+  const [referralCode, setReferralCode] = useState("");
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -128,7 +130,7 @@ export default function DashboardPage() {
 
         const { data: profile } = await supabase
           .from("profiles")
-          .select("role, full_name, firm_id")
+          .select("role, full_name, firm_id, referral_code")
           .eq("id", appUser?.uuid)
           .single();
 
@@ -137,6 +139,7 @@ export default function DashboardPage() {
         setIsOwner(owner);
         setUserName(profile?.full_name || appUser?.displayName || appUser?.email?.split("@")[0] || "there");
         setUserRole(role);
+        setReferralCode(profile?.referral_code || "");
 
         if (!profile?.firm_id) {
           setLoading(false);
@@ -377,6 +380,9 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Referral Banner */}
+      {referralCode && <ReferralBanner referralCode={referralCode} userName={userName} />}
 
       {/* Case limit exceeded alert */}
       {caseLimit && caseLimit.limit !== -1 && caseLimit.used >= caseLimit.limit && (

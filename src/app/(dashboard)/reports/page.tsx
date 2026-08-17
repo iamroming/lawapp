@@ -1,17 +1,19 @@
 "use client";
 import React, { useState } from "react";
 import ReportsOverviewTab from "./_components/overview-tab";
+import ProfitLossTab from "./_components/profit-loss-tab";
 import FinancialAnalyticsPage from "./financial/page";
 import TeamAnalyticsPage from "./team/page";
 import ClientDeepAnalyticsPage from "./clients-deep/page";
-import { BarChart3, IndianRupee, Users, TrendingUp, Download } from "lucide-react";
+import { BarChart3, IndianRupee, Users, TrendingUp, Download, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const tabs = [
   { id: "overview", label: "Overview", icon: BarChart3 },
-  { id: "financial", label: "Financial", icon: IndianRupee },
+  { id: "profit-loss", label: "Profit & Loss", icon: IndianRupee },
+  { id: "financial", label: "Analytics", icon: TrendingUp },
   { id: "team", label: "Team", icon: Users },
-  { id: "clients", label: "Clients", icon: TrendingUp },
+  { id: "clients", label: "Clients", icon: FileText },
 ];
 
 export default function ReportsPage() {
@@ -51,6 +53,7 @@ export default function ReportsPage() {
 
       <div>
         {activeTab === "overview" && <ReportsOverviewTab />}
+        {activeTab === "profit-loss" && <ProfitLossTab />}
         {activeTab === "financial" && <FinancialAnalyticsPage />}
         {activeTab === "team" && <TeamAnalyticsPage />}
         {activeTab === "clients" && <ClientDeepAnalyticsPage />}

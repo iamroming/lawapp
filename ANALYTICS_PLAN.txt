@@ -1,0 +1,197 @@
+========================================
+ANALYTICS & VISITOR TRACKING PLAN
+========================================
+
+GOAL
+----
+Track: how many visitors, how long they stayed, where they came from (referral/source).
+
+
+OPTION A: GOOGLE ANALYTICS 4 (GA4) — Recommended
+-------------------------------------------------
+Why: Free, industry standard, no server costs, integrates with Google Search Console.
+
+What You Get:
+- Real-time active users
+- Total users / new users / returning users
+- Session duration (avg time on site)
+- Bounce rate
+- Traffic sources (direct, Google, social, referral)
+- Geographic location (country, city)
+- Device breakdown (mobile, desktop, tablet)
+- Page views per session
+- User flow (where they land → where they go → where they leave)
+- Conversion tracking (signup, login, subscription)
+
+Setup Steps:
+1. Create GA4 property at https://analytics.google.com
+2. Get Measurement ID (starts with G-XXXXXXXXXX)
+3. Add NEXT_PUBLIC_GA_MEASUREMENT_ID to .env.local
+4. Create AnalyticsProvider component (src/components/analytics-provider.tsx)
+5. Add <AnalyticsProvider> to root layout
+6. Add custom events for key actions (signup, login, subscription purchase)
+
+Files to Create/Modify:
+- src/components/analytics-provider.tsx (NEW)
+- src/app/layout.tsx (add provider)
+- src/lib/analytics.ts (NEW - event tracking helper)
+
+Custom Events to Track:
+- signup_complete: { method: 'email' | 'google' }
+- login_complete: { method: 'email' | 'google', role: 'owner' | 'employee' | 'super_admin' }
+- subscription_purchase: { plan: string, amount: number, billing: 'monthly' | 'yearly' }
+- case_created: { firm_id: string }
+- client_created: { firm_id: string }
+- page_viewed: { page: string, referrer: string }
+
+
+OPTION B: PLAUSIBLE ANALYTICS (Privacy-Focused)
+------------------------------------------------
+Why: No cookies, GDPR compliant, lightweight (~1KB script), no Google dependency.
+
+What You Get:
+- Total visitors / unique visitors
+- Session duration
+- Bounce rate
+- Top pages
+- Traffic sources / referrers
+- Geographic data
+- Device/browser breakdown
+- Goal conversions (custom events)
+
+Setup Steps:
+1. Self-host at plausible.io OR use cloud ($9/month for 10k pageviews)
+2. Add script tag to layout
+3. Add custom events via data-api
+
+Files to Create/Modify:
+- src/app/layout.tsx (add script tag)
+- No component needed (just a script tag)
+
+Limitations:
+- No user-level tracking (anonymous only)
+- Less detailed than GA4 for funnel analysis
+- Self-hosting requires a server
+
+
+OPTION C: UMAMI (Self-Hosted, Open Source)
+------------------------------------------
+Why: Open source, self-hosted, no cookies, simple dashboard.
+
+What You Get:
+- Same as Plausible
+- SQL query interface
+- Custom event tracking
+- Real-time dashboard
+
+Setup Steps:
+1. Deploy Umami to Vercel/Railway/Docker
+2. Add tracking script to layout
+3. Add custom events
+
+Files to Create/Modify:
+- src/app/layout.tsx (add script tag)
+
+
+OPTION D: CUSTOM TRACKING (Supabase)
+-------------------------------------
+Why: Full control, no third-party dependency, data stays in your DB.
+
+What You Get:
+- Custom metrics specific to your app
+- Full data ownership
+- No external service costs
+
+Setup Steps:
+1. Create analytics table in Supabase
+2. Create API endpoint to log events
+3. Create client-side tracking hook
+4. Build analytics dashboard in super-admin panel
+
+Files to Create/Modify:
+- Supabase table: analytics_events (NEW)
+- src/app/api/analytics/route.ts (NEW)
+- src/hooks/use-analytics.ts (NEW)
+- src/app/(super-admin)/super-admin/analytics/page.tsx (NEW)
+- src/components/analytics-provider.tsx (NEW)
+
+Database Schema:
+  analytics_events:
+    - id (uuid, primary key)
+    - event_type (text): pageview, session_start, session_end, custom
+    - page_url (text)
+    - referrer (text)
+    - user_agent (text)
+    - ip_address (text, hashed)
+    - country (text)
+    - device_type (text): mobile, desktop, tablet
+    - browser (text)
+    - os (text)
+    - session_id (text): groups events into sessions
+    - user_id (uuid, nullable): linked to auth user if logged in
+    - duration_ms (integer): for session_end events
+    - metadata (jsonb): custom event data
+    - created_at (timestamp)
+
+Session Calculation:
+  - session_start: first event with a new session_id
+  - session_end: last event with that session_id
+  - Duration = session_end.created_at - session_start.created_at
+
+Super Admin Analytics Dashboard:
+  - Total visitors (today, this week, this month, all time)
+  - Average session duration
+  - Top pages by views
+  - Top referrers
+  - Visitor growth chart
+  - Device breakdown pie chart
+  - Geographic heatmap
+
+
+RECOMMENDATION
+--------------
+Go with Option A (GA4) for:
+- Best free analytics available
+- No server costs
+- Professional dashboards
+- Integration with Google Ads if you run campaigns
+- Real-time data
+
+Then later add Option D (custom Supabase tracking) for:
+- App-specific metrics (cases created, subscriptions purchased)
+- Data you own and can query directly
+- Super-admin dashboard with custom KPIs
+
+
+IMPLEMENTATION PLAN (GA4)
+--------------------------
+Phase 1: Basic Setup (15 min)
+  1. Create GA4 property
+  2. Create src/components/analytics-provider.tsx
+  3. Add to root layout
+  4. Deploy
+
+Phase 2: Custom Events (30 min)
+  1. Create src/lib/analytics.ts helper
+  2. Add trackEvent calls to:
+     - Login page (login_complete)
+     - Signup page (signup_complete)
+     - Subscription purchase flow
+     - Case creation
+     - Client creation
+
+Phase 3: Custom Dashboard (Later)
+  1. Build super-admin analytics page
+  2. Query GA4 Data API for custom charts
+  3. Combine with Supabase data for app metrics
+
+
+DEPLOYMENT
+----------
+After implementation, run:
+  npx vercel --yes --prod
+
+Verify analytics are working:
+  1. Visit https://www.casefiles.in
+  2. Check GA4 Realtime report
+  3. Verify events are firing in GA4 DebugView

@@ -80,12 +80,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Category must be a string" }, { status: 400 });
     }
 
-    // Get user's firm_id
+    // Get user's firm_id and role
     const { data: profile } = await supabase
       .from("profiles")
-      .select("firm_id")
+      .select("firm_id, role")
       .eq("id", user.uuid)
       .single();
+
+    // Role check: owner/partner/senior_associate/associate can create expenses
+    const expenseCreateRoles = ["owner", "partner", "senior_associate", "associate", "super_admin"];
+    if (!profile?.role || !expenseCreateRoles.includes(profile.role)) {
+      return NextResponse.json({ error: "Forbidden: you do not have permission to create expenses" }, { status: 403 });
+    }
 
     if (case_id) {
       const { data: caseRecord } = await supabase

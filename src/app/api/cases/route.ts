@@ -50,10 +50,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
   }
 
-  // Subscription limit check
   const { data: profile } = await supabase.from("profiles").select("firm_id, role").eq("id", user.uuid).single();
   const firmId = profile?.firm_id || user.uuid;
   const isOwnerOrPartner = ["owner", "partner", "super_admin"].includes(profile?.role || "");
+
+  // Role check: only owner/partner/senior_associate/associate can create cases
+  const caseCreateRoles = ["owner", "partner", "senior_associate", "associate", "super_admin"];
+  if (!profile?.role || !caseCreateRoles.includes(profile.role)) {
+    return NextResponse.json({ error: "Forbidden: you do not have permission to create cases" }, { status: 403 });
+  }
+
+  // Subscription limit check
 
   const { count } = await supabase.from("cases").select("id", { count: "exact", head: true }).eq("firm_id", firmId).is("deleted_at", null);
   const limitCheck = await checkCaseLimit(user.uuid, count || 0);

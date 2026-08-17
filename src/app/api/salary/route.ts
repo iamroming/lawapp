@@ -16,6 +16,12 @@ export async function GET(request: NextRequest) {
 
     if (!profile?.firm_id) return NextResponse.json({ error: "No firm" }, { status: 400 });
 
+    // Role check: only owner/partner/office_admin can view salary data
+    const salaryViewRoles = ["owner", "partner", "office_admin", "super_admin"];
+    if (!profile?.role || !salaryViewRoles.includes(profile.role)) {
+      return NextResponse.json({ error: "Forbidden: insufficient permissions" }, { status: 403 });
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const employeeId = searchParams.get("employee_id");
     const status = searchParams.get("status");

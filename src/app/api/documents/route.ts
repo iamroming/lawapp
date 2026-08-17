@@ -93,8 +93,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "File type not allowed" }, { status: 400 });
   }
 
-  // Get firm_id for storage check
-  const { data: storageProfile } = await supabase.from("profiles").select("firm_id").eq("id", user.uuid).single();
+  // Role check: owner/partner/senior_associate/associate/junior_associate/paralegal can upload docs
+  const { data: roleProfile } = await supabase.from("profiles").select("firm_id, role").eq("id", user.uuid).single();
+  const docCreateRoles = ["owner", "partner", "senior_associate", "associate", "junior_associate", "paralegal", "super_admin"];
+  if (!roleProfile?.role || !docCreateRoles.includes(roleProfile.role)) {
+    return NextResponse.json({ error: "Forbidden: you do not have permission to upload documents" }, { status: 403 });
+  }
+
+  const storageProfile = roleProfile;
+
   const storageFirmId = storageProfile?.firm_id || user.uuid;
 
   // Check storage limit (existing usage + new file)

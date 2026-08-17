@@ -1,0 +1,177 @@
+========================================
+CASEFILES - LAUNCH & GROWTH STRATEGY
+========================================
+
+PRE-LAUNCH CHECKLIST
+=====================
+
+Must Fix Before Launch:
+-----------------------
+□ Vercel cron setup
+  → vercel.json mein add karo:
+  { "crons": [{ "path": "/api/reminders/cron", "schedule": "0 18 * * *" }] }
+
+□ WhatsApp Twilio sandbox se production number lo
+  → Sandbox mein sirf test users bhej sakte ho
+
+□ Email domain verify karo (CaseFiles.in)
+  → Resend se SPF/DKIM setup karo nahi to emails spam mein jayenge
+
+□ .env mein SAARE keys properly set hai — verify karo
+
+
+Already Done:
+-------------
+✅ Firebase Auth (login/signup/Google)
+✅ Case management (CRUD, status, timeline)
+✅ Client management
+✅ Court/hearing tracking + calendar
+✅ E-filing integration
+✅ AI legal research + drafting
+✅ Invoice + GST billing
+✅ Payment gateway (Razorpay)
+✅ Subscription system (Free/Solo/Pro/Firm/Enterprise)
+✅ WhatsApp hearing reminders (lawyer + owner)
+✅ Email notifications (Resend)
+✅ SMS notifications (MSG91)
+✅ Team management + roles
+✅ Expense tracking
+✅ Reports + P&L
+✅ Client portal
+✅ Blog + marketing pages
+✅ Pricing page
+✅ Mobile responsive
+
+
+========================================
+ZYADA CUSTOMERS LANE KE LIYE (GROWTH STRATEGY)
+========================================
+
+
+1. SEO + CONTENT MARKETING (FREE - Sabse Important)
+====================================================
+
+Blog regularly likho (2-3 posts/week):
+  - "How to manage court dates in India"
+  - "Best legal practice management software 2026"
+  - "GST invoicing for lawyers guide"
+  - "How to track case deadlines"
+
+Target keywords:
+  - "legal practice management software India"
+  - "case management software for lawyers"
+  - "court date tracker India"
+  - "lawyer billing software"
+  - "advocate case management app"
+
+Google My Business setup karo (CaseFiles office)
+
+
+2. FREE TRIAL FUNNEL (Sabse Powerful)
+======================================
+
+14-day free trial already hai — use karo:
+  - Trial start pe WhatsApp + email welcome bhejo
+  - Day 3 pe: "Aapne kitne cases track kiye?"
+  - Day 7 pe: "Aapka trial aadha ho gaya"
+  - Day 12 pe: "Trial khatam hone wala hai — upgrade karo"
+  - Day 14 pe: Urgency message
+
+Free plan dete ho (3 cases) — yeh lead magnet hai
+  → Free users ko email bhejo weekly:
+    "Aapki 3 cases full ho gayi — upgrade for unlimited"
+
+
+3. REFERRAL PROGRAM (Viral Growth)
+===================================
+
+Add karo in-app referral:
+  - "Refer a lawyer, both get 1 month free"
+  - Unique referral link for each user
+  - Track referrals in database
+
+Target: Every happy user brings 2 more
+
+
+4. COMMUNITY + PARTNERSHIPS
+============================
+
+Lawyer Facebook groups join karo (India mein 500+ groups)
+LinkedIn pe lawyer connections banao
+Bar Association tie-ups karo (local courts)
+CA/Tax lawyer communities mein jaao (billing feature)
+Legal tech influencers ko demo do
+
+
+5. PAID MARKETING (Jab budget ho)
+===================================
+
+Google Ads:
+  - "case management software for lawyers" (Rs.15-30/click)
+  - "legal billing software India"
+
+Facebook/Instagram Ads:
+  - Target: Advocate, Lawyer, Legal Practitioner
+  - Age: 25-55, India
+  - Creative: "Manage 100+ cases from your phone"
+
+YouTube:
+  - 2-min demo video
+  - "How I manage 50 cases with CaseFiles"
+
+
+6. PRODUCT-LED GROWTH
+=======================
+
+In-app growth loops:
+  - Client portal -> Client sees app -> Client becomes user
+  - Invoice sharing -> "Powered by CaseFiles" footer
+  - Case sharing -> Opposing counsel sees your app
+
+Embed branding:
+  - "Sent via CaseFiles" on shared invoices
+  - "Managed with CaseFiles" on client portal links
+
+
+7. LAUNCH PLATFORMS (Day 1 pe post karo)
+==========================================
+
+Product Hunt (biggest launch day boost)
+BetaList
+Indie Hackers
+Hacker News (Show HN post)
+Twitter/X launch thread
+Reddit: r/IndianLegalTech, r/SaaS
+
+
+========================================
+PRIORITIZED ACTION PLAN
+========================================
+
+WEEK 1: Fix remaining issues
+  - Vercel cron, Twilio prod, email domain
+
+WEEK 2: Content + SEO
+  - 5 blog posts, Google My Business, SEO audit
+
+WEEK 3: Community outreach
+  - 10 Facebook groups, 50 LinkedIn connections, 2 bar associations
+
+WEEK 4: Launch
+  - Product Hunt, Twitter thread, Reddit posts
+  - Referral program live
+
+MONTH 2: Scale
+  - Google Ads (Rs.500/day budget)
+  - Influencer partnerships
+  - Free webinar for lawyers
+
+
+========================================
+SABSE IMPORTANT
+========================================
+
+Lawyers ko personally approach karo.
+Ek ek karke 10 lawyers ko free trial do,
+unka feedback lo, aur unhe paying customers banao.
+Word of mouth sabse powerful hai legal industry mein.

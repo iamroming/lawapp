@@ -1,0 +1,172 @@
+========================================
+CASEFILES - REFERRAL PROGRAM MODULE
+========================================
+
+Overview:
+---------
+"Refer a lawyer, both get 1 month free"
+Unique referral link for each user.
+Track referrals in database.
+Monitor in super admin.
+
+
+Setup:
+------
+Run SQL migration in Supabase SQL Editor:
+  scripts/create-referrals-table.sql
+
+
+How It Works:
+=============
+
+1. USER SHares LINK
+   ┌─────────────────────────────────────────────┐
+   │ 🎁 Refer & Earn                             │
+   │ Share with fellow lawyers. When they        │
+   │ subscribe, you both get 1 month free!       │
+   │                                             │
+   │ Your unique referral link:                  │
+   │ [https://casefiles.app/signup?ref=ABC123]  │
+   │                                     [Copy]  │
+   │                                             │
+   │ [WhatsApp] [Email] [Share]                  │
+   └─────────────────────────────────────────────┘
+
+2. FRIEND SIGNS UP
+   → referral_code recorded
+   → Status: "signed_up"
+
+3. FRIEND STARTS TRIAL
+   → Status: "trial_started"
+
+4. FRIEND PAYS (Converts)
+   → Status: "converted"
+   → Both get 1 month free subscription
+
+
+Database Tables:
+================
+
+1. profiles (new columns)
+   ├── referral_code TEXT UNIQUE (auto-generated)
+   └── referred_by UUID REFERENCES profiles(id)
+
+2. referrals (new table)
+   ├── id UUID PRIMARY KEY
+   ├── referrer_id UUID (who shared)
+   ├── referred_id UUID (who signed up)
+   ├── referral_code TEXT
+   ├── status TEXT (pending/signed_up/trial_started/converted/rewarded)
+   ├── referrer_reward_days INTEGER (default 30)
+   ├── referred_reward_days INTEGER (default 30)
+   ├── referrer_rewarded BOOLEAN
+   ├── referred_rewarded BOOLEAN
+   ├── source TEXT (link/whatsapp/email)
+   ├── created_at TIMESTAMPTZ
+   └── updated_at TIMESTAMPTZ
+
+
+API Endpoints:
+==============
+
+GET /api/referrals/track?code=ABC123
+  → Validates referral code
+  → Returns referrer info
+
+POST /api/referrals/track
+  → Records a new referral
+  → Body: { referral_code, referred_email, source }
+
+PATCH /api/referrals/track
+  → Updates referral status
+  → Body: { referral_id, status }
+
+
+Super Admin Monitor:
+====================
+
+URL: /super-admin/referrals
+
+Features:
+  ✅ Stats: Total, Pending, Signed Up, Trial Started, Converted, Rewarded
+  ✅ Conversion Rate percentage
+  ✅ Visual Funnel (bar chart)
+  ✅ Top Referrers leaderboard (top 10)
+  ✅ How It Works guide
+  ✅ Searchable referrals table
+  ✅ Filter by status
+
+Referral Funnel:
+  Total Links Shared → Signed Up → Trial Started → Converted (Paid)
+
+
+Files Created:
+==============
+
+1. scripts/create-referrals-table.sql
+   - Adds referral_code to profiles
+   - Creates referrals table
+   - Auto-generate trigger
+   - Backfills existing users
+
+2. src/app/api/referrals/track/route.ts
+   - GET: Validate code
+   - POST: Record referral
+   - PATCH: Update status
+
+3. src/app/api/super-admin/referrals/route.ts
+   - GET: Stats + referrals + top referrers
+
+4. src/app/(super-admin)/super-admin/referrals/page.tsx
+   - Admin monitor dashboard
+
+5. src/components/referral-banner.tsx
+   - Share widget for user dashboard
+
+
+Files Modified:
+===============
+
+1. src/app/(dashboard)/dashboard/page.tsx
+   - Added referral_code to profile fetch
+   - Added ReferralBanner component
+
+2. src/components/super-admin-sidebar.tsx
+   - Added "Referrals" link with Gift icon
+
+
+Referral Reward Logic:
+======================
+
+When referred user converts (pays):
+  1. Referrer gets: +30 days free subscription
+  2. Referred gets: +30 days free subscription
+  
+Implementation:
+  → Add 30 days to expires_at of both users
+  → Log reward in referrals table
+  → Send email notification to both
+
+
+How to Track Referrals:
+=======================
+
+1. User signs up with referral link
+   /signup?ref=ABC123
+   
+2. Frontend calls:
+   POST /api/referrals/track
+   {
+     "referral_code": "ABC123",
+     "referred_email": "newuser@email.com",
+     "source": "link"
+   }
+
+3. When user converts to paid:
+   PATCH /api/referrals/track
+   {
+     "referral_id": "xxx",
+     "status": "converted"
+   }
+
+4. Backend rewards both users

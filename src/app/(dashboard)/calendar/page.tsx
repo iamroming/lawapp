@@ -117,6 +117,7 @@ function CalendarContent() {
   const searchParams = useSearchParams();
   const preselectedCaseId = searchParams.get("case_id");
   const supabase = createClient();
+  const { user: appUser } = useUser();
 
   const [hearings, setHearings] = useState<Hearing[]>([]);
   const [cases, setCases] = useState<CaseOption[]>([]);
@@ -1343,7 +1344,6 @@ function CalendarContent() {
 }
 
 export default function CalendarPage() {
-  const { user: appUser } = useUser();
   return (
     <Suspense
       fallback={

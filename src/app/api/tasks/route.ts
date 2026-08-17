@@ -58,7 +58,13 @@ export async function POST(request: NextRequest) {
     if (!title) return NextResponse.json({ error: "Title is required" }, { status: 400 });
 
     const { data: profile } = await supabase
-      .from("profiles").select("firm_id").eq("id", user.uuid).single();
+      .from("profiles").select("firm_id, role").eq("id", user.uuid).single();
+
+    // Role check: owner/partner/senior_associate/associate can create tasks
+    const taskCreateRoles = ["owner", "partner", "senior_associate", "associate", "super_admin"];
+    if (!profile?.role || !taskCreateRoles.includes(profile.role)) {
+      return NextResponse.json({ error: "Forbidden: you do not have permission to create tasks" }, { status: 403 });
+    }
 
     const { data, error } = await supabase
       .from("tasks")

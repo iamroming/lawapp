@@ -35,10 +35,11 @@ interface PaymentHistory {
 }
 
 const fallbackPlans = [
-  { slug: "solo", name: "Solo", price: 299, monthly: 299, annual: 2999, icon: Shield, color: "blue" },
-  { slug: "professional", name: "Professional", price: 799, monthly: 799, annual: 7999, icon: Crown, color: "purple" },
-  { slug: "firm", name: "Firm", price: 1999, monthly: 1999, annual: 19999, icon: Crown, color: "indigo" },
-  { slug: "enterprise", name: "Enterprise", price: 4999, monthly: 4999, annual: 49999, icon: Zap, color: "amber" },
+  { slug: "free", name: "Free", price: 0, monthly: 0, annual: 0, icon: Shield, color: "blue", description: "Try CaseFiles with basic features.", features: ["3 active cases", "1 user", "100 MB storage", "Basic dashboard", "Mobile access"], max_cases: 3, max_users: 1, max_storage_mb: 100 },
+  { slug: "solo", name: "Solo", price: 299, monthly: 299, annual: 2999, icon: Shield, color: "blue", description: "For individual lawyers handling a growing caseload.", features: ["20 active cases", "1 user", "1 GB storage", "E-filing integration", "Court tracking", "Invoice generation", "Notifications"], max_cases: 20, max_users: 1, max_storage_mb: 1024 },
+  { slug: "professional", name: "Professional", price: 799, monthly: 799, annual: 7999, icon: Crown, color: "purple", description: "For established lawyers and small teams.", features: ["Unlimited active cases", "3 users", "5 GB storage", "Everything in Solo", "Team collaboration", "Client portal", "AI-powered research", "Priority support"], max_cases: -1, max_users: 3, max_storage_mb: 5120 },
+  { slug: "firm", name: "Firm", price: 1999, monthly: 1999, annual: 19999, icon: Crown, color: "indigo", description: "For law firms needing full team access.", features: ["Unlimited active cases", "10 users", "20 GB storage", "Everything in Professional", "Admin controls", "Bulk operations", "Custom reports", "API access"], max_cases: -1, max_users: 10, max_storage_mb: 20480 },
+  { slug: "enterprise", name: "Enterprise", price: 4999, monthly: 4999, annual: 49999, icon: Zap, color: "amber", description: "For large firms with custom requirements.", features: ["Unlimited everything", "Unlimited users", "Unlimited storage", "Everything in Firm", "Dedicated support", "Custom integrations", "SLA guarantee", "Onboarding assistance"], max_cases: -1, max_users: -1, max_storage_mb: -1 },
 ];
 
 const PLAN_ICONS: Record<string, React.ComponentType<any>> = { Shield, Crown, Zap };
@@ -50,7 +51,7 @@ export default function SubscriptionPage() {
   const [payments, setPayments] = useState<PaymentHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [plans, setPlans] = useState(fallbackPlans);
-  const [currentPlan, setCurrentPlan] = useState<string>("solo");
+  const [currentPlan, setCurrentPlan] = useState<string>("free");
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
   const [upgrading, setUpgrading] = useState<string | null>(null);
   const [couponCode, setCouponCode] = useState("");
@@ -61,8 +62,10 @@ export default function SubscriptionPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (appUser) {
+      fetchData();
+    }
+  }, [appUser]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -72,19 +75,33 @@ export default function SubscriptionPage() {
     try {
       const { data: plansData } = await supabase
         .from("subscription_plans")
-        .select("id, name, slug, price")
+        .select("id, name, slug, price, description, features, max_cases, max_users, max_storage_mb")
         .eq("is_active", true)
         .order("price");
       if (plansData && plansData.length > 0) {
-        setPlans(plansData.map((p: any) => ({
-          slug: p.slug,
-          name: p.name,
-          price: p.price,
-          monthly: p.price,
-          annual: p.price * 12,
-          icon: PLAN_ICONS[p.slug] || Shield,
-          color: PLAN_COLORS[p.slug] || "blue",
-        })));
+        const dbPlans = plansData.map((p: any) => {
+          let parsedFeatures: string[] = [];
+          try {
+            parsedFeatures = typeof p.features === "string" ? JSON.parse(p.features) : (p.features || []);
+          } catch { parsedFeatures = []; }
+          return {
+            slug: p.slug,
+            name: p.name,
+            price: p.price,
+            monthly: p.price,
+            annual: p.price * 12,
+            icon: PLAN_ICONS[p.slug] || Shield,
+            color: PLAN_COLORS[p.slug] || "blue",
+            description: p.description || "",
+            features: parsedFeatures,
+            max_cases: p.max_cases ?? -1,
+            max_users: p.max_users ?? -1,
+            max_storage_mb: p.max_storage_mb ?? -1,
+          };
+        });
+        const dbSlugs = new Set(dbPlans.map((p) => p.slug));
+        const missing = fallbackPlans.filter((p) => !dbSlugs.has(p.slug));
+        setPlans([...dbPlans, ...missing]);
       }
     } catch (e) {
       console.error("Failed to fetch plans, using fallback:", e);
@@ -124,8 +141,13 @@ export default function SubscriptionPage() {
       } catch {
         notes = {};
       }
-      setCurrentPlan(notes.plan_slug || "free");
+      // Only treat as paid plan if status is "active" (not just "trialing")
+      setCurrentPlan(subData.status === "active" ? (notes.plan_slug || "free") : "free");
       setBillingCycle(notes.billing_cycle || "monthly");
+    } else {
+      // No paid/trial subscription — the user is on the Free plan
+      setSubscription(null);
+      setCurrentPlan("free");
     }
 
     // Get payment history from Razorpay
@@ -296,18 +318,36 @@ export default function SubscriptionPage() {
                 <div>
                   <h3 className="text-xl font-bold capitalize">{currentPlan} Plan</h3>
                   <p className="text-sm text-[var(--text-secondary)]">
-                    {subscription.payment_method === "razorpay" ? "Paid via Razorpay" : "Active subscription"}
+                    {subscription.status === "trialing"
+                      ? "Free trial"
+                      : subscription.payment_method === "razorpay"
+                        ? "Paid via Razorpay"
+                        : "Active subscription"}
                   </p>
                 </div>
-                <Badge className={getSubscriptionStatusColor(subscription.status)}>
-                  {subscription.status}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  {subscription.status === "trialing" && (
+                    <Badge className="bg-purple-100 text-purple-700">Free Trial</Badge>
+                  )}
+                  <Badge className={getSubscriptionStatusColor(subscription.status)}>
+                    {subscription.status}
+                  </Badge>
+                </div>
               </div>
+
+              {subscription.status === "trialing" && subscription.expires_at && (
+                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                  <p className="text-sm text-purple-700">
+                    Your free trial of the <strong className="capitalize">{currentPlan}</strong> plan ends on {formatDate(subscription.expires_at)}.
+                    Upgrade now to keep access after the trial.
+                  </p>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
                   <p className="text-[var(--text-secondary)]">Amount</p>
-                  <p className="font-semibold">{formatCurrency(subscription.amount_paid)}</p>
+                  <p className="font-semibold">{subscription.amount_paid === 0 ? "Free" : formatCurrency(subscription.amount_paid)}</p>
                 </div>
                 <div>
                   <p className="text-[var(--text-secondary)]">Started</p>
@@ -334,10 +374,35 @@ export default function SubscriptionPage() {
               )}
             </div>
           ) : (
-            <div className="text-center py-8">
-              <Shield className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-              <h3 className="font-semibold text-lg">No Active Subscription</h3>
-              <p className="text-[var(--text-secondary)]">Choose a plan to get started</p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold">Free Plan</h3>
+                  <p className="text-sm text-[var(--text-secondary)]">Active subscription</p>
+                </div>
+                <Badge className="bg-green-100 text-green-700">active</Badge>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <p className="text-[var(--text-secondary)]">Amount</p>
+                  <p className="font-semibold">{formatCurrency(0)}</p>
+                </div>
+                <div>
+                  <p className="text-[var(--text-secondary)]">Started</p>
+                  <p className="font-semibold">{formatDate(new Date().toISOString())}</p>
+                </div>
+                <div>
+                  <p className="text-[var(--text-secondary)]">Expires</p>
+                  <p className="font-semibold">Never</p>
+                </div>
+                <div>
+                  <p className="text-[var(--text-secondary)]">Auto-renew</p>
+                  <p className="font-semibold">N/A</p>
+                </div>
+              </div>
+              <p className="text-sm text-[var(--text-secondary)]">
+                You're on the Free plan. Upgrade to a paid plan to unlock more cases, storage and team members.
+              </p>
             </div>
           )}
         </CardContent>
@@ -413,7 +478,7 @@ export default function SubscriptionPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {plans.filter(p => p.slug !== "free").map((plan) => {
+            {plans.map((plan) => {
               const basePrice = billingCycle === "annual" ? plan.annual : plan.monthly;
               const discountedPrice = couponData ? (() => {
                 if (couponData.discount_type === "free") return 0;
@@ -423,6 +488,7 @@ export default function SubscriptionPage() {
               })() : null;
               const price = discountedPrice ?? basePrice;
               const isCurrent = currentPlan === plan.slug;
+              const isFree = plan.slug === "free";
               const Icon = plan.icon;
 
               return (
@@ -433,8 +499,11 @@ export default function SubscriptionPage() {
                   <div className="flex items-center gap-2">
                     <Icon className={`h-5 w-5 text-${plan.color}-600`} />
                     <h4 className="font-semibold">{plan.name}</h4>
-                    {isCurrent && <Badge>Current</Badge>}
+                    {isCurrent && <Badge>{subscription?.status === "trialing" ? "Trial" : "Current"}</Badge>}
                   </div>
+                  {plan.description && (
+                    <p className="text-xs text-[var(--text-secondary)] mt-1">{plan.description}</p>
+                  )}
                   <div className="mt-2">
                     {discountedPrice !== null && discountedPrice !== basePrice ? (
                       <div className="flex items-center gap-2">
@@ -456,7 +525,17 @@ export default function SubscriptionPage() {
                       Save {Math.max(0, Math.round((1 - plan.annual / (plan.monthly * 12)) * 100))}%
                     </p>
                   )}
-                  {!isCurrent && (
+                  {plan.features && plan.features.length > 0 && (
+                    <ul className="mt-3 space-y-1.5">
+                      {plan.features.map((feature: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-2 text-xs text-[var(--text-secondary)]">
+                          <Check className="h-3.5 w-3.5 text-green-500 mt-0.5 shrink-0" />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {!isCurrent && !isFree && (
                     <Button
                       className="w-full mt-4"
                       size="sm"

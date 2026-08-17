@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Scale, Calendar, User, ArrowLeft } from "lucide-react";
+import { Calendar, User, ArrowLeft } from "lucide-react";
 
 async function getPost(slug: string) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.casefiles.in";
@@ -35,14 +35,14 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   if (!post) notFound();
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-black text-white">
       {/* Header */}
-      <div className="bg-gray-50 border-b border-gray-200">
+      <div className="border-b border-white/10 bg-white/[0.02]">
         <div className="max-w-3xl mx-auto px-4 py-8">
-          <Link href="/blog" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
+          <Link href="/blog" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-white mb-6 transition-colors">
             <ArrowLeft className="h-4 w-4" /> Back to Blog
           </Link>
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight">
+          <h1 className="text-3xl sm:text-4xl font-bold leading-tight">
             {post.heading}
           </h1>
           <div className="flex items-center gap-4 mt-4 text-sm text-gray-500">
@@ -78,14 +78,14 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       {/* Content */}
       <div className="max-w-3xl mx-auto px-4 py-8">
         <article
-          className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-orange-600 prose-img:rounded-xl"
+          className="prose prose-lg max-w-none prose-headings:text-white prose-p:text-gray-300 prose-a:text-orange-500 prose-strong:text-white prose-img:rounded-xl"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
       </div>
 
       {/* Footer */}
-      <div className="max-w-3xl mx-auto px-4 py-8 border-t border-gray-200">
-        <Link href="/blog" className="inline-flex items-center gap-1 text-sm text-orange-600 hover:text-orange-700 font-semibold">
+      <div className="max-w-3xl mx-auto px-4 py-8 border-t border-white/10">
+        <Link href="/blog" className="inline-flex items-center gap-1 text-sm text-orange-500 hover:text-orange-400 font-semibold transition-colors">
           <ArrowLeft className="h-4 w-4" /> More articles
         </Link>
       </div>

@@ -11,8 +11,14 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const caseId = searchParams.get("case_id");
 
-  const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.uuid).single();
+  const { data: profile } = await supabase.from("profiles").select("firm_id, role").eq("id", user.uuid).single();
   const firmId = profile?.firm_id;
+
+  // Role check: owner/partner/senior_associate/associate can view hearings
+  const hearingViewRoles = ["owner", "partner", "senior_associate", "associate", "super_admin"];
+  if (!profile?.role || !hearingViewRoles.includes(profile.role)) {
+    return NextResponse.json({ error: "Forbidden: insufficient permissions" }, { status: 403 });
+  }
 
   let query = supabase
     .from("hearings")
@@ -62,8 +68,14 @@ export async function POST(request: NextRequest) {
   }
 
   // Verify case belongs to user's firm
-  const { data: profile } = await supabase.from("profiles").select("firm_id").eq("id", user.uuid).single();
+  const { data: profile } = await supabase.from("profiles").select("firm_id, role").eq("id", user.uuid).single();
   const firmId = profile?.firm_id || user.uuid;
+
+  // Role check: only owner/partner/senior_associate/associate can create hearings
+  const hearingCreateRoles = ["owner", "partner", "senior_associate", "associate", "super_admin"];
+  if (!profile?.role || !hearingCreateRoles.includes(profile.role)) {
+    return NextResponse.json({ error: "Forbidden: you do not have permission to create hearings" }, { status: 403 });
+  }
   if (parsed.data.case_id) {
     const { data: caseRow } = await supabase.from("cases").select("id").eq("id", parsed.data.case_id).eq("firm_id", firmId).single();
     if (!caseRow) return NextResponse.json({ error: "Case not found in your firm" }, { status: 404 });

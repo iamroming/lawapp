@@ -82,7 +82,8 @@ export async function createSessionCookie(
       expiresIn: SESSION_COOKIE_MAX_AGE * 1000,
     });
     return { cookie: sessionCookie, maxAge: SESSION_COOKIE_MAX_AGE };
-  } catch {
+  } catch (error) {
+    console.error("createSessionCookie error:", error);
     return null;
   }
 }

@@ -60,6 +60,8 @@ export async function updateSession(request: NextRequest) {
     "/bare-acts",
     "/api/auth",
     "/api/courts",
+    "/api/team/",
+    "/api/blog",
     "/blog",
   ];
 
@@ -75,7 +77,7 @@ export async function updateSession(request: NextRequest) {
 
   // Root path is now the public landing page — no redirect for authenticated users
 
-  if (isAuthenticated && isAuthPage && pathname !== "/" && pathname !== "/auth/callback" && pathname !== "/pricing" && pathname !== "/subscription-required" && pathname !== "/onboarding") {
+  if (isAuthenticated && isAuthPage && pathname !== "/" && pathname !== "/auth/callback" && pathname !== "/pricing" && pathname !== "/subscription-required" && pathname !== "/onboarding" && pathname !== "/login" && pathname !== "/signup") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
