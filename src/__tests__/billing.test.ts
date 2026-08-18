@@ -56,11 +56,11 @@ describe("calculateGST", () => {
 });
 
 describe("calculateTDS", () => {
-  it("returns no TDS for individual under 50k", () => {
-    const result = calculateTDS(40000, "individual");
+  it("returns no TDS for individual under 30k", () => {
+    const result = calculateTDS(25000, "individual");
     expect(result.tdsRate).toBe(0);
     expect(result.tdsAmount).toBe(0);
-    expect(result.netAmount).toBe(40000);
+    expect(result.netAmount).toBe(25000);
   });
 
   it("deducts TDS for individual over 50k", () => {

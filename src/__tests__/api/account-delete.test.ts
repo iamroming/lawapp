@@ -4,8 +4,18 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(),
 }));
 
+vi.mock("@/lib/firebase/auth", () => ({
+  verifySessionFromRequest: vi.fn(),
+}));
+
+vi.mock("@/lib/firebase/admin", () => ({
+  getAdminAuth: vi.fn(),
+}));
+
 import { DELETE } from "@/app/api/account/delete/route";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
+import { getAdminAuth } from "@/lib/firebase/admin";
 
 const mockUser = { id: "user-1", email: "lawyer@test.com" };
 let mockChain: any;
@@ -17,12 +27,12 @@ beforeEach(() => {
     eq: vi.fn().mockReturnThis(),
   };
   (createClient as any).mockResolvedValue({
-    auth: {
-      getUser: vi.fn().mockResolvedValue({ data: { user: mockUser }, error: null }),
-      admin: { updateUserById: vi.fn().mockResolvedValue({ error: null }), deleteUser: vi.fn().mockResolvedValue({ error: null }) },
-    },
     from: vi.fn().mockReturnValue(mockChain),
     rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
+  });
+  (getAdminAuth as any).mockResolvedValue({
+    revokeRefreshTokens: vi.fn().mockResolvedValue(undefined),
+    deleteUser: vi.fn().mockResolvedValue(undefined),
   });
 });
 
@@ -36,17 +46,18 @@ function makeRequest(body: any) {
 
 describe("DELETE /api/account/delete", () => {
   it("returns 401 when not authenticated", async () => {
-    (createClient as any).mockResolvedValue({
-      auth: {
-        getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
-        admin: { updateUserById: vi.fn() },
-      },
-    });
+    (verifySessionFromRequest as any).mockResolvedValue(null);
     const res = await DELETE(makeRequest({ confirm_email: "lawyer@test.com" }));
     expect(res.status).toBe(401);
   });
 
   it("rejects mismatched email confirmation", async () => {
+    (verifySessionFromRequest as any).mockResolvedValue({
+      uid: "user-1",
+      uuid: "user-1",
+      email: "lawyer@test.com",
+      displayName: "Test User",
+    });
     const res = await DELETE(makeRequest({ confirm_email: "wrong@email.com" }));
     expect(res.status).toBe(400);
     const data = await res.json();
@@ -54,6 +65,12 @@ describe("DELETE /api/account/delete", () => {
   });
 
   it("soft-deletes account with correct email", async () => {
+    (verifySessionFromRequest as any).mockResolvedValue({
+      uid: "user-1",
+      uuid: "user-1",
+      email: "lawyer@test.com",
+      displayName: "Test User",
+    });
     const res = await DELETE(makeRequest({ confirm_email: "lawyer@test.com" }));
     expect(res.status).toBe(200);
     const data = await res.json();

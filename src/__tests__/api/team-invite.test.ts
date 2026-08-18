@@ -4,8 +4,13 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(),
 }));
 
+vi.mock("@/lib/firebase/auth", () => ({
+  verifySessionFromRequest: vi.fn(),
+}));
+
 import { POST } from "@/app/api/team/invite/route";
 import { createClient } from "@/lib/supabase/server";
+import { verifySessionFromRequest } from "@/lib/firebase/auth";
 
 const mockUser = { id: "owner-1", email: "owner@firm.com" };
 const mockOwnerProfile = { id: "owner-1", role: "owner", firm_id: "firm-1" };
@@ -25,9 +30,6 @@ beforeEach(() => {
   };
 
   (createClient as any).mockResolvedValue({
-    auth: {
-      getUser: vi.fn().mockResolvedValue({ data: { user: mockUser }, error: null }),
-    },
     from: vi.fn().mockReturnValue(mockChain),
     rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
   });
@@ -43,19 +45,22 @@ function makeRequest(body: any) {
 
 describe("POST /api/team/invite", () => {
   it("returns 401 when not authenticated", async () => {
-    (createClient as any).mockResolvedValue({
-      auth: {
-        getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
-      },
-    });
+    (verifySessionFromRequest as any).mockResolvedValue(null);
 
     const response = await POST(makeRequest({ email: "new@team.com", role: "associate" }));
     expect(response.status).toBe(401);
   });
 
   it("returns 403 when non-owner tries to invite", async () => {
+    (verifySessionFromRequest as any).mockResolvedValue({
+      uid: "owner-1",
+      uuid: "owner-1",
+      email: "owner@firm.com",
+      displayName: "Test Owner",
+    });
+
     mockChain.single.mockResolvedValue({
-      data: { id: "user-1", role: "associate", firm_id: "firm-1" },
+      data: { id: "owner-1", role: "associate", firm_id: "firm-1" },
       error: null,
     });
 
@@ -64,6 +69,13 @@ describe("POST /api/team/invite", () => {
   });
 
   it("returns 400 for invalid role", async () => {
+    (verifySessionFromRequest as any).mockResolvedValue({
+      uid: "owner-1",
+      uuid: "owner-1",
+      email: "owner@firm.com",
+      displayName: "Test Owner",
+    });
+
     mockChain.single.mockResolvedValue({ data: mockOwnerProfile, error: null });
 
     const response = await POST(makeRequest({ email: "new@team.com", role: "super_hero" }));

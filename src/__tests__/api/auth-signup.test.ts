@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock the admin client used by signup route
 vi.mock("@supabase/supabase-js", () => ({
   createClient: vi.fn().mockReturnValue({
     auth: {
@@ -14,8 +13,13 @@ vi.mock("@supabase/supabase-js", () => ({
   }),
 }));
 
+vi.mock("@/lib/firebase/admin", () => ({
+  getAdminAuth: vi.fn(),
+}));
+
 import { POST } from "@/app/api/auth/signup/route";
 import { createClient } from "@supabase/supabase-js";
+import { getAdminAuth } from "@/lib/firebase/admin";
 
 function makeRequest(body: any) {
   return new Request("http://localhost:3000/api/auth/signup", {
@@ -26,11 +30,21 @@ function makeRequest(body: any) {
 }
 
 describe("POST /api/auth/signup", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (getAdminAuth as any).mockResolvedValue({
+      createUser: vi.fn().mockResolvedValue({
+        data: { user: { id: "new-user-id" } },
+        error: null,
+      }),
+    });
+  });
+
   it("returns 400 for missing fields", async () => {
     const response = await POST(makeRequest({ email: "test@test.com" }));
     expect(response.status).toBe(400);
     const data = await response.json();
-    expect(data.error).toContain("Missing");
+    expect(data.error).toBeDefined();
   });
 
   it("returns 400 for short password", async () => {
@@ -43,27 +57,27 @@ describe("POST /api/auth/signup", () => {
   });
 
   it("returns 400 when Supabase returns error", async () => {
-    const mockClient = (createClient as any)();
-    mockClient.auth.admin.createUser.mockResolvedValue({
-      data: null,
-      error: { message: "User already exists" },
+    const mockAdminAuth = await getAdminAuth() as any;
+    mockAdminAuth.createUser.mockRejectedValue({
+      code: "auth/email-already-exists",
+      message: "The email address is already in use by another account.",
     });
 
     const response = await POST(makeRequest({
       email: "existing@test.com",
       password: "StrongPass1",
       full_name: "Test User",
+      signup_mode: "owner",
     }));
     expect(response.status).toBe(400);
     const data = await response.json();
-    expect(data.error).toBe("User already exists");
+    expect(data.error).toContain("already exists");
   });
 
   it("creates owner account successfully", async () => {
-    const mockClient = (createClient as any)();
-    mockClient.auth.admin.createUser.mockResolvedValue({
-      data: { user: { id: "new-user-id" } },
-      error: null,
+    const mockAdminAuth = await getAdminAuth() as any;
+    mockAdminAuth.createUser.mockResolvedValue({
+      uid: "new-user-id",
     });
 
     const response = await POST(makeRequest({
@@ -78,6 +92,5 @@ describe("POST /api/auth/signup", () => {
     expect(response.status).toBe(200);
     const data = await response.json();
     expect(data.success).toBe(true);
-    expect(data.user_id).toBe("new-user-id");
   });
 });

@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 const mockChain: any = {
   select: vi.fn().mockReturnThis(),
   eq: vi.fn().mockReturnThis(),
+  in: vi.fn().mockReturnThis(),
   single: vi.fn(),
 };
 
@@ -69,12 +70,12 @@ describe("checkStorageLimit", () => {
     mockChain.single.mockResolvedValue({ data: null, error: null });
     const result = await checkStorageLimit("user-1", 49 * 1024 * 1024);
     expect(result.allowed).toBe(true);
-    expect(result.limit).toBe(50);
+    expect(result.limit).toBe(200);
   });
 
   it("blocks storage when over limit", async () => {
     mockChain.single.mockResolvedValue({ data: null, error: null });
-    const result = await checkStorageLimit("user-1", 150 * 1024 * 1024);
+    const result = await checkStorageLimit("user-1", 200 * 1024 * 1024);
     expect(result.allowed).toBe(false);
   });
 });
