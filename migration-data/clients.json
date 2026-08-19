@@ -1,0 +1,25 @@
+[
+  {
+    "id": "55779727-9e69-4f96-96ea-5834cf338bba",
+    "user_id": null,
+    "full_name": "dsdgf",
+    "email": "hitechpostblog@gmail.com",
+    "phone": "34353",
+    "alternate_phone": null,
+    "address": null,
+    "city": null,
+    "state": null,
+    "pincode": null,
+    "id_type": null,
+    "id_number": null,
+    "company_name": null,
+    "gst_number": null,
+    "notes": null,
+    "created_by": "34d4d71d-ae67-553d-053e-a2f16e000000",
+    "deleted_at": null,
+    "created_at": "2026-08-16T09:28:04.71797+00:00",
+    "updated_at": "2026-08-16T09:28:04.71797+00:00",
+    "firm_id": "34d4d71d-ae67-553d-053e-a2f16e000000",
+    "branch_id": null
+  }
+]

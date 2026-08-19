@@ -1,0 +1,18 @@
+[
+  {
+    "id": "679c1c08-3bc3-44d8-a306-b3906b57c2e3",
+    "user_id": "34d4d71d-ae67-553d-053e-a2f16e000000",
+    "plan_id": "c74f4df6-2e68-4e80-ae60-5e3a0bd674b6",
+    "status": "trialing",
+    "starts_at": "2026-08-12T16:05:22.713+00:00",
+    "expires_at": "2026-08-26T16:05:22.713+00:00",
+    "cancelled_at": null,
+    "payment_method": "free_trial",
+    "amount_paid": 0,
+    "currency": "INR",
+    "auto_renew": false,
+    "notes": "{\"plan_slug\":\"solo\",\"type\":\"free_trial\"}",
+    "created_at": "2026-08-12T16:05:22.777262+00:00",
+    "updated_at": "2026-08-12T16:05:22.777262+00:00"
+  }
+]

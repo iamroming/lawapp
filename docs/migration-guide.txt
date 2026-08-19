@@ -1,0 +1,348 @@
+========================================
+CASEFILES - DATA MIGRATION GUIDE
+August 18, 2026
+========================================
+
+
+========================================
+OVERVIEW
+========================================
+
+This guide helps you migrate your CaseFiles database from one Supabase project to another.
+
+What gets migrated:
+- All 80 tables (schema + data)
+- All rows (profiles, cases, clients, etc.)
+- All indexes and constraints
+- All RLS policies
+- All functions and triggers
+- Seed data (plans, permissions, coupons)
+
+What does NOT get migrated:
+- Firebase Auth users (handled separately)
+- Storage buckets/files (handled separately)
+- Edge functions
+- Realtime subscriptions
+
+
+========================================
+OPTION 1: SQL METHOD (Recommended)
+========================================
+
+This is the simplest and most reliable method.
+
+Step 1: Create New Supabase Project
+------------------------------------
+1. Go to https://supabase.com/dashboard
+2. Click "New Project"
+3. Set project name, password, region
+4. Wait for project to be ready
+
+Step 2: Get Service Role Key
+------------------------------------
+1. In new project, go to Settings → API
+2. Copy the "service_role" key (starts with "eyJ...")
+3. Save it - you'll need it later
+
+Step 3: Export Data from Old Project
+------------------------------------
+1. Open old project in Supabase Dashboard
+2. Go to SQL Editor
+3. Run these queries one by one and save results:
+
+```sql
+-- Export profiles
+SELECT * FROM public.profiles;
+
+-- Export clients
+SELECT * FROM public.clients;
+
+-- Export cases
+SELECT * FROM public.cases;
+
+-- Export hearings
+SELECT * FROM public.hearings;
+
+-- Export documents
+SELECT * FROM public.documents;
+
+-- Export invoices
+SELECT * FROM public.invoices;
+
+-- Export payments
+SELECT * FROM public.payments;
+
+-- Export notes
+SELECT * FROM public.notes;
+
+-- Export time_entries
+SELECT * FROM public.time_entries;
+
+-- Export subscription_plans
+SELECT * FROM public.subscription_plans;
+
+-- Export user_subscriptions
+SELECT * FROM public.user_subscriptions;
+
+-- Export tags
+SELECT * FROM public.tags;
+
+-- Export reminders
+SELECT * FROM public.reminders;
+
+-- Export super_admins
+SELECT * FROM public.super_admins;
+
+-- Export platform_settings
+SELECT * FROM public.platform_settings;
+
+-- Export notifications
+SELECT * FROM public.notifications;
+
+-- Export all other tables...
+```
+
+Step 4: Run Schema on New Project
+------------------------------------
+1. Open new project SQL Editor
+2. Paste contents of COMPLETE_SCHEMA.sql
+3. Click "Run"
+4. Wait for success message
+
+Step 5: Import Data to New Project
+------------------------------------
+For each table, run INSERT statements in new project SQL Editor.
+
+Example:
+```sql
+INSERT INTO public.profiles (id, full_name, email, role) VALUES
+('uuid-1', 'John Doe', 'john@example.com', 'owner'),
+('uuid-2', 'Jane Smith', 'jane@example.com', 'associate');
+```
+
+Step 6: Update Firebase Auth
+------------------------------------
+1. Go to Firebase Console
+2. Export users from old project
+3. Import users to new project
+4. Users will need to re-login
+
+
+========================================
+OPTION 2: SCRIPT METHOD (Faster)
+========================================
+
+This uses a Node.js script to automate the process.
+
+Prerequisites:
+- Node.js 18+ installed
+- Service role keys for both projects
+
+Step 1: Set Environment Variables
+------------------------------------
+Windows PowerShell:
+$env:SOURCE_SUPABASE_URL="https://old-project.supabase.co"
+$env:SOURCE_SUPABASE_SERVICE_KEY="your-old-service-role-key"
+$env:TARGET_SUPABASE_URL="https://new-project.supabase.co"
+$env:TARGET_SUPABASE_SERVICE_KEY="your-new-service-role-key"
+
+Step 2: Export Data
+------------------------------------
+npx tsx scripts/migrate-data.ts export
+
+Step 3: Import Data
+------------------------------------
+npx tsx scripts/migrate-data.ts import
+
+Step 4: Verify
+------------------------------------
+1. Open new project dashboard
+2. Check table counts match
+3. Test a few queries
+
+
+========================================
+OPTION 3: SUPABASE CLI (Advanced)
+========================================
+
+This uses the official Supabase CLI for migration.
+
+Prerequisites:
+- Supabase CLI installed
+- Docker running
+
+Step 1: Link to Old Project
+------------------------------------
+supabase link --project-ref old-project-id
+
+Step 2: Dump Database
+------------------------------------
+supabase db dump --data-only > data.sql
+
+Step 3: Link to New Project
+------------------------------------
+supabase link --project-ref new-project-id
+
+Step 4: Push Schema
+------------------------------------
+supabase db push
+
+Step 5: Import Data
+------------------------------------
+supabase db import data.sql
+
+
+========================================
+OPTION 4: SUPABASE DASHBOARD (Manual)
+========================================
+
+This uses the web interface for small datasets.
+
+Step 1: Export from Old Project
+------------------------------------
+1. Go to Table Editor
+2. Select table
+3. Click "..." → Export as CSV
+4. Save CSV file
+
+Step 2: Import to New Project
+------------------------------------
+1. Go to Table Editor
+2. Select table
+3. Click "..." → Import from CSV
+4. Upload CSV file
+
+Repeat for each table.
+
+
+========================================
+POST-MIGIGATION CHECKLIST
+========================================
+
+After migration, verify:
+
+1. Table Counts
+   SELECT table_name, 
+     (SELECT COUNT(*) FROM information_schema.columns WHERE table_name = t.table_name) as columns
+   FROM information_schema.tables t
+   WHERE table_schema = 'public';
+
+2. Row Counts
+   SELECT 
+     (SELECT COUNT(*) FROM profiles) as profiles,
+     (SELECT COUNT(*) FROM clients) as clients,
+     (SELECT COUNT(*) FROM cases) as cases,
+     (SELECT COUNT(*) FROM hearings) as hearings;
+
+3. Test Queries
+   - Can you login?
+   - Can you see cases?
+   - Can you create new records?
+
+4. Test Functions
+   - Does handle_new_user trigger work?
+   - Do updated_at triggers work?
+   - Does generate_case_number work?
+
+5. Test RLS
+   - Can users only see their own data?
+   - Can admins see all data?
+
+
+========================================
+FIREBASE AUTH MIGRATION
+========================================
+
+Supabase uses its own auth, but CaseFiles uses Firebase.
+You need to migrate Firebase users separately.
+
+Step 1: Export from Firebase
+------------------------------------
+1. Go to Firebase Console
+2. Authentication → Users
+3. Click "Export" button
+4. Download CSV file
+
+Step 2: Import to New Firebase Project
+------------------------------------
+1. Create new Firebase project
+2. Go to Authentication → Users
+3. Click "Import users"
+4. Upload CSV file
+
+Step 3: Update Vercel Environment
+------------------------------------
+Update these env vars in Vercel:
+- FIREBASE_PROJECT_ID
+- FIREBASE_CLIENT_EMAIL
+- FIREBASE_PRIVATE_KEY
+- NEXT_PUBLIC_FIREBASE_API_KEY
+- NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+- NEXT_PUBLIC_FIREBASE_PROJECT_ID
+- NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+- NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+- NEXT_PUBLIC_FIREBASE_APP_ID
+
+Step 4: Update Supabase Auth
+------------------------------------
+If using Supabase auth too:
+1. Go to new Supabase project
+2. Authentication → Providers
+3. Configure Firebase provider
+4. Add Firebase credentials
+
+
+========================================
+STORAGE MIGRATION
+========================================
+
+If you have files in Supabase Storage:
+
+Step 1: Export Files
+------------------------------------
+1. Go to Storage in old project
+2. Download all files/folders
+
+Step 2: Import Files
+------------------------------------
+1. Go to Storage in new project
+2. Upload all files/folders
+
+Step 3: Update URLs
+------------------------------------
+Files URLs contain project reference.
+You may need to update file_url in documents table.
+
+
+========================================
+TROUBLESHOOTING
+========================================
+
+Problem: Foreign key constraint error
+Solution: Import tables in correct order:
+  1. profiles (no dependencies)
+  2. clients (depends on profiles)
+  3. cases (depends on profiles, clients)
+  4. hearings (depends on cases)
+  5. documents (depends on cases)
+  ... and so on
+
+Problem: Duplicate key error
+Solution: Use ON CONFLICT DO NOTHING in INSERTs
+
+Problem: RLS blocking inserts
+Solution: Disable RLS temporarily during import:
+  ALTER TABLE public.profiles DISABLE ROW LEVEL SECURITY;
+  -- import data --
+  ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+Problem: Triggers causing errors
+Solution: Disable triggers during import:
+  SET session_replication_role = 'replica';
+  -- import data --
+  SET session_replication_role = 'origin';
+
+
+========================================
+END OF MIGRATION GUIDE
+========================================

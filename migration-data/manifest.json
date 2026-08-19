@@ -1,0 +1,12 @@
+{
+  "profiles": 2,
+  "clients": 1,
+  "tags": 6,
+  "activity_logs": 2,
+  "subscription_plans": 5,
+  "user_subscriptions": 1,
+  "super_admins": 1,
+  "platform_settings": 6,
+  "coupon_codes": 1,
+  "cron_jobs": 8
+}

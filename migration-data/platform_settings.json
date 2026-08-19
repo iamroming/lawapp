@@ -1,0 +1,44 @@
+[
+  {
+    "key": "app_name",
+    "value": "LawApp",
+    "description": "Application name",
+    "updated_by": null,
+    "updated_at": "2026-07-26T14:27:58.071648+00:00"
+  },
+  {
+    "key": "maintenance_mode",
+    "value": false,
+    "description": "Enable maintenance mode",
+    "updated_by": null,
+    "updated_at": "2026-07-26T14:27:58.071648+00:00"
+  },
+  {
+    "key": "allow_signups",
+    "value": true,
+    "description": "Allow new user registrations",
+    "updated_by": null,
+    "updated_at": "2026-07-26T14:27:58.071648+00:00"
+  },
+  {
+    "key": "default_trial_days",
+    "value": 14,
+    "description": "Default trial period in days",
+    "updated_by": null,
+    "updated_at": "2026-07-26T14:27:58.071648+00:00"
+  },
+  {
+    "key": "max_upload_size_mb",
+    "value": 50,
+    "description": "Maximum file upload size in MB",
+    "updated_by": null,
+    "updated_at": "2026-07-26T14:27:58.071648+00:00"
+  },
+  {
+    "key": "support_email",
+    "value": "support@lawapp.in",
+    "description": "Support contact email",
+    "updated_by": null,
+    "updated_at": "2026-07-26T14:27:58.071648+00:00"
+  }
+]

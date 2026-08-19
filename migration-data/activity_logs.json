@@ -1,0 +1,26 @@
+[
+  {
+    "id": "c059c7e5-4301-4d30-ac32-2ea7aa1bca27",
+    "user_id": null,
+    "action": "created",
+    "entity_type": "invoice",
+    "entity_id": "98ab31cc-8ffb-4993-9122-03c60bd1af5a",
+    "entity_name": "INV/2026-27/0001",
+    "details": {},
+    "ip_address": null,
+    "user_agent": null,
+    "created_at": "2026-07-31T17:06:36.320704+00:00"
+  },
+  {
+    "id": "3ca957a0-31a5-429c-b5bc-c7fbebec4e14",
+    "user_id": null,
+    "action": "created",
+    "entity_type": "document",
+    "entity_id": "e9d8f9ca-1a2b-4d00-b497-30ec33313a07",
+    "entity_name": "## Full-Stack Software Engineering Services",
+    "details": {},
+    "ip_address": null,
+    "user_agent": null,
+    "created_at": "2026-08-05T01:19:52.683053+00:00"
+  }
+]

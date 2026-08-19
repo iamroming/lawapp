@@ -1,0 +1,44 @@
+[
+  {
+    "id": "7147232c-1b47-486b-be33-6d68f4604e7d",
+    "name": "Urgent",
+    "color": "#ef4444",
+    "created_by": null,
+    "firm_id": null
+  },
+  {
+    "id": "5afa8d6e-ae6e-436b-8584-6e1ed3fe553a",
+    "name": "Pro Bono",
+    "color": "#10b981",
+    "created_by": null,
+    "firm_id": null
+  },
+  {
+    "id": "833a808e-f6c5-4541-87df-19fd4824ea17",
+    "name": "Corporate",
+    "color": "#3b82f6",
+    "created_by": null,
+    "firm_id": null
+  },
+  {
+    "id": "5528c521-72fd-4f18-923f-eeb67a151a90",
+    "name": "Criminal",
+    "color": "#8b5cf6",
+    "created_by": null,
+    "firm_id": null
+  },
+  {
+    "id": "a1eefa9b-4802-4e3b-adb6-721d3aa72c9b",
+    "name": "Family",
+    "color": "#f59e0b",
+    "created_by": null,
+    "firm_id": null
+  },
+  {
+    "id": "695a6150-baa4-4f7b-916a-56c5daf54afe",
+    "name": "Property",
+    "color": "#06b6d4",
+    "created_by": null,
+    "firm_id": null
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "id": "b2cae11e-1270-512a-8875-6b83c7d00000",
+    "email": "mubb@ymail.com",
+    "access_level": "owner",
+    "permissions": [
+      "all"
+    ],
+    "last_login": null,
+    "created_at": "2026-08-12T23:58:16.313848+00:00"
+  }
+]
