@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     .from("user_subscriptions")
     .select("id")
     .eq("user_id", user_id)
-    .in("status", ["active", "trialing"])
+    .in("status", ["active", "trialing", "cancelled"])
     .limit(1)
     .single();
 

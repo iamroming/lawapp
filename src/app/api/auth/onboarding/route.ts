@@ -117,5 +117,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid mode" }, { status: 400 });
   }
 
-  return NextResponse.json({ success: true });
+  // Check for active subscription after profile creation
+  let subscription = null;
+  if (mode === "owner") {
+    const { data: sub } = await supabase
+      .from("user_subscriptions")
+      .select("id, status")
+      .eq("user_id", user.uuid)
+      .in("status", ["active", "trialing", "cancelled"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    subscription = sub;
+  }
+
+  return NextResponse.json({ success: true, subscription: subscription || null });
 }

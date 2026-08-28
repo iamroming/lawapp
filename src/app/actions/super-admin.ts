@@ -548,7 +548,7 @@ export async function deleteSuperAdminPlan(planId: string) {
     .from("user_subscriptions")
     .select("id", { count: "exact", head: true })
     .eq("plan_id", planId)
-    .in("status", ["active", "trialing"]);
+    .in("status", ["active", "trialing", "cancelled"]);
 
   if (count && count > 0) {
     throw new Error(`Cannot delete: ${count} active subscription(s) use this plan. Deactivate it instead.`);

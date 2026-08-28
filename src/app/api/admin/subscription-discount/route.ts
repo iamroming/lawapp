@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     .from("user_subscriptions")
     .update(updateData)
     .in("user_id", user_ids)
-    .in("status", ["active", "trialing"])
+    .in("status", ["active", "trialing", "cancelled"])
     .select();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

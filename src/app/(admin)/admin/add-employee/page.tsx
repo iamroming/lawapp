@@ -78,7 +78,7 @@ export default function AddEmployeePage() {
         .from("user_subscriptions")
         .select("plan:subscription_plans(name, max_users)")
         .eq("user_id", firmId)
-        .in("status", ["active", "trialing"])
+        .in("status", ["active", "trialing", "cancelled"])
         .limit(1)
         .single();
 

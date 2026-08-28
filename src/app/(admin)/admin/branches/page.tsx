@@ -54,7 +54,7 @@ export default function BranchesPage() {
         .from("user_subscriptions")
         .select("plan:subscription_plans(name, max_branches)")
         .eq("user_id", firmId)
-        .in("status", ["active", "trialing"])
+        .in("status", ["active", "trialing", "cancelled"])
         .limit(1)
         .single();
 

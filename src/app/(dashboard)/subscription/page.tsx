@@ -128,7 +128,7 @@ export default function SubscriptionPage() {
       .from("user_subscriptions")
       .select("*")
       .eq("user_id", subscriptionUserId)
-      .in("status", ["active", "trialing"])
+      .in("status", ["active", "trialing", "cancelled"])
       .order("created_at", { ascending: false })
       .limit(1)
       .single();

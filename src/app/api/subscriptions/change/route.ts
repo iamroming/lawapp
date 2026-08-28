@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     .from("user_subscriptions")
     .select("id, status, notes")
     .eq("user_id", user.uuid)
-    .in("status", ["active", "trialing"])
+    .in("status", ["active", "trialing", "cancelled"])
     .single();
 
   if (!currentSub) {
@@ -82,10 +82,18 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Look up the new plan ID from subscription_plans
+    const { data: newPlan } = await supabase
+      .from("subscription_plans")
+      .select("id")
+      .eq("slug", planSlug)
+      .single();
+
     await supabase
       .from("user_subscriptions")
       .update({
         status: "active",
+        plan_id: newPlan?.id,
         amount_paid: billing.price,
         notes: JSON.stringify({
           ...currentNotes,

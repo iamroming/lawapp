@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     .eq("id", user.uuid)
     .single();
 
-  if (profileError) {
+  if (profileError && profileError.code !== "PGRST116") {
     return NextResponse.json(
       { error: "Failed to fetch profile", details: profileError.message },
       { status: 500 }
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
       .from("user_subscriptions")
       .select("id, status, expires_at, notes")
       .eq("user_id", user.uuid)
-      .in("status", ["active", "trialing"])
+      .in("status", ["active", "trialing", "cancelled"])
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
         .from("user_subscriptions")
         .select("id, status, expires_at, notes")
         .eq("user_id", owner.id)
-        .in("status", ["active", "trialing"])
+        .in("status", ["active", "trialing", "cancelled"])
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
       .from("user_subscriptions")
       .select("id, status, expires_at, notes")
       .eq("user_id", user.uuid)
-      .in("status", ["active", "trialing"])
+      .in("status", ["active", "trialing", "cancelled"])
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();

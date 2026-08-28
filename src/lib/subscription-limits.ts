@@ -31,12 +31,20 @@ export async function getPlanLimits(userId: string): Promise<PlanLimits> {
 
   const { data: subscription } = await supabase
     .from("user_subscriptions")
-    .select("plan:subscription_plans(name, max_cases, max_users, max_storage_mb)")
+    .select("plan:subscription_plans(name, max_cases, max_users, max_storage_mb), status, expires_at")
     .eq("user_id", lookupId)
-    .in("status", ["active", "trialing"])
+    .in("status", ["active", "trialing", "cancelled"])
     .single();
 
   if (!subscription?.plan) return DEFAULT_PLAN;
+
+  // Cancelled subscription: keep plan only until expires_at
+  if (subscription.status === "cancelled" && subscription.expires_at) {
+    const expiresAt = new Date(subscription.expires_at);
+    if (expiresAt <= new Date()) {
+      return DEFAULT_PLAN;
+    }
+  }
 
   const plan = Array.isArray(subscription.plan) ? subscription.plan[0] : subscription.plan;
   if (!plan) return DEFAULT_PLAN;

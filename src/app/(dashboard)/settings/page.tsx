@@ -190,7 +190,7 @@ export default function SettingsPage() {
           .from("user_subscriptions")
           .select("*, plan:subscription_plans(*)")
           .eq("user_id", subscriptionOwnerId)
-          .in("status", ["active", "trialing"])
+          .in("status", ["active", "trialing", "cancelled"])
           .order("created_at", { ascending: false })
           .limit(1)
           .single();
