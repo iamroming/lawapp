@@ -13,10 +13,11 @@ function getRazorpay() {
 }
 
 const planLimits: Record<string, { max_cases: number; max_users: number; max_storage_mb: number; max_ai_queries: number }> = {
-  solo: { max_cases: 20, max_users: 1, max_storage_mb: 1024, max_ai_queries: 50 },
-  professional: { max_cases: 50, max_users: 3, max_storage_mb: 3072, max_ai_queries: 200 },
-  firm: { max_cases: 100, max_users: 10, max_storage_mb: 7168, max_ai_queries: -1 },
-  enterprise: { max_cases: 500, max_users: 50, max_storage_mb: 20480, max_ai_queries: 150 },
+  free: { max_cases: 10, max_users: 10, max_storage_mb: 500, max_ai_queries: 10 },
+  solo: { max_cases: 50, max_users: 2, max_storage_mb: 1024, max_ai_queries: 100 },
+  professional: { max_cases: 150, max_users: 5, max_storage_mb: 5120, max_ai_queries: 300 },
+  firm: { max_cases: 350, max_users: 20, max_storage_mb: 20480, max_ai_queries: 2000 },
+  enterprise: { max_cases: -1, max_users: -1, max_storage_mb: 61440, max_ai_queries: 5000 },
 };
 
 export async function POST(req: NextRequest) {

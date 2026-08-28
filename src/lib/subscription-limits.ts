@@ -10,10 +10,10 @@ export interface PlanLimits {
 }
 
 const DEFAULT_PLAN: PlanLimits = {
-  max_cases: 3,
-  max_users: 1,
-  max_storage_mb: 200,
-  max_ai_queries: 5,
+  max_cases: 10,
+  max_users: 10,
+  max_storage_mb: 500,
+  max_ai_queries: 10,
   max_branches: 0,
   plan_name: "Free",
 };
